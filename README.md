@@ -1,23 +1,23 @@
 # Introduction
 
-[![Travis](https://img.shields.io/travis/locize/i18next-locize-backend/master.svg?style=flat-square)](https://travis-ci.org/locize/i18next-locize-backend)
-[![Coveralls](https://img.shields.io/coveralls/locize/i18next-locize-backend/master.svg?style=flat-square)](https://coveralls.io/github/locize/i18next-locize-backend)
-[![npm version](https://img.shields.io/npm/v/i18next-locize-backend.svg?style=flat-square)](https://www.npmjs.com/package/i18next-locize-backend)
-[![Bower](https://img.shields.io/bower/v/i18next-locize-backend.svg)]()
-[![David](https://img.shields.io/david/locize/i18next-locize-backend.svg?style=flat-square)](https://david-dm.org/locize/i18next-locize-backend)
+[![Travis](https://img.shields.io/travis/locize/locizify/master.svg?style=flat-square)](https://travis-ci.org/locize/locizify)
+[![Coveralls](https://img.shields.io/coveralls/locize/locizify/master.svg?style=flat-square)](https://coveralls.io/github/locize/locizify)
+[![npm version](https://img.shields.io/npm/v/locizify.svg?style=flat-square)](https://www.npmjs.com/package/locizify)
+[![Bower](https://img.shields.io/bower/v/locizify.svg)]()
+[![David](https://img.shields.io/david/locize/locizify.svg?style=flat-square)](https://david-dm.org/locize/locizify)
 
 This is a simple i18next backend to be used for locize service. It will load resources from locize server using xhr.
 
 # Getting started
 
-Source can be loaded via [npm](https://www.npmjs.com/package/i18next-locize-backend), bower or [downloaded](https://github.com/locize/i18next-locize-backend/blob/master/i18nextLocizeBackend.min.js) from this repo.
+Source can be loaded via [npm](https://www.npmjs.com/package/locizify), bower or [downloaded](https://github.com/locize/locizify/blob/master/locizify.min.js) from this repo.
 
 ```
 # npm package
-$ npm install i18next-locize-backend
+$ npm install locizify
 
 # bower
-$ bower install i18next-locize-backend
+$ bower install locizify
 ```
 
 Wiring up:
