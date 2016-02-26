@@ -12,7 +12,11 @@
     "type": "git",
     "url": "git://github.com/locize/locizify.git"
   },
-  "dependencies": {},
+  "dependencies": {
+    "i18next-browser-languagedetector": "0.0.14",
+    "i18nextify": "0.0.2",
+    "locize": "0.0.3"
+  },
   "devDependencies": {
     "babel-cli": "6.0.0",
     "babel-core": "6.4.5",
@@ -38,7 +42,7 @@
     "transpile": "babel src -d lib",
     "browserify": "browserify ./src/index.js --outfile ./bin/index.js -g uglifyify -t babelify -s locizify",
     "copy": "cp ./bin/index.js ./locizify.min.js",
-    "build": "npm run transpile && npm run browserify && npm run copy",
+    "build": "npm run transpile && npm run browserify && npm run copy && git commit -a -m 'updated build output'",
     "version": "npm run build",
     "postversion": "git push && git push --tags"
   },
