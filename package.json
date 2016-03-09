@@ -13,7 +13,7 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-browser-languagedetector": "0.0.14",
+    "i18next-browser-languagedetector": "0.2.0",
     "i18nextify": "0.0.2",
     "locize": "0.0.3"
   },
