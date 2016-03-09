@@ -1,11 +1,12 @@
-import i18next from 'locize';
-import LngDet from 'i18next-browser-languagedetector/lib';
+import i18next from 'i18next';
+import LngDet from 'i18next-browser-languagedetector';
+import LocizeBackend from 'i18next-locize-backend';
 
-import Observer from 'i18nextify/lib/Observer';
+import Observer from 'i18nextify/dist/es/Observer';
 
-import docReady from 'i18nextify/lib/docReady';
-import renderer from 'i18nextify/lib/renderer';
-import { missingHandler } from 'i18nextify/lib/missingHandler';
+import docReady from 'i18nextify/dist/es/docReady';
+import renderer from 'i18nextify/dist/es/renderer';
+import { missingHandler } from 'i18nextify/dist/es/missingHandler';
 
 function getDefaults() {
   return {
@@ -29,7 +30,9 @@ docReady(function() {
 });
 
 // extend i18next with default extensions
-i18next.use(LngDet);
+i18next
+  .use(LngDet)
+  .use(LocizeBackend);
 
 // log out missings
 i18next.on('missingKey', missingHandler);
