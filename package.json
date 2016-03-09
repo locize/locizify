@@ -17,7 +17,7 @@
     "i18next-browser-languagedetector": "0.2.0",
     "i18next-locize-backend": "0.0.2",
     "i18nextify": "0.1.1",
-    "i18next": "2.3.0"
+    "i18next": "2.3.1"
   },
   "devDependencies": {
     "babel-cli": "6.6.5",
