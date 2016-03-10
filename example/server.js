@@ -39,8 +39,8 @@ app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
-app.get('/locizify.min.js', function(req, res) {
-  fs.readFile(__dirname + '/../locizify.min.js', 'utf-8', function(err, doc) {
+app.get('/locizify.js', function(req, res) {
+  fs.readFile(__dirname + '/../locizify.js', 'utf-8', function(err, doc) {
     res.send(doc);
   });
 });

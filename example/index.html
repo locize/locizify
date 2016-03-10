@@ -2,13 +2,19 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="/locizify.min.js"></script>
-    <!-- <script>
-      window.virtualDomI18next.init({
-        // debug: true,
-        saveMissing: true
+    <script src="/locizify.js"></script>
+    <script>
+      window.locizify.init({
+        debug: true,
+        saveMissing: true,
+        saveMissingTo: 'all',
+        backend: {
+          referenceLng: 'de',
+          apiKey: '6947fce1-fa17-42c4-959b-b9bc5913c9ac',
+          addPath: 'https://e6fnb5nbs4.execute-api.eu-west-1.amazonaws.com/dev/missing/614b6c00-a993-4c94-bc9a-e40ee01ed4fe/latest/{{lng}}/{{ns}}',
+        }
       });
-    </script> -->
+    </script>
   </head>
   <body class="landing-page" style='display: none'>
     <div>
