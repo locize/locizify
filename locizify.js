@@ -5296,21 +5296,18 @@
 
 	var _createClass$14 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _typeof$3 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
 	function _classCallCheck$14(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	// https://gist.github.com/Xeoncross/7663273
 	function ajax$1(url, options, callback, data, cache) {
 	  // Must encode data
-	  if (data && (typeof data === 'undefined' ? 'undefined' : _typeof$3(data)) === 'object') {
-	    var y = '',
-	        e = encodeURIComponent;
-	    for (var m in data) {
-	      y += '&' + e(m) + '=' + e(data[m]);
-	    }
-	    data = y.slice(1) + (!cache ? '&_t=' + new Date() : '');
-	  }
+	  // if(data && typeof data === 'object') {
+	  //   var y = '', e = encodeURIComponent;
+	  //   for (var m in data) {
+	  //     y += '&' + e(m) + '=' + e(data[m]);
+	  //   }
+	  //   data = y.slice(1) + (!cache ? '&_t=' + new Date : '');
+	  // }
 
 	  try {
 	    var x = new (XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0');
@@ -5321,11 +5318,11 @@
 	    if (options.authorize && options.apiKey) {
 	      x.setRequestHeader('Authorization', options.apiKey);
 	    }
-	    x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+	    x.setRequestHeader('Content-type', 'application/json');
 	    x.onreadystatechange = function () {
 	      x.readyState > 3 && callback && callback(x.responseText, x);
 	    };
-	    x.send(data);
+	    x.send(JSON.stringify(data));
 	  } catch (e) {
 	    window.console && console.log(e);
 	  }
