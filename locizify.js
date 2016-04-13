@@ -5121,10 +5121,13 @@
 	var debouncedLog = debounce(log, 2000);
 
 	function missingHandler(lngs, namespace, key, res) {
-	  console.warn('here');
-	  setPath(missings, [namespace, key], res);
-	  console.warn('there');
-	  debouncedLog();
+	  if (typeof lngs === 'string') lngs = [lngs];
+	  if (!lngs) lngs = [];
+
+	  lngs.forEach(function (lng) {
+	    setPath(missings, [lng, namespace, key], res);
+	    debouncedLog();
+	  });
 	}
 
 	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
