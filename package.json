@@ -1,6 +1,6 @@
 {
   "name": "locizify",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "backend layer for i18next using locize service ",
   "main": "dist/commonjs/index.js",
   "jsnext:main": "dist/es/index.js",
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "i18next-locize-backend": "0.1.0",
-    "i18nextify": "0.1.4"
+    "i18nextify": "0.2.0"
   },
   "devDependencies": {
     "babel-cli": "6.6.5",
