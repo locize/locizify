@@ -5001,10 +5001,6 @@
 
 	var _extends$7 = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-	function isUnTranslated(node) {
-	  return !node.properties || !node.properties.attributes || node.properties.attributes.translated !== '';
-	}
-
 	function translate(str) {
 	  var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
@@ -5046,12 +5042,12 @@
 	  if (node.text) node.text = translate(node.text, tOptions);
 	  if (node.properties) node.properties = translateProps(node.properties, tOptions);
 
-	  var nodeIsUnTranslated = isUnTranslated(node);
+	  //let nodeIsUnTranslated = isUnTranslated(node);
 	  if (node.children) {
 	    node.children.forEach(function (child) {
-	      if (nodeIsUnTranslated && child.text || !child.text && isUnTranslated(child)) {
-	        walk(child, tOptions);
-	      }
+	      if ( /*nodeIsUnTranslated && */child.text || !child.text /*&& isUnTranslated(child)*/) {
+	          walk(child, tOptions);
+	        }
 	    });
 	  }
 	  if (node.properties && node.properties.attributes) node.properties.attributes.translated = '';
