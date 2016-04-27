@@ -5002,6 +5002,10 @@
 	var _extends$7 = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 	function isUnTranslated(node) {
+	  return !node.properties || !node.properties.attributes || node.properties.attributes.localized !== '';
+	}
+
+	function isNotExcluded(node) {
 	  return !node.properties || !node.properties.attributes || node.properties.attributes.translated !== '';
 	}
 
@@ -5042,15 +5046,17 @@
 	}
 
 	function walk(node, tOptions) {
+	  var nodeIsNotExcluded = isNotExcluded(node);
+
 	  if (node.children) {
 	    node.children.forEach(function (child) {
-	      if ( /*nodeIsUnTranslated && */child.text || !child.text /*&& isUnTranslated(child)*/) {
-	          walk(child, tOptions);
-	        }
+	      if (nodeIsNotExcluded && child.text || !child.text && isNotExcluded(child)) {
+	        walk(child, tOptions);
+	      }
 	    });
 	  }
 
-	  if (isUnTranslated(node)) {
+	  if (nodeIsNotExcluded && isUnTranslated(node)) {
 	    tOptions = getTOptions(tOptions, node);
 	    if (node.text) node.text = translate(node.text, tOptions);
 	    if (node.properties) node.properties = translateProps(node.properties, tOptions);
