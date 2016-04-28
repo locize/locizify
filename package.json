@@ -14,8 +14,8 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-locize-backend": "0.1.0",
-    "i18nextify": "0.3.0"
+    "i18next-locize-backend": "0.1.1",
+    "i18nextify": "0.4.0"
   },
   "devDependencies": {
     "babel-cli": "6.6.5",

@@ -5060,7 +5060,7 @@
 	    tOptions = getTOptions(tOptions, node);
 	    if (node.text) node.text = translate(node.text, tOptions);
 	    if (node.properties) node.properties = translateProps(node.properties, tOptions);
-	    if (node.properties && node.properties.attributes) node.properties.attributes.translated = '';
+	    if (node.properties && node.properties.attributes) node.properties.attributes.localized = '';
 	  }
 
 	  return node;
@@ -5147,7 +5147,9 @@
 	    nsSeparator: '#||#',
 	    keySeparator: '#|#',
 	    debug: window.location.search && window.location.search.indexOf('debug=true') > -1,
-	    saveMissing: window.location.search && window.location.search.indexOf('saveMissing=true') > -1
+	    saveMissing: window.location.search && window.location.search.indexOf('saveMissing=true') > -1,
+	    namespace: false,
+	    namespaceFromPath: false
 	  };
 	}
 
@@ -5169,10 +5171,35 @@
 	// store last init options - for case init is called before dom ready
 	var lastOptions = {};
 
+	function getPathname() {
+	  var path = location.pathname;
+	  if (path === '/') return 'root';
+	  return 'root' + path.replace('/', '_');
+	}
+
+	function changeNamespace(ns) {
+	  if (!ns && lastOptions.namespaceFromPath) ns = getPathname();
+	  lastOptions.ns = ns;
+	  lastOptions.defaultNS = ns;
+
+	  i18next$1.loadNamespaces(ns, function () {
+	    i18next$1.setDefaultNamespace(ns);
+	  });
+	}
+
 	function init() {
 	  var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
 	  options = _extends({}, getDefaults(), lastOptions, options);
+
+	  if (options.namespace) {
+	    options.ns = options.namespace;
+	    options.defaultNS = options.namespace;
+	  } else if (options.namespaceFromPath) {
+	    var ns = getPathname();
+	    options.ns = ns;
+	    options.defaultNS = ns;
+	  }
 
 	  // delay init from domReady
 	  if (!options.ele) {
@@ -5229,7 +5256,8 @@
 
 	var i18nextify = {
 	  init: init,
-	  i18next: i18next$1
+	  i18next: i18next$1,
+	  changeNamespace: changeNamespace
 	};
 
 	function debounce$1(func, wait, immediate) {
