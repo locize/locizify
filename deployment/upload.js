@@ -20,6 +20,7 @@ function upload(fileEnding) {
     Key: `locizify${suffix}${fileEnding}`,
     Body: fs.createReadStream(`${__dirname}/../locizify${fileEnding}`),
     ContentType: 'application/javascript',
+    ACL: 'public-read',
     Expires: 0,
     CacheControl: 'public, must-revalidate, proxy-revalidate, max-age=0'
   }, (err, data) => {
