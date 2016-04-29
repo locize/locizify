@@ -1982,7 +1982,7 @@
 	var each = arr.forEach;
 	var slice = arr.slice;
 
-	function defaults(obj) {
+	function defaults$1(obj) {
 	  each.call(slice.call(arguments, 1), function (source) {
 	    if (source) {
 	      for (var prop in source) {
@@ -2086,7 +2086,7 @@
 	      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
 	      this.services = services;
-	      this.options = defaults(options, this.options || {}, getDefaults$1());
+	      this.options = defaults$1(options, this.options || {}, getDefaults$1());
 	    }
 	  }, {
 	    key: 'readMulti',
@@ -2153,7 +2153,7 @@
 	var each$1 = arr$1.forEach;
 	var slice$1 = arr$1.slice;
 
-	function defaults$1(obj) {
+	function defaults$2(obj) {
 	  each$1.call(slice$1.call(arguments, 1), function (source) {
 	    if (source) {
 	      for (var prop in source) {
@@ -2341,7 +2341,7 @@
 	      var i18nOptions = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
 	      this.services = services;
-	      this.options = defaults$1(options, this.options || {}, getDefaults$2());
+	      this.options = defaults$2(options, this.options || {}, getDefaults$2());
 	      this.i18nOptions = i18nOptions;
 
 	      this.addDetector(cookie$1);
@@ -5060,7 +5060,7 @@
 	    tOptions = getTOptions(tOptions, node);
 	    if (node.text) node.text = translate(node.text, tOptions);
 	    if (node.properties) node.properties = translateProps(node.properties, tOptions);
-	    if (node.properties && node.properties.attributes) node.properties.attributes.localized = '';
+	    if (node.properties && node.properties.attributes) node.properties.attributes.translated = '';
 	  }
 
 	  return node;
@@ -5147,9 +5147,7 @@
 	    nsSeparator: '#||#',
 	    keySeparator: '#|#',
 	    debug: window.location.search && window.location.search.indexOf('debug=true') > -1,
-	    saveMissing: window.location.search && window.location.search.indexOf('saveMissing=true') > -1,
-	    namespace: false,
-	    namespaceFromPath: false
+	    saveMissing: window.location.search && window.location.search.indexOf('saveMissing=true') > -1
 	  };
 	}
 
@@ -5171,35 +5169,10 @@
 	// store last init options - for case init is called before dom ready
 	var lastOptions = {};
 
-	function getPathname() {
-	  var path = location.pathname;
-	  if (path === '/') return 'root';
-	  return 'root' + path.replace('/', '_');
-	}
-
-	function changeNamespace(ns) {
-	  if (!ns && lastOptions.namespaceFromPath) ns = getPathname();
-	  lastOptions.ns = ns;
-	  lastOptions.defaultNS = ns;
-
-	  i18next$1.loadNamespaces(ns, function () {
-	    i18next$1.setDefaultNamespace(ns);
-	  });
-	}
-
 	function init() {
 	  var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
 	  options = _extends({}, getDefaults(), lastOptions, options);
-
-	  if (options.namespace) {
-	    options.ns = options.namespace;
-	    options.defaultNS = options.namespace;
-	  } else if (options.namespaceFromPath) {
-	    var ns = getPathname();
-	    options.ns = ns;
-	    options.defaultNS = ns;
-	  }
 
 	  // delay init from domReady
 	  if (!options.ele) {
@@ -5256,8 +5229,7 @@
 
 	var i18nextify = {
 	  init: init,
-	  i18next: i18next$1,
-	  changeNamespace: changeNamespace
+	  i18next: i18next$1
 	};
 
 	function debounce$1(func, wait, immediate) {
@@ -5525,6 +5497,10 @@
 	  saveMissingTo: 'all'
 	};
 
+	var defaults = {
+	  saveMissing: true
+	};
+
 	var i18next = i18nextify.i18next;
 
 
@@ -5533,7 +5509,38 @@
 	  var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 	  var callback = arguments[1];
 
-	  originalInit.call(i18next, babelHelpers.extends({}, options, enforce), callback);
+	  var scriptEle = document.getElementById('locizify');
+
+	  if (scriptEle) {
+	    (function () {
+	      var config = {};
+	      var backend = {};
+
+	      var toRead = ['fallbackLng', 'saveMissing', 'debug'];
+	      var toReadBackend = ['projectId', 'apiKey', 'referenceLng'];
+
+	      toRead.forEach(function (attr) {
+	        var value = scriptEle.getAttribute(attr.toLowerCase());
+	        if (value === 'true') value = true;
+	        if (value === 'false') value = false;
+	        config[attr] = value;
+	      });
+
+	      toReadBackend.forEach(function (attr) {
+	        var value = scriptEle.getAttribute(attr.toLowerCase());
+	        if (value === 'true') value = true;
+	        if (value === 'false') value = false;
+	        backend[attr] = value;
+	      });
+
+	      options = babelHelpers.extends({}, config, options);
+	      options.backend = babelHelpers.extends({}, backend, options.backend);
+	    })();
+	  }
+
+	  console.warn(options);
+
+	  originalInit.call(i18next, babelHelpers.extends({}, defaults, options, enforce), callback);
 	};
 
 	i18next.use(Backend$1);

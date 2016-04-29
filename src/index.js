@@ -5,11 +5,45 @@ const enforce = {
   saveMissingTo: 'all'
 };
 
+const defaults = {
+  saveMissing: true
+};
+
+
 const { i18next } = i18nextify;
 
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {
-  originalInit.call(i18next, { ...options, ...enforce }, callback);
+  const scriptEle = document.getElementById('locizify');
+
+  if (scriptEle) {
+    const config = {};
+    const backend = {};
+
+    const toRead = ['fallbackLng', 'saveMissing', 'debug'];
+    const toReadBackend = ['projectId', 'apiKey', 'referenceLng'];
+
+    toRead.forEach(attr => {
+      let value = scriptEle.getAttribute(attr.toLowerCase());
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+      config[attr] = value;
+    });
+
+    toReadBackend.forEach(attr => {
+      let value = scriptEle.getAttribute(attr.toLowerCase());
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+      backend[attr] = value;
+    });
+
+    options = { ...config, ...options };
+    options.backend = { ...backend, ...options.backend };
+  }
+
+  console.warn(options)
+
+  originalInit.call(i18next, { ...defaults, ...options, ...enforce }, callback);
 };
 
 
