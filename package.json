@@ -18,6 +18,7 @@
     "i18nextify": "0.4.0"
   },
   "devDependencies": {
+    "aws-sdk": "2.3.7",
     "babel-cli": "6.6.5",
     "babel-core": "6.4.5",
     "babel-eslint": "6.0.0-beta.5",
@@ -46,7 +47,9 @@
     "build:iife": "rollup -c rollup.config.js --format iife && rollup -c rollup.config.js --format iife --uglify",
     "build": "npm run clean && npm run build:cjs && npm run build:es && npm run build:umd && npm run copy",
     "preversion": "npm run build && git push",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "deploy": "node deployment/upload.js",
+    "deploy_prod": "DEPLOY_TYPE=prod node deployment/upload.js"
   },
   "author": "Jan Mühlemann <jan.muehlemann@gmail.com> (https://github.com/jamuhl)",
   "license": "MIT"
