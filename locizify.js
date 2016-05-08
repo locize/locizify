@@ -5566,7 +5566,7 @@
 	      var backend = {};
 
 	      var toRead = ['fallbackLng', 'saveMissing', 'debug'];
-	      var toReadBackend = ['projectId', 'apiKey', 'referenceLng'];
+	      var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
 
 	      toRead.forEach(function (attr) {
 	        var value = scriptEle.getAttribute(attr.toLowerCase());

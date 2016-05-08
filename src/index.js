@@ -21,7 +21,7 @@ i18next.init = (options = {}, callback) => {
     const backend = {};
 
     const toRead = ['fallbackLng', 'saveMissing', 'debug'];
-    const toReadBackend = ['projectId', 'apiKey', 'referenceLng'];
+    const toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
 
     toRead.forEach(attr => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
