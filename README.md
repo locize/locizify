@@ -6,88 +6,235 @@
 [![Bower](https://img.shields.io/bower/v/locizify.svg)]()
 [![David](https://img.shields.io/david/locize/locizify.svg?style=flat-square)](https://david-dm.org/locize/locizify)
 
-This is a simple i18next backend to be used for locize service. It will load resources from locize server using xhr.
+# locizify
+
+Drop the locizify script onto your website and it will automatically start to segment your content and connect it to your locize project. Translating your content was never easier.
+
+Just drop the following line to your header to deliever your content in any language:
+
+```html
+<script id="locizify" projectid="[PROJECT_ID]" apikey="[API_KEY]" referencelng="[LNG]" fallbacklng="[LNG]" src="https://cdn.locize.io/locizify.min.js" />
+```
+
+locizify uses virtual-dom to update your page with translations based on the current content. MutationObserver is used to trigger translations on dynamically added content. So it should play well with any static or dynamic page not using a own virtual-dom implementation.
+
+locizify comes bundled with [i18next](http://i18next.com/).
+
+
 
 # Getting started
 
-Source can be loaded via [npm](https://www.npmjs.com/package/locizify), bower or [downloaded](https://github.com/locize/locizify/blob/master/locizify.min.js) from this repo.
+Add the script to your page:
 
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <script id="locizify"
+      projectid="[PROJECT_ID]"
+      apikey="[API_KEY]"
+      referencelng="[LNG]"
+      fallbacklng="[LNG]"
+      src="https://cdn.locize.io/locizify.min.js"
+    />
+  </head>
+  ...
 ```
-# npm package
-$ npm install locizify
 
-# bower
-$ bower install locizify
+1. Reload your page.
+
+2. Refresh your project on locize.io - there should be added a new namespace in your reference language having all the segments of this page.
+
+3. Add a new language to your project and translate the content
+
+4. Reload your page with `?lng='[newLanguage]'`
+
+## Initialize with optional options
+
+### via attibutes on script element
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <script id="locizify"
+      projectid="[PROJECT_ID]"
+      apikey="[API_KEY]"
+      referencelng="[LNG]"
+      fallbacklng="[LNG]"
+      src="https://cdn.locize.io/locizify.min.js"
+
+      /* optional */
+      version="[VERSION]"
+      savemissing="[true|false (default true)]"
+      debug="[true|false (default false)]"
+    />
+  </head>
+  ...
+```
+### via init function
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.locize.io/locizify.min.js"></script>
+    <script>
+      locizify.init({
+        // required
+        fallbackLng: '[LNG]',
+        backend: {
+          projectId: '[PROJECT_ID]',
+          apiKey: '[API_KEY]', // only needed if you like to add missing segments
+          referenceLng: '[LNG]',
+          version: '[VERSION]' // defaults to latest
+        },
+
+        // defaults that are set
+        autorun: true, // setting to false init will return an object with start function
+        ele: document.body, // pass in another element if you like to translate another html element
+        ignoreTags: ['SCRIPT'], // tags to ignore
+
+        // optional
+        ignoreIds: ['ignoreMeId'],
+        ignoreClasses: ['ignoreMeClass'],
+
+        namespace: false, // set another name - default namespace will be translation
+        namespaceFromPath: false // set true will use namepace based on window.location.pathname
+        ns: ['common'] // -> only set if accessing more then one namepace
+
+        // + all options available in i18next
+      });
+    </script>
+  </head>
+  ...
 ```
 
-Wiring up:
+## Delay initial translation
 
 ```js
-import i18next from 'i18next';
-import Locize from 'i18next-locize-backend';
+const translation = locizify.init({
+  autorun: false
+});
 
-i18next
-  .use(Locize)
-  .init(i18nextOptions);
+setTimeout(function () {
+  translation.start();
+}, 1000);
 ```
 
-- As with all modules you can either pass the constructor function (class) to the i18next.use or a concrete instance.
-- If you don't use a module loader it will be added to `window.i18nextLocizeBackend`
+## Avoid translating an element
 
-## Backend Options
+###### By  attribute
 
-```js
-{
-  // path where resources get loaded from
-  loadPath: '/locales/{{lng}}/{{ns}}.json',
+Just set translated attribute:
 
-  // path to post missing resources
-  addPath: 'locales/add/{{lng}}/{{ns}}',
-
-  // your backend server supports multiloading
-  // /locales/resources.json?lng=de+en&ns=ns1+ns2
-  allowMultiLoading: false,
-
-  // parse data after it has been fetched
-  // in example use https://www.npmjs.com/package/json5
-  // here it removes the letter a from the json (bad idea)
-  parse: function(data) { return data.replace(/a/g, ''); },
-
-  // allow cross domain requests
-  crossDomain: false,
-
-  // define a custom xhr function
-  // can be used to support XDomainRequest in IE 8 and 9
-  ajax: function (url, options, callback, data) {}
-}
+```html
+<div translated>this won't get translated - nor this elements children</div>
 ```
 
-Options can be passed in:
+###### By ignoring tag, class, id
 
-**preferred** - by setting options.backend in i18next.init:
+Just add needed items to the specific array:
 
 ```js
-import i18next from 'i18next';
-import Locize from 'i18next-locize-backend';
-
-i18next
-  .use(Locize)
-  .init({
-    backend: options
-  });
+locizify.init({
+  ignoreTags: ['SCRIPT'], // need to be uppercased
+  ignoreIds: ['ignoreMeId'],
+  ignoreClasses: ['ignoreMeClass']
+});
 ```
 
-on construction:
-
-```js
-  import Locize from 'i18next-locize-backend';
-  const locize = new Locize(null, options);
+```html
+<script>this won't get translated - nor this elements children</script>
+<div id="ignoreMeId">this won't get translated - nor this elements children</div>
+<div class="ignoreMeClass">this won't get translated - nor this elements children</div>
 ```
 
-via calling init:
+Just add `translated`-attribute
+
+## Advanced Translation Features
+
+For [advanced translations](http://i18next.com/translate/) like plurals, interpolation, ... you need to add options to the element
+
+#### Interpolation
+
+```html
+<div i18next-options='{"foo": "bar"}'>
+  foo {{bar}}
+  <p i18next-options='{"foo2": "bar2"}'>foo {{foo}}; foo2 {{foo2}}</p>
+</div>
+```
+
+Options get inherited from parent to child nodes.
+
+#### Plural
+
+```html
+<p i18next-options='{"count": 2}'>plural {{count}} items</p>
+```
+
+
+
+## Set different namespaces
+
+Default would be translation.
+
+#### Set a different one:
 
 ```js
-  import Locize from 'i18next-locize-backend';
-  const locize = new Locize();
-  locize.init(options);
+locizify.init({
+  namespace: 'myNamespace'
+});
+```
+
+#### autogenerate one per route:
+
+```js
+locizify.init({
+  namespaceFromPath: true
+});
+```
+
+## Access different namespaces
+
+This is useful for reused elements that are on every page, eg. like footer,... and you're using namespaceFromPath. This way you can avoid having that segments on every routes namespace file.
+
+```js
+locizify.init({
+  namespaceFromPath: true
+  ns: ['common'] // -> add additional namespaces to load
+});
+```
+
+```html
+<div i18next-options='{"ns": "common"}'>
+  <p>different namespace common is used</p>
+  <p>all the way down</p>
+</div>
+```
+
+
+
+## Avoid flickering on initial load
+
+To avoid to show the user the untranslated content in the reference language you can:
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    ...
+  </head>
+  <body style="display: none">
+  ...
+```
+
+Just set the element style display to none. locizify will change it to block when ready.
+
+## Change namespace per code to use
+
+You can change the namespace after loading to some other file (eg. before transitioning to another page).
+
+```js
+locizify.changeNamespace('newNamespace');
 ```
