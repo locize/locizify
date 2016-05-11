@@ -229,7 +229,7 @@ To avoid to show the user the untranslated content in the reference language you
 
 Just set the element style display to none. locizify will change it to block when ready.
 
-## Change namespace per code to use
+## Change namespace dynamically per code
 
 You can change the namespace after loading to some other file (eg. before transitioning to another page).
 
