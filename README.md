@@ -127,7 +127,7 @@ setTimeout(function () {
 Just set translated attribute:
 
 ```html
-<div translated>this won't get translated - nor this elements children</div>
+<div translated>this will not get translated - nor this elements children</div>
 ```
 
 ###### By ignoring tag, class, id
@@ -143,9 +143,9 @@ locizify.init({
 ```
 
 ```html
-<script>this won't get translated - nor this elements children</script>
-<div id="ignoreMeId">this won't get translated - nor this elements children</div>
-<div class="ignoreMeClass">this won't get translated - nor this elements children</div>
+<script>this will not get translated - nor this elements children</script>
+<div id="ignoreMeId">this will not get translated - nor this elements children</div>
+<div class="ignoreMeClass">this will not get translated - nor this elements children</div>
 ```
 
 Just add `translated`-attribute
