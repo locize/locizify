@@ -10,3 +10,7 @@ bin/
 bower.json
 gulpfile.js
 karma.conf.js
+
+
+# Deployment
+deployment/
