@@ -6,7 +6,7 @@
 
 # locizify
 
-Drop the locizify script onto your website and it will automatically start to segment your content and connect it to your locize project. Translating your content was never easier.
+Drop the locizify script onto your website and it will automatically start to segment your content and connect it to your [locize](http://locize.com) project. Translating your content was never easier.
 
 Just drop the following line to your header to deliever your content in any language:
 
