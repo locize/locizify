@@ -11,6 +11,7 @@ const defaults = {
 
 
 const { i18next } = i18nextify;
+i18next.use(LocizeBackend);
 
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {
@@ -43,8 +44,5 @@ i18next.init = (options = {}, callback) => {
 
   originalInit.call(i18next, { ...defaults, ...options, ...enforce }, callback);
 };
-
-
-i18next.use(LocizeBackend);
 
 export default i18nextify;

@@ -5226,6 +5226,8 @@
 	    options.defaultNS = ns;
 	  }
 
+	  if (!options.ns.length) options.ns = ['translation'];
+
 	  // delay init from domReady
 	  if (!options.ele) {
 	    delete options.ele;
@@ -5556,6 +5558,7 @@
 
 	var i18next = i18nextify.i18next;
 
+	i18next.use(Backend$1);
 
 	var originalInit = i18next.init;
 	i18next.init = function () {
@@ -5593,8 +5596,6 @@
 
 	  originalInit.call(i18next, babelHelpers.extends({}, defaults, options, enforce), callback);
 	};
-
-	i18next.use(Backend$1);
 
 	return i18nextify;
 
