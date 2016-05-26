@@ -5144,6 +5144,10 @@
 	    setPath(missings, [lng, namespace, key], res);
 	    debouncedLog();
 	  });
+
+	  if (i18next$1.services.backendConnector && i18next$1.services.backendConnector.saveMissing) {
+	    i18next$1.services.backendConnector.saveMissing(lngs, namespace, key, res);
+	  }
 	}
 
 	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -5586,8 +5590,6 @@
 	      options.backend = babelHelpers.extends({}, backend, options.backend);
 	    })();
 	  }
-
-	  console.warn(options);
 
 	  originalInit.call(i18next, babelHelpers.extends({}, defaults, options, enforce), callback);
 	};

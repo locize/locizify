@@ -41,8 +41,6 @@ i18next.init = (options = {}, callback) => {
     options.backend = { ...backend, ...options.backend };
   }
 
-  console.warn(options)
-
   originalInit.call(i18next, { ...defaults, ...options, ...enforce }, callback);
 };
 
