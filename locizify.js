@@ -1963,7 +1963,7 @@
 	var each = arr.forEach;
 	var slice = arr.slice;
 
-	function defaults$1(obj) {
+	function defaults(obj) {
 	  each.call(slice.call(arguments, 1), function (source) {
 	    if (source) {
 	      for (var prop in source) {
@@ -2069,7 +2069,7 @@
 	      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
 	      this.services = services;
-	      this.options = defaults$1(options, this.options || {}, getDefaults$1());
+	      this.options = defaults(options, this.options || {}, getDefaults$1());
 	    }
 	  }, {
 	    key: 'readMulti',
@@ -2136,7 +2136,7 @@
 	var each$1 = arr$1.forEach;
 	var slice$1 = arr$1.slice;
 
-	function defaults$2(obj) {
+	function defaults$1(obj) {
 	  each$1.call(slice$1.call(arguments, 1), function (source) {
 	    if (source) {
 	      for (var prop in source) {
@@ -2339,7 +2339,7 @@
 	      var i18nOptions = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
 	      this.services = services;
-	      this.options = defaults$2(options, this.options || {}, getDefaults$2());
+	      this.options = defaults$1(options, this.options || {}, getDefaults$2());
 	      this.i18nOptions = i18nOptions;
 
 	      this.addDetector(cookie$1);
@@ -5552,10 +5552,6 @@
 	  saveMissingTo: 'all'
 	};
 
-	var defaults = {
-	  saveMissing: true
-	};
-
 	var i18next = i18nextify.i18next;
 
 	i18next.use(Backend$1);
@@ -5579,22 +5575,22 @@
 	        var value = scriptEle.getAttribute(attr.toLowerCase());
 	        if (value === 'true') value = true;
 	        if (value === 'false') value = false;
-	        config[attr] = value;
+	        if (value !== undefined && value !== null) config[attr] = value;
 	      });
 
 	      toReadBackend.forEach(function (attr) {
 	        var value = scriptEle.getAttribute(attr.toLowerCase());
 	        if (value === 'true') value = true;
 	        if (value === 'false') value = false;
-	        backend[attr] = value;
+	        if (value !== undefined && value !== null) backend[attr] = value;
 	      });
 
-	      options = babelHelpers.extends({}, config, options);
-	      options.backend = babelHelpers.extends({}, backend, options.backend);
+	      options = babelHelpers.extends({}, options, config);
+	      options.backend = babelHelpers.extends({}, options.backend, backend);
 	    })();
 	  }
 
-	  originalInit.call(i18next, babelHelpers.extends({}, defaults, options, enforce), callback);
+	  originalInit.call(i18next, babelHelpers.extends({}, options, enforce), callback);
 	};
 
 	return i18nextify;

@@ -5,11 +5,6 @@ const enforce = {
   saveMissingTo: 'all'
 };
 
-const defaults = {
-  saveMissing: true
-};
-
-
 const { i18next } = i18nextify;
 i18next.use(LocizeBackend);
 
@@ -28,21 +23,21 @@ i18next.init = (options = {}, callback) => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
-      config[attr] = value;
+      if (value !== undefined && value !== null) config[attr] = value;
     });
 
     toReadBackend.forEach(attr => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
-      backend[attr] = value;
+      if (value !== undefined && value !== null) backend[attr] = value;
     });
 
-    options = { ...config, ...options };
-    options.backend = { ...backend, ...options.backend };
+    options = { ...options, ...config  };
+    options.backend = { ...options.backend, ...backend };
   }
 
-  originalInit.call(i18next, { ...defaults, ...options, ...enforce }, callback);
+  originalInit.call(i18next, { ...options, ...enforce }, callback);
 };
 
 export default i18nextify;
