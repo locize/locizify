@@ -108,6 +108,26 @@ Add the script to your page:
   ...
 ```
 
+## Get project languages
+
+```js
+locizify.getLanguages(function(err, lngs) {
+  console.warn(lngs);
+});
+
+// returns something like
+{
+  "en": {
+    "name": "English",
+    "nativeName": "English"
+  },
+  "de": {
+    "name": "German",
+    "nativeName": "Deutsch"
+  }
+}
+```
+
 ## Delay initial translation
 
 ```js

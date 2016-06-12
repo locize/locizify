@@ -40,4 +40,16 @@ i18next.init = (options = {}, callback) => {
   originalInit.call(i18next, { ...options, ...enforce }, callback);
 };
 
+i18nextify.getLanguages = function(callback) {
+  if (i18next.services.backendConnector) {
+    i18next.services.backendConnector.backend.getLanguages(callback);
+  } else {
+    function ready() {
+      i18next.off('initialized', ready);
+      i18next.services.backendConnector.backend.getLanguages(callback);
+    }
+    i18next.on('initialized', ready);
+  }
+}
+
 export default i18nextify;
