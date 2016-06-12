@@ -110,6 +110,8 @@ Add the script to your page:
 
 ## Get project languages
 
+To build some dynamic language selector you can load the available languages:
+
 ```js
 locizify.getLanguages(function(err, lngs) {
   console.warn(lngs);
