@@ -14,7 +14,7 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-locize-backend": "0.1.1",
+    "i18next-locize-backend": "0.2.0",
     "i18nextify": "0.8.0"
   },
   "devDependencies": {
