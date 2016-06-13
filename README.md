@@ -121,11 +121,19 @@ locizify.getLanguages(function(err, lngs) {
 {
   "en": {
     "name": "English",
-    "nativeName": "English"
+    "nativeName": "English",
+    "translated": {
+       "latest": 1,
+       "production": 1
+     }
   },
   "de": {
     "name": "German",
-    "nativeName": "Deutsch"
+    "nativeName": "Deutsch",
+    "translated": {
+       "latest": 0.8,
+       "production": 1
+     }
   }
 }
 ```
