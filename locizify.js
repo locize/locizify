@@ -4,28 +4,6 @@
 	(global.locizify = factory());
 }(this, function () { 'use strict';
 
-	var babelHelpers = {};
-
-	babelHelpers.extends = Object.assign || function (target) {
-	  for (var i = 1; i < arguments.length; i++) {
-	    var source = arguments[i];
-
-	    for (var key in source) {
-	      if (Object.prototype.hasOwnProperty.call(source, key)) {
-	        target[key] = source[key];
-	      }
-	    }
-	  }
-
-	  return target;
-	};
-
-	babelHelpers;
-
-
-	var __commonjs_global = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : this;
-	function __commonjs(fn, module) { return module = { exports: {} }, fn(module, module.exports, __commonjs_global), module.exports; }
-
 	var _extends$2 = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 	function _classCallCheck$1(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -754,7 +732,7 @@
 	    // interpolate
 	    var data = options.replace && typeof options.replace !== 'string' ? options.replace : options;
 	    if (this.options.interpolation.defaultVariables) data = _extends$4({}, this.options.interpolation.defaultVariables, data);
-	    res = this.interpolator.interpolate(res, data);
+	    res = this.interpolator.interpolate(res, data, this.language);
 
 	    // nesting
 	    res = this.interpolator.nest(res, function () {
@@ -906,8 +884,10 @@
 	    }
 	  };
 
-	  LanguageUtil.prototype.isWhitelisted = function isWhitelisted(code) {
-	    if (this.options.load === 'languageOnly') code = this.getLanguagePartFromCode(code);
+	  LanguageUtil.prototype.isWhitelisted = function isWhitelisted(code, exactMatch) {
+	    if (this.options.load === 'languageOnly' || this.options.nonExplicitWhitelist && !exactMatch) {
+	      code = this.getLanguagePartFromCode(code);
+	    }
 	    return !this.whitelist || !this.whitelist.length || this.whitelist.indexOf(code) > -1 ? true : false;
 	  };
 
@@ -919,7 +899,9 @@
 
 	    var codes = [];
 	    var addCode = function addCode(code) {
-	      if (_this.isWhitelisted(code)) {
+	      var exactMatch = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+	      if (_this.isWhitelisted(code, exactMatch)) {
 	        codes.push(code);
 	      } else {
 	        _this.logger.warn('rejecting non-whitelisted language code: ' + code);
@@ -927,7 +909,7 @@
 	    };
 
 	    if (typeof code === 'string' && code.indexOf('-') > -1) {
-	      if (this.options.load !== 'languageOnly') addCode(this.formatLanguageCode(code));
+	      if (this.options.load !== 'languageOnly') addCode(this.formatLanguageCode(code), true);
 	      if (this.options.load !== 'currentOnly') addCode(this.getLanguagePartFromCode(code));
 	    } else if (typeof code === 'string') {
 	      addCode(this.formatLanguageCode(code));
@@ -1148,7 +1130,12 @@
 	    var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 	    var reset = arguments[1];
 
-	    if (reset) this.options = options;
+	    if (reset) {
+	      this.options = options;
+	      this.format = options.interpolation && options.interpolation.format || function (value) {
+	        return value;
+	      };
+	    }
 	    if (!options.interpolation) options.interpolation = { escapeValue: true };
 
 	    var iOpts = options.interpolation;
@@ -1157,6 +1144,7 @@
 
 	    this.prefix = iOpts.prefix ? regexEscape(iOpts.prefix) : iOpts.prefixEscaped || '{{';
 	    this.suffix = iOpts.suffix ? regexEscape(iOpts.suffix) : iOpts.suffixEscaped || '}}';
+	    this.formatSeparator = iOpts.formatSeparator ? regexEscape(iOpts.formatSeparator) : iOpts.formatSeparator || ',';
 
 	    this.unescapePrefix = iOpts.unescapeSuffix ? '' : iOpts.unescapePrefix || '-';
 	    this.unescapeSuffix = this.unescapePrefix ? '' : iOpts.unescapeSuffix || '';
@@ -1179,7 +1167,9 @@
 	    if (this.options) this.init(this.options);
 	  };
 
-	  Interpolator.prototype.interpolate = function interpolate(str, data) {
+	  Interpolator.prototype.interpolate = function interpolate(str, data, lng) {
+	    var _this = this;
+
 	    var match = void 0,
 	        value = void 0;
 
@@ -1187,15 +1177,26 @@
 	      return val.replace(/\$/g, '$$$$');
 	    }
 
+	    var handleFormat = function handleFormat(key) {
+	      if (key.indexOf(_this.formatSeparator) < 0) return getPath(data, key);
+
+	      var p = key.split(_this.formatSeparator);
+	      var k = p.shift().trim();
+	      var f = p.join(_this.formatSeparator).trim();
+
+	      return _this.format(getPath(data, k), f, lng);
+	    };
+
 	    // unescape if has unescapePrefix/Suffix
 	    while (match = this.regexpUnescape.exec(str)) {
-	      var _value = getPath(data, match[1].trim());
+	      var _value = handleFormat(match[1].trim());
 	      str = str.replace(match[0], _value);
+	      this.regexpUnescape.lastIndex = 0;
 	    }
 
 	    // regular escape on demand
 	    while (match = this.regexp.exec(str)) {
-	      value = getPath(data, match[1].trim());
+	      value = handleFormat(match[1].trim());
 	      if (typeof value !== 'string') value = makeString(value);
 	      if (!value) {
 	        this.logger.warn('missed to pass in variable ' + match[1] + ' for interpolating ' + str);
@@ -1459,7 +1460,7 @@
 	    // load one by one
 	    else {
 	        (function () {
-	          var read = function read(name) {
+	          var readOne = function readOne(name) {
 	            var _this6 = this;
 
 	            var _name$split5 = name.split('|');
@@ -1481,7 +1482,72 @@
 	          ;
 
 	          toLoad.toLoad.forEach(function (name) {
-	            read.call(_this5, name);
+	            readOne.call(_this5, name);
+	          });
+	        })();
+	      }
+	  };
+
+	  Connector.prototype.reload = function reload(languages, namespaces) {
+	    var _this7 = this;
+
+	    if (!this.backend) {
+	      this.logger.warn('No backend was added via i18next.use. Will not load resources.');
+	    }
+	    var options = _extends$5({}, this.backend.options, this.options.backend);
+
+	    if (typeof languages === 'string') languages = this.services.languageUtils.toResolveHierarchy(languages);
+	    if (typeof namespaces === 'string') namespaces = [namespaces];
+
+	    // load with multi-load
+	    if (options.allowMultiLoading && this.backend.readMulti) {
+	      this.read(languages, namespaces, 'readMulti', null, null, function (err, data) {
+	        if (err) _this7.logger.warn('reloading namespaces ' + namespaces.join(', ') + ' for languages ' + languages.join(', ') + ' via multiloading failed', err);
+	        if (!err && data) _this7.logger.log('reloaded namespaces ' + namespaces.join(', ') + ' for languages ' + languages.join(', ') + ' via multiloading', data);
+
+	        languages.forEach(function (l) {
+	          namespaces.forEach(function (n) {
+	            var bundle = getPath(data, [l, n]);
+	            if (bundle) {
+	              _this7.loaded(l + '|' + n, err, bundle);
+	            } else {
+	              var _err2 = 'reloading namespace ' + n + ' for language ' + l + ' via multiloading failed';
+	              _this7.loaded(l + '|' + n, _err2);
+	              _this7.logger.error(_err2);
+	            }
+	          });
+	        });
+	      });
+	    }
+
+	    // load one by one
+	    else {
+	        (function () {
+	          var readOne = function readOne(name) {
+	            var _this8 = this;
+
+	            var _name$split7 = name.split('|');
+
+	            var _name$split8 = _slicedToArray(_name$split7, 2);
+
+	            var lng = _name$split8[0];
+	            var ns = _name$split8[1];
+
+
+	            this.read(lng, ns, 'read', null, null, function (err, data) {
+	              if (err) _this8.logger.warn('reloading namespace ' + ns + ' for language ' + lng + ' failed', err);
+	              if (!err && data) _this8.logger.log('reloaded namespace ' + ns + ' for language ' + lng, data);
+
+	              _this8.loaded(name, err, data);
+	            });
+	          };
+
+	          ;
+
+	          languages.forEach(function (l) {
+	            namespaces.forEach(function (n) {
+	              readOne.call(_this7, l + '|' + n);
+	            });
 	          });
 	        })();
 	      }
@@ -1574,6 +1640,7 @@
 	    fallbackNS: false, // string or array of namespaces
 
 	    whitelist: false, // array with whitelisted languages
+	    nonExplicitWhitelist: false,
 	    load: 'all', // | currentOnly | languageOnly
 	    preload: false, // array with preload languages
 
@@ -1600,8 +1667,12 @@
 
 	    interpolation: {
 	      escapeValue: true,
+	      format: function format(value, _format, lng) {
+	        return value;
+	      },
 	      prefix: '{{',
 	      suffix: '}}',
+	      formatSeparator: ',',
 	      // prefixEscaped: '{{',
 	      // suffixEscaped: '}}',
 	      // unescapeSuffix: '',
@@ -1811,6 +1882,12 @@
 	    } else {
 	      callback(null);
 	    }
+	  };
+
+	  I18n.prototype.reloadResources = function reloadResources(lngs, ns) {
+	    if (!lngs) lngs = this.languages;
+	    if (!ns) ns = this.options.ns;
+	    this.services.backendConnector.reload(lngs, ns);
 	  };
 
 	  I18n.prototype.use = function use(module) {
@@ -2091,14 +2168,13 @@
 	      var _this = this;
 
 	      this.options.ajax(url, this.options, function (data, xhr) {
-	        var statusCode = xhr.status.toString();
-	        if (statusCode.indexOf('5') === 0) return callback('failed loading ' + url, true /* retry */);
-	        if (statusCode.indexOf('4') === 0) return callback('failed loading ' + url, false /* no retry */);
+	        if (xhr.status >= 500 && xhr.status < 600) return callback('failed loading ' + url, true /* retry */);
+	        if (xhr.status >= 400 && xhr.status < 500) return callback('failed loading ' + url, false /* no retry */);
 
 	        var ret = void 0,
 	            err = void 0;
 	        try {
-	          ret = _this.options.parse(data);
+	          ret = _this.options.parse(data, url);
 	        } catch (e) {
 	          err = 'failed parsing ' + url + ' to json';
 	        }
@@ -2548,7 +2624,13 @@
 	// modify this previous line to pass in your own method name
 	// and object for the method to be attached to
 
-	var vcomment = __commonjs(function (module) {
+	var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {}
+
+	function createCommonjsModule(fn, module) {
+		return module = { exports: {} }, fn(module, module.exports), module.exports;
+	}
+
+	var vcomment = createCommonjsModule(function (module) {
 	module.exports = VirtualComment
 
 	function VirtualComment(text) {
@@ -2569,13 +2651,13 @@
 
 	var require$$0 = (vcomment && typeof vcomment === 'object' && 'default' in vcomment ? vcomment['default'] : vcomment);
 
-	var version = __commonjs(function (module) {
+	var version = createCommonjsModule(function (module) {
 	module.exports = "2"
 	});
 
 	var require$$0$1 = (version && typeof version === 'object' && 'default' in version ? version['default'] : version);
 
-	var vtext = __commonjs(function (module) {
+	var vtext = createCommonjsModule(function (module) {
 	var version = require$$0$1
 
 	module.exports = VirtualText
@@ -2590,7 +2672,7 @@
 
 	var require$$1 = (vtext && typeof vtext === 'object' && 'default' in vtext ? vtext['default'] : vtext);
 
-	var isVhook = __commonjs(function (module) {
+	var isVhook = createCommonjsModule(function (module) {
 	module.exports = isHook
 
 	function isHook(hook) {
@@ -2602,7 +2684,7 @@
 
 	var require$$0$2 = (isVhook && typeof isVhook === 'object' && 'default' in isVhook ? isVhook['default'] : isVhook);
 
-	var isThunk = __commonjs(function (module) {
+	var isThunk = createCommonjsModule(function (module) {
 	module.exports = isThunk
 
 	function isThunk(t) {
@@ -2612,7 +2694,7 @@
 
 	var require$$0$3 = (isThunk && typeof isThunk === 'object' && 'default' in isThunk ? isThunk['default'] : isThunk);
 
-	var isWidget = __commonjs(function (module) {
+	var isWidget = createCommonjsModule(function (module) {
 	module.exports = isWidget
 
 	function isWidget(w) {
@@ -2622,7 +2704,7 @@
 
 	var require$$1$1 = (isWidget && typeof isWidget === 'object' && 'default' in isWidget ? isWidget['default'] : isWidget);
 
-	var isVnode = __commonjs(function (module) {
+	var isVnode = createCommonjsModule(function (module) {
 	var version = require$$0$1
 
 	module.exports = isVirtualNode
@@ -2634,7 +2716,7 @@
 
 	var require$$3 = (isVnode && typeof isVnode === 'object' && 'default' in isVnode ? isVnode['default'] : isVnode);
 
-	var vnode = __commonjs(function (module) {
+	var vnode = createCommonjsModule(function (module) {
 	var version = require$$0$1
 	var isVNode = require$$3
 	var isWidget = require$$1$1
@@ -2711,7 +2793,7 @@
 
 	var require$$2 = (vnode && typeof vnode === 'object' && 'default' in vnode ? vnode['default'] : vnode);
 
-	var index = __commonjs(function (module) {
+	var index = createCommonjsModule(function (module) {
 	/*!
 	* vdom-virtualize
 	* Copyright 2014 by Marcel Klehr <mklehr@gmx.net>
@@ -2750,29 +2832,6 @@
 	  return
 	}
 
-	createVNode.fromHTML = function(html, key) {
-	  var rootNode = null;
-
-	  try {
-	    // Everything except iOS 7 Safari, IE 8/9, Andriod Browser 4.1/4.3
-	    var parser = new DOMParser();
-	    var doc = parser.parseFromString(html, 'text/html');
-	    rootNode = doc.documentElement;
-	  } catch(e) {
-	    // Old browsers
-	    var ifr = document.createElement('iframe');
-	    ifr.setAttribute('data-content', html);
-	    ifr.src = 'javascript: window.frameElement.getAttribute("data-content");';
-	    document.head.appendChild(ifr);
-	    rootNode = ifr.contentDocument.documentElement;
-	    setTimeout(function() {
-	      ifr.remove(); // Garbage collection
-	    }, 0);
-	  }
-
-	  return createVNode(rootNode, key);
-	};
-
 	function createFromTextNode(tNode) {
 	  return new VText(tNode.nodeValue)
 	}
@@ -2800,8 +2859,9 @@
 	function getElementProperties(el) {
 	  var obj = {}
 
-	  props.forEach(function(propName) {
-	    if(!el[propName]) return
+	  for(var i=0; i<props.length; i++) {
+	    var propName = props[i]
+	    if(!el[propName]) continue
 
 	    // Special case: style
 	    // .style is a DOMStyleDeclaration, thus we need to iterate over all
@@ -2812,9 +2872,9 @@
 	    if("style" == propName) {
 	      var css = {}
 	        , styleProp
-	      if (el.style.length) {
-	        for(var i=0; i<el.style.length; i++) {
-	          styleProp = el.style[i]
+	      if ('undefined' !== typeof el.style.length) {
+	        for(var j=0; j<el.style.length; j++) {
+	          styleProp = el.style[j]
 	          css[styleProp] = el.style.getPropertyValue(styleProp) // XXX: add support for "!important" via getPropertyPriority()!
 	        }
 	      } else { // IE8
@@ -2825,15 +2885,15 @@
 	        }
 	      }
 
-	      obj[propName] = css
-	      return
+	      if(Object.keys(css).length) obj[propName] = css
+	      continue
 	    }
 
 	    // https://msdn.microsoft.com/en-us/library/cc848861%28v=vs.85%29.aspx
 	    // The img element does not support the HREF content attribute.
 	    // In addition, the href property is read-only for the img Document Object Model (DOM) object
 	    if (el.tagName.toLowerCase() === 'img' && propName === 'href') {
-	      return;
+	      continue;
 	    }
 
 	    // Special case: dataset
@@ -2860,28 +2920,28 @@
 	    // because of https://github.com/Matt-Esch/virtual-dom/blob/master/vdom/apply-properties.js#L57
 	    if("attributes" == propName){
 	      var atts = Array.prototype.slice.call(el[propName]);
-	      var hash = atts.reduce(function(o,a){
-	        var name = a.name;
-	        if(obj[name]) return o;
-	        o[name] = el.getAttribute(a.name);
-	        return o;
-	      },{});
-	      return obj[propName] = hash;
+	      var hash = {}
+	      for(var k=0; k<atts.length; k++){
+	        var name = atts[k].name;
+	        if(obj[name] || obj[attrBlacklist[name]]) continue;
+	        hash[name] = el.getAttribute(name);
+	      }
+	      obj[propName] = hash;
+	      continue
 	    }
-	    if("tabIndex" == propName && el.tabIndex === -1) return
+	    if("tabIndex" == propName && el.tabIndex === -1) continue
 
 	    // Special case: contentEditable
 	    // browser use 'inherit' by default on all nodes, but does not allow setting it to ''
 	    // diffing virtualize dom will trigger error
 	    // ref: https://github.com/Matt-Esch/virtual-dom/issues/176
-	    if("contentEditable" == propName && el[propName] === 'inherit') return
+	    if("contentEditable" == propName && el[propName] === 'inherit') continue
 
-	    if('object' === typeof el[propName]) return
+	    if('object' === typeof el[propName]) continue
 
 	    // default: just copy the property
 	    obj[propName] = el[propName]
-	    return
-	  })
+	  }
 
 	  return obj
 	}
@@ -2972,65 +3032,15 @@
 	, "attributes"
 	]
 
-	var attrs =
-	module.exports.attrs = [
-	 "allowFullScreen"
-	,"allowTransparency"
-	,"charSet"
-	,"cols"
-	,"contextMenu"
-	,"dateTime"
-	,"disabled"
-	,"form"
-	,"frameBorder"
-	,"height"
-	,"hidden"
-	,"maxLength"
-	,"role"
-	,"rows"
-	,"seamless"
-	,"size"
-	,"width"
-	,"wmode"
-
-	// SVG Properties
-	,"cx"
-	,"cy"
-	,"d"
-	,"dx"
-	,"dy"
-	,"fill"
-	,"fx"
-	,"fy"
-	,"gradientTransform"
-	,"gradientUnits"
-	,"offset"
-	,"points"
-	,"r"
-	,"rx"
-	,"ry"
-	,"spreadMethod"
-	,"stopColor"
-	,"stopOpacity"
-	,"stroke"
-	,"strokeLinecap"
-	,"strokeWidth"
-	,"textAnchor"
-	,"transform"
-	,"version"
-	,"viewBox"
-	,"x1"
-	,"x2"
-	,"x"
-	,"y1"
-	,"y2"
-	,"y"
-	]
+	var attrBlacklist =
+	module.exports.attrBlacklist = {
+	  'class': 'className'
+	}
 	});
 
 	var virtualize = (index && typeof index === 'object' && 'default' in index ? index['default'] : index);
 
-	var index$1 = __commonjs(function (module) {
+	var index$1 = createCommonjsModule(function (module) {
 	"use strict";
 
 	module.exports = function isObject(x) {
@@ -3040,7 +3050,7 @@
 
 	var require$$1$2 = (index$1 && typeof index$1 === 'object' && 'default' in index$1 ? index$1['default'] : index$1);
 
-	var diffProps = __commonjs(function (module) {
+	var diffProps = createCommonjsModule(function (module) {
 	var isObject = require$$1$2
 	var isHook = require$$0$2
 
@@ -3103,7 +3113,7 @@
 
 	var require$$0$5 = (diffProps && typeof diffProps === 'object' && 'default' in diffProps ? diffProps['default'] : diffProps);
 
-	var isVtext = __commonjs(function (module) {
+	var isVtext = createCommonjsModule(function (module) {
 	var version = require$$0$1
 
 	module.exports = isVirtualText
@@ -3115,7 +3125,7 @@
 
 	var require$$2$1 = (isVtext && typeof isVtext === 'object' && 'default' in isVtext ? isVtext['default'] : isVtext);
 
-	var handleThunk = __commonjs(function (module) {
+	var handleThunk = createCommonjsModule(function (module) {
 	var isVNode = require$$3
 	var isVText = require$$2$1
 	var isWidget = require$$1$1
@@ -3160,7 +3170,7 @@
 
 	var require$$0$6 = (handleThunk && typeof handleThunk === 'object' && 'default' in handleThunk ? handleThunk['default'] : handleThunk);
 
-	var vpatch = __commonjs(function (module) {
+	var vpatch = createCommonjsModule(function (module) {
 	var version = require$$0$1
 
 	VirtualPatch.NONE = 0
@@ -3187,7 +3197,7 @@
 
 	var require$$1$3 = (vpatch && typeof vpatch === 'object' && 'default' in vpatch ? vpatch['default'] : vpatch);
 
-	var index$2 = __commonjs(function (module) {
+	var index$2 = createCommonjsModule(function (module) {
 	var nativeIsArray = Array.isArray
 	var toString = Object.prototype.toString
 
@@ -3200,7 +3210,7 @@
 
 	var require$$3$1 = (index$2 && typeof index$2 === 'object' && 'default' in index$2 ? index$2['default'] : index$2);
 
-	var diff$2 = __commonjs(function (module) {
+	var diff$2 = createCommonjsModule(function (module) {
 	var isArray = require$$3$1
 
 	var VPatch = require$$1$3
@@ -3632,7 +3642,7 @@
 
 	var require$$0$4 = (diff$2 && typeof diff$2 === 'object' && 'default' in diff$2 ? diff$2['default'] : diff$2);
 
-	var diff = __commonjs(function (module) {
+	var diff = createCommonjsModule(function (module) {
 	var diff = require$$0$4
 
 	module.exports = diff
@@ -3640,7 +3650,7 @@
 
 	var diff$1 = (diff && typeof diff === 'object' && 'default' in diff ? diff['default'] : diff);
 
-	var updateWidget = __commonjs(function (module) {
+	var updateWidget = createCommonjsModule(function (module) {
 	var isWidget = require$$1$1
 
 	module.exports = updateWidget
@@ -3660,7 +3670,7 @@
 
 	var require$$0$9 = (updateWidget && typeof updateWidget === 'object' && 'default' in updateWidget ? updateWidget['default'] : updateWidget);
 
-	var applyProperties = __commonjs(function (module) {
+	var applyProperties = createCommonjsModule(function (module) {
 	var isObject = require$$1$2
 	var isHook = require$$0$2
 
@@ -3762,7 +3772,7 @@
 
 	var require$$4 = (applyProperties && typeof applyProperties === 'object' && 'default' in applyProperties ? applyProperties['default'] : applyProperties);
 
-	var patchOp = __commonjs(function (module) {
+	var patchOp = createCommonjsModule(function (module) {
 	var applyProperties = require$$4
 
 	var isWidget = require$$1$1
@@ -3918,7 +3928,7 @@
 
 	var require$$0$8 = (patchOp && typeof patchOp === 'object' && 'default' in patchOp ? patchOp['default'] : patchOp);
 
-	var domIndex = __commonjs(function (module) {
+	var domIndex = createCommonjsModule(function (module) {
 	// Maps a virtual DOM tree onto a real DOM tree in an efficient manner.
 	// We don't want to read all of the DOM nodes in the tree so we use
 	// the in-order tree indexing to eliminate recursion down certain branches.
@@ -4008,7 +4018,7 @@
 
 	var require$$1$4 = (domIndex && typeof domIndex === 'object' && 'default' in domIndex ? domIndex['default'] : domIndex);
 
-	var removeEventListener = __commonjs(function (module) {
+	var removeEventListener = createCommonjsModule(function (module) {
 	module.exports = removeEventListener
 
 	function removeEventListener(type, listener) {
@@ -4032,7 +4042,7 @@
 
 	var require$$1$5 = (removeEventListener && typeof removeEventListener === 'object' && 'default' in removeEventListener ? removeEventListener['default'] : removeEventListener);
 
-	var addEventListener = __commonjs(function (module) {
+	var addEventListener = createCommonjsModule(function (module) {
 	module.exports = addEventListener
 
 	function addEventListener(type, listener) {
@@ -4054,7 +4064,7 @@
 
 	var require$$2$3 = (addEventListener && typeof addEventListener === 'object' && 'default' in addEventListener ? addEventListener['default'] : addEventListener);
 
-	var dispatchEvent = __commonjs(function (module) {
+	var dispatchEvent = createCommonjsModule(function (module) {
 	module.exports = dispatchEvent
 
 	function dispatchEvent(ev) {
@@ -4090,7 +4100,7 @@
 
 	var require$$3$2 = (dispatchEvent && typeof dispatchEvent === 'object' && 'default' in dispatchEvent ? dispatchEvent['default'] : dispatchEvent);
 
-	var event = __commonjs(function (module) {
+	var event = createCommonjsModule(function (module) {
 	module.exports = Event
 
 	function Event(family) {}
@@ -4108,7 +4118,7 @@
 
 	var require$$3$3 = (event && typeof event === 'object' && 'default' in event ? event['default'] : event);
 
-	var serialize = __commonjs(function (module) {
+	var serialize = createCommonjsModule(function (module) {
 	module.exports = serializeNode
 
 	var voidElements = /area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr/i;
@@ -4243,7 +4253,7 @@
 
 	var require$$0$13 = (serialize && typeof serialize === 'object' && 'default' in serialize ? serialize['default'] : serialize);
 
-	var index$4 = __commonjs(function (module) {
+	var index$4 = createCommonjsModule(function (module) {
 	var slice = Array.prototype.slice
 
 	module.exports = iterativelyWalk
@@ -4272,7 +4282,7 @@
 
 	var require$$4$2 = (index$4 && typeof index$4 === 'object' && 'default' in index$4 ? index$4['default'] : index$4);
 
-	var domElement = __commonjs(function (module) {
+	var domElement = createCommonjsModule(function (module) {
 	var domWalk = require$$4$2
 	var dispatchEvent = require$$3$2
 	var addEventListener = require$$2$3
@@ -4478,7 +4488,7 @@
 
 	var require$$0$12 = (domElement && typeof domElement === 'object' && 'default' in domElement ? domElement['default'] : domElement);
 
-	var domFragment = __commonjs(function (module) {
+	var domFragment = createCommonjsModule(function (module) {
 	var DOMElement = require$$0$12
 
 	module.exports = DocumentFragment
@@ -4511,7 +4521,7 @@
 
 	var require$$4$1 = (domFragment && typeof domFragment === 'object' && 'default' in domFragment ? domFragment['default'] : domFragment);
 
-	var domText = __commonjs(function (module) {
+	var domText = createCommonjsModule(function (module) {
 	module.exports = DOMText
 
 	function DOMText(value, owner) {
@@ -4542,7 +4552,7 @@
 
 	var require$$6 = (domText && typeof domText === 'object' && 'default' in domText ? domText['default'] : domText);
 
-	var domComment = __commonjs(function (module) {
+	var domComment = createCommonjsModule(function (module) {
 	module.exports = Comment
 
 	function Comment(data, owner) {
@@ -4566,7 +4576,7 @@
 
 	var require$$7 = (domComment && typeof domComment === 'object' && 'default' in domComment ? domComment['default'] : domComment);
 
-	var document$2 = __commonjs(function (module) {
+	var document$2 = createCommonjsModule(function (module) {
 	var domWalk = require$$4$2
 
 	var Comment = require$$7
@@ -4643,7 +4653,7 @@
 
 	var require$$0$11 = (document$2 && typeof document$2 === 'object' && 'default' in document$2 ? document$2['default'] : document$2);
 
-	var index$3 = __commonjs(function (module) {
+	var index$3 = createCommonjsModule(function (module) {
 	var Document = require$$0$11;
 
 	module.exports = new Document();
@@ -4651,8 +4661,8 @@
 
 	var require$$0$10 = (index$3 && typeof index$3 === 'object' && 'default' in index$3 ? index$3['default'] : index$3);
 
-	var document$1 = __commonjs(function (module, exports, global) {
-	var topLevel = typeof global !== 'undefined' ? global :
+	var document$1 = createCommonjsModule(function (module) {
+	var topLevel = typeof commonjsGlobal !== 'undefined' ? commonjsGlobal :
 	    typeof window !== 'undefined' ? window : {}
 	var minDoc = require$$0$10;
 
@@ -4671,7 +4681,7 @@
 
 	var require$$5 = (document$1 && typeof document$1 === 'object' && 'default' in document$1 ? document$1['default'] : document$1);
 
-	var createElement = __commonjs(function (module) {
+	var createElement = createCommonjsModule(function (module) {
 	var document = require$$5
 
 	var applyProperties = require$$4
@@ -4722,7 +4732,7 @@
 
 	var require$$2$2 = (createElement && typeof createElement === 'object' && 'default' in createElement ? createElement['default'] : createElement);
 
-	var patch$2 = __commonjs(function (module) {
+	var patch$2 = createCommonjsModule(function (module) {
 	var document = require$$5
 	var isArray = require$$3$1
 
@@ -4807,7 +4817,7 @@
 
 	var require$$0$7 = (patch$2 && typeof patch$2 === 'object' && 'default' in patch$2 ? patch$2['default'] : patch$2);
 
-	var patch = __commonjs(function (module) {
+	var patch = createCommonjsModule(function (module) {
 	var patch = require$$0$7
 
 	module.exports = patch
@@ -4815,7 +4825,7 @@
 
 	var patch$1 = (patch && typeof patch === 'object' && 'default' in patch ? patch['default'] : patch);
 
-	var udc = __commonjs(function (module, exports, global) {
+	var udc = createCommonjsModule(function (module, exports) {
 	(function (root, factory) {
 			"use strict";
 
@@ -4826,7 +4836,7 @@
 			} else {
 				root.UltraDeepClone = factory();
 			}
-		}(__commonjs_global, function () {
+		}(commonjsGlobal, function () {
 
 			var functionPropertyFilter = [
 				"caller",
@@ -5577,6 +5587,20 @@
 
 	Backend$1.type = 'backend';
 
+	var _extends$9 = Object.assign || function (target) {
+	  for (var i = 1; i < arguments.length; i++) {
+	    var source = arguments[i];
+
+	    for (var key in source) {
+	      if (Object.prototype.hasOwnProperty.call(source, key)) {
+	        target[key] = source[key];
+	      }
+	    }
+	  }
+
+	  return target;
+	};
+
 	var enforce = {
 	  saveMissingTo: 'all'
 	};
@@ -5614,12 +5638,12 @@
 	        if (value !== undefined && value !== null) backend[attr] = value;
 	      });
 
-	      options = babelHelpers.extends({}, options, config);
-	      options.backend = babelHelpers.extends({}, options.backend, backend);
+	      options = _extends$9({}, options, config);
+	      options.backend = _extends$9({}, options.backend, backend);
 	    })();
 	  }
 
-	  originalInit.call(i18next, babelHelpers.extends({}, options, enforce), callback);
+	  originalInit.call(i18next, _extends$9({}, options, enforce), callback);
 	};
 
 	i18nextify.getLanguages = function (callback) {
