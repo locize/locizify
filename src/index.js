@@ -37,7 +37,7 @@ i18next.init = (options = {}, callback) => {
     options.backend = { ...options.backend, ...backend };
   }
 
-  return originalInit.call(i18next, { ...options, ...enforce }, callback);
+  originalInit.call(i18next, { ...options, ...enforce }, callback);
 };
 
 i18nextify.getLanguages = function(callback) {

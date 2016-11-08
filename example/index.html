@@ -4,10 +4,7 @@
   <head>
     <script id="locizify" src="/locizify.js"></script>
     <script>
-      locizify.getLanguages(function(err, lngs) {
-        console.warn(lngs);
-      });
-      locizify.init({
+      var translation = locizify.init({
         debug: true,
         saveMissing: true,
         fallbackLng: 'en',
@@ -19,8 +16,18 @@
           loadPath: 'https://api-dev.locize.io/{{projectId}}/latest/{{lng}}/{{ns}}',
           getLanguagesPath: 'https://api-dev.locize.io/languages/{{projectId}}',
           addPath: 'https://api-dev.locize.io/missing/{{projectId}}/latest/{{lng}}/{{ns}}'
-        }
+        },
+        // autorun: false
       });
+      // setTimeout(function () {
+      //   translation.start();
+      // }, 4000);
+
+
+      locizify.getLanguages(function(err, lngs) {
+        console.warn(lngs);
+      });
+
     </script>
   </head>
   <body class="landing-page" style='display: none'>
