@@ -4121,7 +4121,7 @@
 	var serialize = createCommonjsModule(function (module) {
 	module.exports = serializeNode
 
-	var voidElements = /area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr/i;
+	var voidElements = ["area","base","br","col","embed","hr","img","input","keygen","link","menuitem","meta","param","source","track","wbr"];
 
 	function serializeNode(node) {
 	    switch (node.nodeType) {
@@ -4145,7 +4145,7 @@
 
 	    strings.push("<" + tagname + properties(elem) + datasetify(elem))
 
-	    if (voidElements.test(tagname)) {
+	    if (voidElements.indexOf(tagname) > -1) {
 	        strings.push(" />")
 	    } else {
 	        strings.push(">")
@@ -4178,6 +4178,7 @@
 	}
 
 	function stylify(styles) {
+	    if (typeof styles === 'string') return styles
 	    var attr = ""
 	    Object.keys(styles).forEach(function (key) {
 	        var value = styles[key]
@@ -4239,7 +4240,15 @@
 	    return props.length ? stringify(props) : ""
 	}
 
-	function escapeText(str) {
+	function escapeText(s) {
+	    var str = '';
+
+	    if (typeof(s) === 'string') { 
+	        str = s; 
+	    } else if (s) {
+	        str = s.toString();
+	    }
+
 	    return str
 	        .replace(/&/g, "&amp;")
 	        .replace(/</g, "&lt;")
@@ -4301,6 +4310,7 @@
 	    var ns = namespace === undefined ? htmlns : (namespace || null)
 
 	    this.tagName = ns === htmlns ? String(tagName).toUpperCase() : tagName
+	    this.nodeName = this.tagName
 	    this.className = ""
 	    this.dataset = {}
 	    this.childNodes = []
@@ -4388,18 +4398,25 @@
 	            prefix = name.substr(0, colonPosition)
 	            localName = name.substr(colonPosition + 1)
 	        }
-	        var attributes = this._attributes[namespace] || (this._attributes[namespace] = {})
-	        attributes[localName] = {value: value, prefix: prefix}
+	        if (this.tagName === 'INPUT' && name === 'type') {
+	          this.type = value;
+	        }
+	        else {
+	          var attributes = this._attributes[namespace] || (this._attributes[namespace] = {})
+	          attributes[localName] = {value: value, prefix: prefix}
+	        }
 	    }
 
 	DOMElement.prototype.getAttributeNS =
 	    function _Element_getAttributeNS(namespace, name) {
 	        var attributes = this._attributes[namespace];
 	        var value = attributes && attributes[name] && attributes[name].value
+	        if (this.tagName === 'INPUT' && name === 'type') {
+	          return this.type;
+	        }
 	        if (typeof value !== "string") {
 	            return null
 	        }
-
 	        return value
 	    }
 
@@ -4536,6 +4553,7 @@
 
 	DOMText.prototype.type = "DOMTextNode"
 	DOMText.prototype.nodeType = 3
+	DOMText.prototype.nodeName = "#text"
 
 	DOMText.prototype.toString = function _Text_toString() {
 	    return this.data
@@ -5587,6 +5605,119 @@
 
 	Backend$1.type = 'backend';
 
+	var asyncGenerator = function () {
+	  function AwaitValue(value) {
+	    this.value = value;
+	  }
+
+	  function AsyncGenerator(gen) {
+	    var front, back;
+
+	    function send(key, arg) {
+	      return new Promise(function (resolve, reject) {
+	        var request = {
+	          key: key,
+	          arg: arg,
+	          resolve: resolve,
+	          reject: reject,
+	          next: null
+	        };
+
+	        if (back) {
+	          back = back.next = request;
+	        } else {
+	          front = back = request;
+	          resume(key, arg);
+	        }
+	      });
+	    }
+
+	    function resume(key, arg) {
+	      try {
+	        var result = gen[key](arg);
+	        var value = result.value;
+
+	        if (value instanceof AwaitValue) {
+	          Promise.resolve(value.value).then(function (arg) {
+	            resume("next", arg);
+	          }, function (arg) {
+	            resume("throw", arg);
+	          });
+	        } else {
+	          settle(result.done ? "return" : "normal", result.value);
+	        }
+	      } catch (err) {
+	        settle("throw", err);
+	      }
+	    }
+
+	    function settle(type, value) {
+	      switch (type) {
+	        case "return":
+	          front.resolve({
+	            value: value,
+	            done: true
+	          });
+	          break;
+
+	        case "throw":
+	          front.reject(value);
+	          break;
+
+	        default:
+	          front.resolve({
+	            value: value,
+	            done: false
+	          });
+	          break;
+	      }
+
+	      front = front.next;
+
+	      if (front) {
+	        resume(front.key, front.arg);
+	      } else {
+	        back = null;
+	      }
+	    }
+
+	    this._invoke = send;
+
+	    if (typeof gen.return !== "function") {
+	      this.return = undefined;
+	    }
+	  }
+
+	  if (typeof Symbol === "function" && Symbol.asyncIterator) {
+	    AsyncGenerator.prototype[Symbol.asyncIterator] = function () {
+	      return this;
+	    };
+	  }
+
+	  AsyncGenerator.prototype.next = function (arg) {
+	    return this._invoke("next", arg);
+	  };
+
+	  AsyncGenerator.prototype.throw = function (arg) {
+	    return this._invoke("throw", arg);
+	  };
+
+	  AsyncGenerator.prototype.return = function (arg) {
+	    return this._invoke("return", arg);
+	  };
+
+	  return {
+	    wrap: function (fn) {
+	      return function () {
+	        return new AsyncGenerator(fn.apply(this, arguments));
+	      };
+	    },
+	    await: function (value) {
+	      return new AwaitValue(value);
+	    }
+	  };
+	}();
+
 	var _extends$9 = Object.assign || function (target) {
 	  for (var i = 1; i < arguments.length; i++) {
 	    var source = arguments[i];
@@ -5611,7 +5742,7 @@
 
 	var originalInit = i18next.init;
 	i18next.init = function () {
-	  var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+	  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 	  var callback = arguments[1];
 
 	  var scriptEle = document.getElementById('locizify');
@@ -5643,7 +5774,7 @@
 	    })();
 	  }
 
-	  originalInit.call(i18next, _extends$9({}, options, enforce), callback);
+	  return originalInit.call(i18next, _extends$9({}, options, enforce), callback);
 	};
 
 	i18nextify.getLanguages = function (callback) {
