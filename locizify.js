@@ -5035,8 +5035,12 @@
 	function isNotExcluded(node) {
 	  var ret = !node.properties || !node.properties.attributes || node.properties.attributes.translated !== '';
 
-	  if (ret && i18next$1.options.ignoreClasses) {
-	    if (i18next$1.options.ignoreClasses.indexOf(node.properties && node.properties.className) > -1) ret = false;
+	  if (ret && i18next$1.options.ignoreClasses && node.properties && node.properties.className) {
+	    var p = node.properties.className.split(' ');
+	    p.forEach(function (cls) {
+	      if (!ret) return;
+	      if (i18next$1.options.ignoreClasses.indexOf(cls) > -1) ret = false;
+	    });
 	  }
 
 	  if (ret && i18next$1.options.ignoreIds) {
@@ -5055,7 +5059,9 @@
 	  return str;
 	}
 
-	var toTranslate = ['placeholder', 'title'];
+	var toTranslate = ['placeholder', 'title', 'alt'];
+	var replaceInside = ['src', 'href'];
+	var REGEXP = new RegExp('%7B%7B(.+?)%7D%7D', 'g'); // urlEncoded {{}}
 	function translateProps(props) {
 	  var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
@@ -5063,7 +5069,26 @@
 
 	  toTranslate.forEach(function (attr) {
 	    var value = getPath(props, attr);
-	    if (value) setPath(props, attr, translate(value, options));
+	    if (value) setPath(props, attr, translate(value, _extends$7({}, options)));
+	  });
+
+	  replaceInside.forEach(function (attr) {
+	    var value = getPath(props, attr);
+	    if (value && value.indexOf('%7B') > -1) {
+	      var arr = [];
+
+	      value.split(REGEXP).reduce(function (mem, match, index) {
+	        if (match.length === 0) return mem;
+
+	        if (!index || index % 2 === 0) {
+	          mem.push(match);
+	        } else {
+	          mem.push(translate(match, _extends$7({}, options)));
+	        }
+	        return mem;
+	      }, arr);
+	      if (arr.length) setPath(props, attr, arr.join(''));
+	    }
 	  });
 
 	  return props;
