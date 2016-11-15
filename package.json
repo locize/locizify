@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "i18next-locize-backend": "0.2.0",
-    "i18nextify": "1.1.1"
+    "i18nextify": "1.1.2"
   },
   "devDependencies": {
     "aws-sdk": "2.4.7",
