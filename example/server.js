@@ -5,35 +5,10 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var fs = require('fs');
 
-i18next
-  .use(FsBackend)
-  .init({
-    lng: 'en',
-    saveMissing: true,
-    debug: true,
-    backend: {
-      loadPath: __dirname + '/locales/{{lng}}/{{ns}}.json',
-      addPath: __dirname + '/locales/{{lng}}/{{ns}}.missing.json'
-    },
-    nsSeparator: '#||#',
-    keySeparator: '#|#'
-  });
-
 var app = express();
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
-app.use(middleware.handle(i18next, {
-  // ignoreRoutes: ["/foo"],
-  // removeLngFromUrl: false
-}));
-
-app.use('/locales', express.static('locales'));
-
-app.post('/locales/add/:lng/:ns', middleware.missingKeyHandler(i18next));
-// app.post('/locales/add/:lng/:ns',function(req, res) {
-//   console.warn(req.query, req.body)
-// });
 
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');

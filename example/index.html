@@ -2,36 +2,33 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script id="locizify" src="/locizify.js"></script>
+    <script src="/locizify.js"></script>
     <script>
-      var translation = locizify.init({
+      var translation = window.locizify.init({
         debug: true,
         saveMissing: true,
-        fallbackLng: 'en',
+        namespace: 'translation',
+        // namespaceFromPath: true,
+        ns: ['common'],
+        ignoreIds: ['ignoreMeId'],
+        ignoreClasses: ['ignoreMeClass'],
         backend: {
           referenceLng: 'en',
-          apiKey: 'c239b151-cb28-464a-9523-89e314c64fb4',
-          projectId: 'bc1fe358-fb32-4ed7-9379-976db2be5103',
+          apiKey: '27e9ecff-8926-43b0-80fd-e683abe49297',
+          projectId: 'c8038fbe-7be8-4f96-9692-943b3333185b',
           // version: 'staging',
           loadPath: 'https://api-dev.locize.io/{{projectId}}/latest/{{lng}}/{{ns}}',
-          getLanguagesPath: 'https://api-dev.locize.io/languages/{{projectId}}',
           addPath: 'https://api-dev.locize.io/missing/{{projectId}}/latest/{{lng}}/{{ns}}'
-        },
-        // autorun: false
+        }
       });
       // setTimeout(function () {
       //   translation.start();
       // }, 4000);
-
-
-      locizify.getLanguages(function(err, lngs) {
-        console.warn(lngs);
-      });
-
     </script>
   </head>
   <body class="landing-page" style='display: none'>
     <div>
+      <!-- ignore comments -->
       <a href='/?lng=de'>deutsch</a>
       <span> | </span>
       <a href='/?lng=en'>english</a>
@@ -69,6 +66,29 @@
       </div>
     </div>
     <hr />
+    <div i18next-options='{"ns": "common"}'>
+      <p>different namespace: i18next-options='{"ns": "common"}'</p>
+      <p>set it on i18next options and assert to add it to <strong>i18next.options.ns array on init</strong></p>
+    </div>
+    <hr />
+    <div id="appendToInner">
+      <p id="ignoreMeId">ignored by id</p>
+      <p class="ignoreMeClass">ignored by class</p>
+    </div>
+    <hr />
+    <div>
+      <p>image - alt tag:</p>
+      <img src="/a.png" alt="big a" />
+
+      <p>image - src replacement:</p>
+      <img src="/{{a.png}}" alt="big a" />
+    </div>
+    <hr />
+    <div>
+      <p>anchor - href replacement:</p>
+      <a href="/{{statistic}}" alt="big a">explore the link</a>
+    </div>
+    <hr />
     <div>dynamically added:</div>
     <script>
       // window.virtualDomI18next.run(document.getElementById('react-mount'));
@@ -81,6 +101,30 @@
         btn.appendChild(t);
 
         console.log('appendingFromOutside');
+        ele.appendChild(btn);
+      }, 5000);
+
+
+      setTimeout(function () {
+        var ele = document.getElementById('appendToInner');
+
+        var btn = document.createElement("BUTTON");
+        var t = document.createTextNode("CLICK ME INNER");
+        btn.appendChild(t);
+
+        console.log('appendingFromOutsideToInner');
+        ele.appendChild(btn);
+      }, 5000);
+
+      setTimeout(function () {
+        var ele = document.getElementById('appendToInner');
+
+        var btn = document.createElement("BUTTON");
+        btn.className = "ignoreMeClass"
+        var t = document.createTextNode("CLICK ME INNER _ IGNORED BY CLASS");
+        btn.appendChild(t);
+
+        console.log('appendingFromOutsideToInnerIgnoreClass');
         ele.appendChild(btn);
       }, 5000);
     </script>
