@@ -4963,11 +4963,12 @@ function getTOptions(opts, node) {
 
 function walk$1(node, tOptions) {
   var nodeIsNotExcluded = isNotExcluded(node);
+  var nodeIsUnTranslated = isUnTranslated(node);
   tOptions = getTOptions(tOptions, node);
 
   if (node.children) {
     node.children.forEach(function (child) {
-      if (nodeIsNotExcluded && child.text || !child.text && isNotExcluded(child)) {
+      if (nodeIsNotExcluded && nodeIsUnTranslated && child.text || !child.text && isNotExcluded(child)) {
         walk$1(child, tOptions);
       }
     });
@@ -4976,7 +4977,7 @@ function walk$1(node, tOptions) {
   // ignore comments
   if (node.text && !node.properties && node.type === 'Widget') return node;
 
-  if (nodeIsNotExcluded && isUnTranslated(node)) {
+  if (nodeIsNotExcluded && nodeIsUnTranslated) {
     if (node.text) node.text = translate$1(node.text, tOptions);
     if (node.properties) node.properties = translateProps(node.properties, tOptions);
     if (node.properties && node.properties.attributes) node.properties.attributes.localized = '';
