@@ -4703,8 +4703,8 @@ var udc = createCommonjsModule(function (module, exports) {
 
 		if (typeof exports === 'object') {
 			module.exports = factory();
-		} else if (typeof define === 'function' && define.amd) {
-			define(factory);
+		} else if (typeof undefined === 'function' && undefined.amd) {
+			undefined(factory);
 		} else {
 			root.UltraDeepClone = factory();
 		}
@@ -4928,6 +4928,7 @@ function translateProps(props) {
 
   replaceInside.forEach(function (attr) {
     var value = getPath(props, attr);
+    if (value) value = value.replace(/\{\{/g, '%7B%7B').replace(/\}\}/g, '%7D%7D'); // fix for safari
     if (value && value.indexOf('%7B') > -1) {
       var arr = [];
 
