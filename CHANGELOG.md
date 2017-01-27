@@ -1,3 +1,6 @@
+### v1.3.0
+- introduces merge, clean feature in backward compatible way...expect a breaking major version in future enabling this as default
+
 ### v1.2.2
 - fixes issue in safari using the fragment replacement for src and href
 - update all dependencies
