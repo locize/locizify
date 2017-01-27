@@ -27,8 +27,8 @@ function upload(fileEnding, version) {
     Expires: 0,
     CacheControl: 'public, must-revalidate, proxy-revalidate, max-age=0'
   }, (err, data) => {
-    if (err) return console.log(`locizify${suffix}${fileEnding} upload failed! `, err.stack);
-    console.log(`locizify${suffix}${fileEnding} uploaded! `, data);
+    if (err) return console.log(`${prefix}locizify${suffix}${fileEnding} upload failed! `, err.stack);
+    console.log(`${prefix}locizify${suffix}${fileEnding} uploaded! `, data);
   });
 }
 
