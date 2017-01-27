@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 const awsCreds = require('./aws-credentials.json');
 const fs = require('fs');
+const package = require('../package.json');
 
 const deployType = process.env.DEPLOY_TYPE || 'dev';
 const suffix = deployType === 'dev' ? '-dev' : '';
@@ -14,23 +15,28 @@ const s3 = new AWS.S3({
   region: awsCreds.region
 });
 
-function upload(fileEnding) {
+function upload(fileEnding, version) {
+  var prefix = '';
+  if (version) prefix = `locizify/${version}/`;
   s3.upload({
     Bucket: bucketName,
-    Key: `locizify${suffix}${fileEnding}`,
+    Key: `${prefix}locizify${suffix}${fileEnding}`,
     Body: fs.createReadStream(`${__dirname}/../locizify${fileEnding}`),
     ContentType: 'application/javascript',
     ACL: 'public-read',
     Expires: 0,
     CacheControl: 'public, must-revalidate, proxy-revalidate, max-age=0'
   }, (err, data) => {
-    if (err) return console.log(`locizify${suffix}${fileEnding} upload failed! `, err.stack);
-    console.log(`locizify${suffix}${fileEnding} uploaded! `, data);
+    if (err) return console.log(`${prefix}locizify${suffix}${fileEnding} upload failed! `, err.stack);
+    console.log(`${prefix}locizify${suffix}${fileEnding} uploaded! `, data);
   });
 }
 
 upload('.js');
 upload('.min.js');
+
+upload('.js', package.version);
+upload('.min.js', package.version);
 
 
 if (distributioId) {
