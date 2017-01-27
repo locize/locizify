@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 const awsCreds = require('./aws-credentials.json');
 const fs = require('fs');
+const package = require('../package.json');
 
 const deployType = process.env.DEPLOY_TYPE || 'dev';
 const suffix = deployType === 'dev' ? '-dev' : '';
@@ -14,10 +15,12 @@ const s3 = new AWS.S3({
   region: awsCreds.region
 });
 
-function upload(fileEnding) {
+function upload(fileEnding, version) {
+  var prefix = '';
+  if (version) prefix = `locizify/${version}/`;
   s3.upload({
     Bucket: bucketName,
-    Key: `locizify${suffix}${fileEnding}`,
+    Key: `${prefix}locizify${suffix}${fileEnding}`,
     Body: fs.createReadStream(`${__dirname}/../locizify${fileEnding}`),
     ContentType: 'application/javascript',
     ACL: 'public-read',
@@ -31,6 +34,9 @@ function upload(fileEnding) {
 
 upload('.js');
 upload('.min.js');
+
+upload('.js', package.version);
+upload('.min.js', package.version);
 
 
 if (distributioId) {
