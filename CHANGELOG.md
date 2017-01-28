@@ -1,3 +1,6 @@
+### v1.4.0
+- better merge, more options
+
 ### v1.3.0
 - introduces merge, clean feature in backward compatible way...expect a breaking major version in future enabling this as default
 

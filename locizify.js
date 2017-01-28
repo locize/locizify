@@ -5943,7 +5943,7 @@ var namespaces = {
 
 var namespaceMap$1 = namespaces;
 
-var VNode = vnode;
+var VNode$1 = vnode;
 var VText = vtext;
 var domParser;
 
@@ -6041,7 +6041,7 @@ function createVirtualDomNode(el, attr) {
 	var ns = el.namespaceURI !== HTML_NAMESPACE ? el.namespaceURI : null;
 	var key = attr && el.getAttribute(attr) ? el.getAttribute(attr) : null;
 
-	return new VNode(
+	return new VNode$1(
 		el.tagName
 		, createProperties(el)
 		, createChildren(el, attr)
@@ -6304,7 +6304,7 @@ function removeIndent(str, substitution) {
 }
 
 function canInline(node, tOptions) {
-  if (!node.children || !node.children.length) return false;
+  if (!node.children || !node.children.length || i18next$2.options.ignoreInlineOn.indexOf(node.tagName) > -1) return false;
 
   var baseTags = tOptions.inlineTags || i18next$2.options.inlineTags;
   var inlineTags = tOptions.additionalInlineTags ? baseTags.concat(tOptions.additionalInlineTags) : baseTags;
@@ -6325,12 +6325,22 @@ function walk$1(node, tOptions, parent) {
   tOptions = getTOptions(tOptions, node);
 
   // translate node as one block
-  if ((getAttribute(node, 'merge') === '' || canInline(node, tOptions)) && nodeIsNotExcluded && nodeIsUnTranslated) {
-    var translation = translate$1(removeIndent(index$9(node), ''), tOptions);
+  var mergeFlag = getAttribute(node, 'merge');
+  if (mergeFlag !== 'false' && (mergeFlag === '' || canInline(node, tOptions)) && nodeIsNotExcluded && nodeIsUnTranslated) {
+
+    // wrap children into dummy node and remove that outer from translation
+    var dummyNode = new vnode('I18NEXTIFYDUMMY', null, node.children);
+    var key = removeIndent(index$9(dummyNode), '').replace('<i18nextifydummy>', '').replace('</i18nextifydummy>', '');
+
+    // translate that's children and surround it again with a dummy node to parse to vdom
+    var translation = '<i18nextifydummy>' + translate$1(key, tOptions) + '</i18nextifydummy>';
     var newNode = index$12((translation || '').trim());
 
-    if (newNode.properties && newNode.properties.attributes) newNode.properties.attributes.localized = '';
-    return newNode;
+    // replace children on passed in node
+    node.children = newNode.children;
+
+    if (node.properties && node.properties.attributes) node.properties.attributes.localized = '';
+    return node;
   }
 
   if (node.children) {
@@ -6443,6 +6453,7 @@ function getDefaults() {
     ignoreIds: [],
     ignoreClasses: [],
     inlineTags: [],
+    ignoreInlineOn: [],
     cleanIndent: false,
     ignoreCleanIndentFor: ['PRE', 'CODE'],
     cleanWhitespace: false,
@@ -6528,6 +6539,9 @@ function init$1() {
     return s.toUpperCase();
   });
   if (options.inlineTags) options.inlineTags = options.inlineTags.map(function (s) {
+    return s.toUpperCase();
+  });
+  if (options.ignoreInlineOn) options.ignoreInlineOn = options.ignoreInlineOn.map(function (s) {
     return s.toUpperCase();
   });
 
