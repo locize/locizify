@@ -6295,16 +6295,14 @@ function getTOptions(opts, node) {
 
 function removeIndent(str, substitution) {
   if (!i18next$2.options.cleanIndent) return str;
-  // const p = str.split('\n');
-  // if (str.indexOf('\n') === 0 && p.length === 3) return p[1].replace(/^\s+/, '');
-  // if (str.indexOf('\n') === 0 && p.length === 2) return p[1].replace(/^\s+/, '');
-  // if (str.indexOf('\n') > 0 && p.length === 2) return p[0];
+
   var ret = str.replace(/\n +/g, substitution);
   return ret;
 }
 
 function canInline(node, tOptions) {
   if (!node.children || !node.children.length || i18next$2.options.ignoreInlineOn.indexOf(node.tagName) > -1) return false;
+  if (i18next$2.options.mergeTags.indexOf(node.tagName) > -1) return true;
 
   var baseTags = tOptions.inlineTags || i18next$2.options.inlineTags;
   var inlineTags = tOptions.additionalInlineTags ? baseTags.concat(tOptions.additionalInlineTags) : baseTags;
@@ -6326,20 +6324,22 @@ function walk$1(node, tOptions, parent) {
 
   // translate node as one block
   var mergeFlag = getAttribute(node, 'merge');
-  if (mergeFlag !== 'false' && (mergeFlag === '' || canInline(node, tOptions)) && nodeIsNotExcluded && nodeIsUnTranslated) {
+  if (mergeFlag !== 'false' && (mergeFlag === '' || canInline(node, tOptions))) {
+    if (nodeIsNotExcluded && nodeIsUnTranslated) {
+      // wrap children into dummy node and remove that outer from translation
+      var dummyNode = new vnode('I18NEXTIFYDUMMY', null, node.children);
+      var key = removeIndent(index$9(dummyNode), '').replace('<i18nextifydummy>', '').replace('</i18nextifydummy>', '');
 
-    // wrap children into dummy node and remove that outer from translation
-    var dummyNode = new vnode('I18NEXTIFYDUMMY', null, node.children);
-    var key = removeIndent(index$9(dummyNode), '').replace('<i18nextifydummy>', '').replace('</i18nextifydummy>', '');
+      // translate that's children and surround it again with a dummy node to parse to vdom
+      var translation = '<i18nextifydummy>' + translate$1(key, tOptions) + '</i18nextifydummy>';
+      var newNode = index$12((translation || '').trim());
 
-    // translate that's children and surround it again with a dummy node to parse to vdom
-    var translation = '<i18nextifydummy>' + translate$1(key, tOptions) + '</i18nextifydummy>';
-    var newNode = index$12((translation || '').trim());
+      // replace children on passed in node
+      node.children = newNode.children;
 
-    // replace children on passed in node
-    node.children = newNode.children;
+      if (node.properties && node.properties.attributes) node.properties.attributes.localized = '';
+    }
 
-    if (node.properties && node.properties.attributes) node.properties.attributes.localized = '';
     return node;
   }
 
@@ -6452,6 +6452,7 @@ function getDefaults() {
     ignoreTags: ['SCRIPT'],
     ignoreIds: [],
     ignoreClasses: [],
+    mergeTags: [],
     inlineTags: [],
     ignoreInlineOn: [],
     cleanIndent: false,
@@ -6542,6 +6543,9 @@ function init$1() {
     return s.toUpperCase();
   });
   if (options.ignoreInlineOn) options.ignoreInlineOn = options.ignoreInlineOn.map(function (s) {
+    return s.toUpperCase();
+  });
+  if (options.mergeTags) options.mergeTags = options.mergeTags.map(function (s) {
     return s.toUpperCase();
   });
 

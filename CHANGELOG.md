@@ -1,3 +1,7 @@
+### v1.5.0
+- improve merge
+- fix issue with walk over merge on next dom change
+
 ### v1.4.0
 - better merge, more options
 
