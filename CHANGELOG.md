@@ -1,3 +1,7 @@
+### 1.6.0
+- update i18next dependencies
+- allow setting translateAttributes in init options (incl. conditions)
+
 ### v1.5.0
 - improve merge
 - fix issue with walk over merge on next dom change
