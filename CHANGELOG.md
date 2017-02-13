@@ -1,3 +1,6 @@
+### 1.6.1
+- take both properties and atrributes on properties for translating
+
 ### 1.6.0
 - update i18next dependencies
 - allow setting translateAttributes in init options (incl. conditions)
