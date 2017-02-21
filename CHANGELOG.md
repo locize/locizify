@@ -1,3 +1,7 @@
+### 2.0.0
+- update dependencies
+- breaking new defaults enabling cleaning per default
+
 ### 1.6.1
 - take both properties and atrributes on properties for translating
 

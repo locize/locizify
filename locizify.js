@@ -1257,11 +1257,6 @@ var Interpolator = function () {
     var clonedOptions = _extends$6({}, options);
     clonedOptions.applyPostProcessor = false; // avoid post processing on nested lookup
 
-    function regexSafe(val) {
-      return val.replace(/\$/g, '$$$$');
-    }
-
-    // if value is something like "myKey": "lorem $(anotherKey, { "count": {{aValueInOptions}} })"
     function handleHasOptions(key) {
       if (key.indexOf(',') < 0) return key;
 
@@ -1311,7 +1306,7 @@ function _possibleConstructorReturn$3(self, call) { if (!self) { throw new Refer
 
 function _inherits$3(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : _defaults$3(subClass, superClass); }
 
-function remove$1(arr, what) {
+function remove(arr, what) {
   var found = arr.indexOf(what);
 
   while (found !== -1) {
@@ -1414,7 +1409,7 @@ var Connector = function (_EventEmitter) {
     // callback if ready
     this.queue.forEach(function (q) {
       pushPath(q.loaded, [lng], ns);
-      remove$1(q.pending, name);
+      remove(q.pending, name);
 
       if (err) q.errors.push(err);
 
@@ -2082,21 +2077,21 @@ var I18n = function (_EventEmitter) {
 
 var i18next$2 = new I18n();
 
-var changeLanguage$1 = i18next$2.changeLanguage.bind(i18next$2);
-var cloneInstance$1 = i18next$2.cloneInstance.bind(i18next$2);
-var createInstance$1 = i18next$2.createInstance.bind(i18next$2);
-var dir$1 = i18next$2.dir.bind(i18next$2);
-var exists$1 = i18next$2.exists.bind(i18next$2);
-var getFixedT$1 = i18next$2.getFixedT.bind(i18next$2);
-var init$2 = i18next$2.init.bind(i18next$2);
-var loadLanguages$1 = i18next$2.loadLanguages.bind(i18next$2);
-var loadNamespaces$1 = i18next$2.loadNamespaces.bind(i18next$2);
-var loadResources$1 = i18next$2.loadResources.bind(i18next$2);
-var off$1 = i18next$2.off.bind(i18next$2);
-var on$1 = i18next$2.on.bind(i18next$2);
-var setDefaultNamespace$1 = i18next$2.setDefaultNamespace.bind(i18next$2);
-var t$1 = i18next$2.t.bind(i18next$2);
-var use$1 = i18next$2.use.bind(i18next$2);
+var changeLanguage = i18next$2.changeLanguage.bind(i18next$2);
+var cloneInstance = i18next$2.cloneInstance.bind(i18next$2);
+var createInstance = i18next$2.createInstance.bind(i18next$2);
+var dir = i18next$2.dir.bind(i18next$2);
+var exists = i18next$2.exists.bind(i18next$2);
+var getFixedT = i18next$2.getFixedT.bind(i18next$2);
+var init$1 = i18next$2.init.bind(i18next$2);
+var loadLanguages = i18next$2.loadLanguages.bind(i18next$2);
+var loadNamespaces = i18next$2.loadNamespaces.bind(i18next$2);
+var loadResources = i18next$2.loadResources.bind(i18next$2);
+var off = i18next$2.off.bind(i18next$2);
+var on = i18next$2.on.bind(i18next$2);
+var setDefaultNamespace = i18next$2.setDefaultNamespace.bind(i18next$2);
+var t = i18next$2.t.bind(i18next$2);
+var use = i18next$2.use.bind(i18next$2);
 
 var arr = [];
 var each = arr.forEach;
@@ -3131,7 +3126,7 @@ var index$3 = function isObject(x) {
 	return typeof x === "object" && x !== null;
 };
 
-var isObject$1 = index$3;
+var isObject = index$3;
 var isHook$1 = isVhook;
 
 var diffProps_1 = diffProps$1;
@@ -3150,7 +3145,7 @@ function diffProps$1(a, b) {
 
         if (aValue === bValue) {
             continue
-        } else if (isObject$1(aValue) && isObject$1(bValue)) {
+        } else if (isObject(aValue) && isObject(bValue)) {
             if (getPrototype(bValue) !== getPrototype(aValue)) {
                 diff = diff || {};
                 diff[aKey] = bValue;
@@ -3509,7 +3504,7 @@ function reorder(aChildren, bChildren) {
 
         // remove items
         while (simulateItem === null && simulate.length) {
-            removes.push(remove$2(simulate, simulateIndex, null));
+            removes.push(remove$1(simulate, simulateIndex, null));
             simulateItem = simulate[simulateIndex];
         }
 
@@ -3519,7 +3514,7 @@ function reorder(aChildren, bChildren) {
                 if (simulateItem && simulateItem.key) {
                     // if an insert doesn't put this key in place, it needs to move
                     if (bKeys[simulateItem.key] !== k + 1) {
-                        removes.push(remove$2(simulate, simulateIndex, simulateItem.key));
+                        removes.push(remove$1(simulate, simulateIndex, simulateItem.key));
                         simulateItem = simulate[simulateIndex];
                         // if the remove didn't put the wanted item in place, we need to insert it
                         if (!simulateItem || simulateItem.key !== wantedItem.key) {
@@ -3541,7 +3536,7 @@ function reorder(aChildren, bChildren) {
             }
             // a key in simulate has no matching wanted key, remove it
             else if (simulateItem && simulateItem.key) {
-                removes.push(remove$2(simulate, simulateIndex, simulateItem.key));
+                removes.push(remove$1(simulate, simulateIndex, simulateItem.key));
             }
         }
         else {
@@ -3553,7 +3548,7 @@ function reorder(aChildren, bChildren) {
     // remove all the remaining nodes from simulate
     while(simulateIndex < simulate.length) {
         simulateItem = simulate[simulateIndex];
-        removes.push(remove$2(simulate, simulateIndex, simulateItem && simulateItem.key));
+        removes.push(remove$1(simulate, simulateIndex, simulateItem && simulateItem.key));
     }
 
     // If the only moves we have are deletes then we can just
@@ -3574,7 +3569,7 @@ function reorder(aChildren, bChildren) {
     }
 }
 
-function remove$2(arr, index, key) {
+function remove$1(arr, index, key) {
     arr.splice(index, 1);
 
     return {
@@ -3789,7 +3784,7 @@ function serializeElement(elem) {
         tagname = tagname.toLowerCase();
     }
 
-    strings.push("<" + tagname + properties$1(elem) + datasetify(elem));
+    strings.push("<" + tagname + properties(elem) + datasetify(elem));
 
     if (voidElements.indexOf(tagname) > -1) {
         strings.push(" />");
@@ -3863,7 +3858,7 @@ function stringify(list) {
     return attributes.length ? " " + attributes.join(" ") : ""
 }
 
-function properties$1(elem) {
+function properties(elem) {
     var props = [];
     for (var key in elem) {
         if (isProperty(elem, key)) {
@@ -4253,7 +4248,7 @@ if (typeof document !== 'undefined') {
 }
 });
 
-var isObject$2 = index$3;
+var isObject$1 = index$3;
 var isHook$2 = isVhook;
 
 var applyProperties_1 = applyProperties$1;
@@ -4272,7 +4267,7 @@ function applyProperties$1(node, props, previous) {
                     previous ? previous[propName] : undefined);
             }
         } else {
-            if (isObject$2(propValue)) {
+            if (isObject$1(propValue)) {
                 patchObject(node, props, previous, propName, propValue);
             } else {
                 node[propName] = propValue;
@@ -4323,13 +4318,13 @@ function patchObject(node, props, previous, propName, propValue) {
         return
     }
 
-    if(previousValue && isObject$2(previousValue) &&
+    if(previousValue && isObject$1(previousValue) &&
         getPrototype$1(previousValue) !== getPrototype$1(propValue)) {
         node[propName] = propValue;
         return
     }
 
-    if (!isObject$2(node[propName])) {
+    if (!isObject$1(node[propName])) {
         node[propName] = {};
     }
 
@@ -4360,9 +4355,9 @@ var isVText$2 = isVtext;
 var isWidget$4 = isWidget_1;
 var handleThunk$2 = handleThunk_1;
 
-var createElement_1 = createElement$1;
+var createElement_1 = createElement;
 
-function createElement$1(vnode, opts) {
+function createElement(vnode, opts) {
     var doc = opts ? opts.document || document$4 : document$4;
     var warn = opts ? opts.warn : null;
 
@@ -4389,7 +4384,7 @@ function createElement$1(vnode, opts) {
     var children = vnode.children;
 
     for (var i = 0; i < children.length; i++) {
-        var childNode = createElement$1(children[i], opts);
+        var childNode = createElement(children[i], opts);
         if (childNode) {
             node.appendChild(childNode);
         }
@@ -4655,7 +4650,7 @@ function replaceRoot(oldRoot, newRoot) {
 var document$1 = document_1;
 var isArray$2 = index$1;
 
-var render$1 = createElement_1;
+var render = createElement_1;
 var domIndex = domIndex_1;
 var patchOp = patchOp$1;
 var patch_1$1 = patch$2;
@@ -4665,7 +4660,7 @@ function patch$2(rootNode, patches, renderOptions) {
     renderOptions.patch = renderOptions.patch && renderOptions.patch !== patch$2
         ? renderOptions.patch
         : patchRecursive;
-    renderOptions.render = renderOptions.render || render$1;
+    renderOptions.render = renderOptions.render || render;
 
     return renderOptions.patch(rootNode, patches, renderOptions)
 }
@@ -4741,12 +4736,8 @@ var udc = createCommonjsModule(function (module, exports) {
 (function (root, factory) {
 		"use strict";
 
-		if (typeof exports === 'object') {
+		{
 			module.exports = factory();
-		} else if (typeof undefined === 'function' && undefined.amd) {
-			undefined(factory);
-		} else {
-			root.UltraDeepClone = factory();
 		}
 	}(commonjsGlobal, function () {
 
@@ -5196,7 +5187,7 @@ var types$1 = {
  *
  */
 
-var properties$3 = {
+var properties$2 = {
   /**
    * Standard Properties
    */
@@ -5338,14 +5329,14 @@ var attributeNames$1 = {
 
 var propertyConfig = {
   attributeTypes: types$1,
-  properties: properties$3,
+  properties: properties$2,
   attributeNames: attributeNames$1
 };
 
 var escape$2 = index$10;
 var propConfig = propertyConfig;
 var types = propConfig.attributeTypes;
-var properties$2 = propConfig.properties;
+var properties$1 = propConfig.properties;
 var attributeNames = propConfig.attributeNames;
 
 var prefixAttribute = memoizeString(function (name) {
@@ -5364,10 +5355,10 @@ var createAttribute_1 = createAttribute$1;
  */
 
 function createAttribute$1(name, value, isAttribute) {
-  if (properties$2.hasOwnProperty(name)) {
+  if (properties$1.hasOwnProperty(name)) {
     if (shouldSkip(name, value)) return '';
     name = (attributeNames[name] || name).toLowerCase();
-    var attrType = properties$2[name];
+    var attrType = properties$1[name];
     // for BOOLEAN `value` only has to be truthy
     // for OVERLOADED_BOOLEAN `value` has to be === true
     if ((attrType === types.BOOLEAN) ||
@@ -5388,7 +5379,7 @@ function createAttribute$1(name, value, isAttribute) {
  */
 
 function shouldSkip(name, value) {
-  var attrType = properties$2[name];
+  var attrType = properties$1[name];
   return value == null ||
     (attrType === types.BOOLEAN && !value) ||
     (attrType === types.OVERLOADED_BOOLEAN && value === false);
@@ -5545,7 +5536,7 @@ function closeTag(node) {
  */
 
 // invert of https://www.npmjs.com/package/html-attributes
-var properties$4 = {
+var properties$3 = {
 	'abbr': 'abbr'
 	, 'accept': 'accept'
 	, 'accept-charset': 'acceptCharset'
@@ -5670,7 +5661,7 @@ var properties$4 = {
 	, 'wrap': 'wrap'
 };
 
-var propertyMap$1 = properties$4;
+var propertyMap$1 = properties$3;
 
 /**
  * namespace-map.js
@@ -6272,7 +6263,7 @@ function isNotExcluded(node) {
   return ret;
 }
 
-function translate$1(str) {
+function translate(str) {
   var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
   var key = str.trim();
@@ -6301,7 +6292,7 @@ function translateProps(node, props) {
       value = getPath(props.attributes, item.attr);
       if (value) wasOnAttr = true;
     }
-    if (value) setPath(wasOnAttr ? props.attributes : props, item.attr, translate$1(value, _extends$9({}, options)));
+    if (value) setPath(wasOnAttr ? props.attributes : props, item.attr, translate(value, _extends$9({}, options)));
   });
 
   replaceInside.forEach(function (attr) {
@@ -6316,7 +6307,7 @@ function translateProps(node, props) {
         if (!index || index % 2 === 0) {
           mem.push(match);
         } else {
-          mem.push(translate$1(match, _extends$9({}, options)));
+          mem.push(translate(match, _extends$9({}, options)));
         }
         return mem;
       }, arr);
@@ -6381,7 +6372,7 @@ function walk$1(node, tOptions, parent) {
       var key = removeIndent(index$9(dummyNode), '').replace('<i18nextifydummy>', '').replace('</i18nextifydummy>', '');
 
       // translate that's children and surround it again with a dummy node to parse to vdom
-      var translation = '<i18nextifydummy>' + translate$1(key, tOptions) + '</i18nextifydummy>';
+      var translation = '<i18nextifydummy>' + translate(key, tOptions) + '</i18nextifydummy>';
       var newNode = index$12((translation || '').trim());
 
       // replace children on passed in node
@@ -6421,10 +6412,10 @@ function walk$1(node, tOptions, parent) {
       }
 
       if (!ignore && match && match.length > 1 && i18next$2.options.cleanWhitespace) {
-        var _translation = translate$1(match[1], tOptions);
+        var _translation = translate(match[1], tOptions);
         node.text = txt.replace(match[1], _translation);
       } else {
-        node.text = translate$1(txt, tOptions);
+        node.text = translate(txt, tOptions);
       }
     }
     if (node.properties) node.properties = translateProps(node, node.properties, tOptions);
@@ -6473,11 +6464,11 @@ var renderer = function (root, observer) {
 
 var missings = {};
 
-function log$1() {
+function log() {
   i18next$2.services.logger.log('missing resources: \n' + JSON.stringify(missings, null, 2));
 }
 
-var debouncedLog = debounce(log$1, 2000);
+var debouncedLog = debounce(log, 2000);
 
 function missingHandler(lngs, namespace, key, res) {
   if (typeof lngs === 'string') lngs = [lngs];
@@ -6504,13 +6495,13 @@ function getDefaults() {
     ignoreTags: ['SCRIPT'],
     ignoreIds: [],
     ignoreClasses: [],
-    translateAttributes: ['placeholder', 'title', 'alt', 'value#input.type=button'],
+    translateAttributes: ['placeholder', 'title', 'alt', 'value#input.type=button', 'value#input.type=submit'],
     mergeTags: [],
     inlineTags: [],
     ignoreInlineOn: [],
-    cleanIndent: false,
+    cleanIndent: true,
     ignoreCleanIndentFor: ['PRE', 'CODE'],
-    cleanWhitespace: false,
+    cleanWhitespace: true,
     nsSeparator: '#||#',
     keySeparator: '#|#',
     debug: window.location.search && window.location.search.indexOf('debug=true') > -1,
@@ -6527,7 +6518,7 @@ var domReady = false;
 var initialized = false;
 docReady(function () {
   domReady = true;
-  if (!initialized) init$1();
+  if (!initialized) init$$1();
 });
 
 // extend i18next with default extensions
@@ -6564,7 +6555,7 @@ function changeNamespace(ns) {
   });
 }
 
-function init$1() {
+function init$$1() {
   var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
   options = _extends$1({}, getDefaults(), lastOptions, options);
@@ -6701,7 +6692,7 @@ function init$1() {
 }
 
 var i18nextify$1 = {
-  init: init$1,
+  init: init$$1,
   i18next: i18next$2,
   changeNamespace: changeNamespace
 };
@@ -6946,30 +6937,28 @@ i18next.init = function () {
   var scriptEle = document.getElementById('locizify');
 
   if (scriptEle) {
-    (function () {
-      var config = {};
-      var backend = {};
+    var config = {};
+    var backend = {};
 
-      var toRead = ['fallbackLng', 'saveMissing', 'debug'];
-      var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
+    var toRead = ['fallbackLng', 'saveMissing', 'debug'];
+    var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
 
-      toRead.forEach(function (attr) {
-        var value = scriptEle.getAttribute(attr.toLowerCase());
-        if (value === 'true') value = true;
-        if (value === 'false') value = false;
-        if (value !== undefined && value !== null) config[attr] = value;
-      });
+    toRead.forEach(function (attr) {
+      var value = scriptEle.getAttribute(attr.toLowerCase());
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+      if (value !== undefined && value !== null) config[attr] = value;
+    });
 
-      toReadBackend.forEach(function (attr) {
-        var value = scriptEle.getAttribute(attr.toLowerCase());
-        if (value === 'true') value = true;
-        if (value === 'false') value = false;
-        if (value !== undefined && value !== null) backend[attr] = value;
-      });
+    toReadBackend.forEach(function (attr) {
+      var value = scriptEle.getAttribute(attr.toLowerCase());
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+      if (value !== undefined && value !== null) backend[attr] = value;
+    });
 
-      options = _extends({}, options, config);
-      options.backend = _extends({}, options.backend, backend);
-    })();
+    options = _extends({}, options, config);
+    options.backend = _extends({}, options.backend, backend);
   }
 
   originalInit.call(i18next, _extends({}, options, enforce), callback);
@@ -6979,14 +6968,12 @@ i18nextify$1.getLanguages = function (callback) {
   if (i18next.services.backendConnector) {
     i18next.services.backendConnector.backend.getLanguages(callback);
   } else {
-    (function () {
-      var ready = function ready() {
-        i18next.off('initialized', ready);
-        i18next.services.backendConnector.backend.getLanguages(callback);
-      };
+    var ready = function ready() {
+      i18next.off('initialized', ready);
+      i18next.services.backendConnector.backend.getLanguages(callback);
+    };
 
-      i18next.on('initialized', ready);
-    })();
+    i18next.on('initialized', ready);
   }
 };
 
