@@ -8,7 +8,7 @@
 
 Drop the locizify script onto your website and it will automatically start to segment your content and connect it to your [locize](http://locize.com) project. Translating your content was never easier.
 
-Just drop the following line to your header to deliever your content in any language:
+Just drop the following line to your header to deliver your content in any language:
 
 ```html
 <script id="locizify" projectid="[PROJECT_ID]" apikey="[API_KEY]" referencelng="[LNG]" fallbacklng="[LNG]" src="https://cdn.locize.io/locizify.min.js" />
@@ -97,6 +97,19 @@ Add the script to your page:
         ignoreIds: ['ignoreMeId'],
         ignoreClasses: ['ignoreMeClass'],
 
+        // attributes to translate
+        translateAttributes: ['placeholder', 'title', 'alt', 'value#input.type=button', 'value#input.type=submit'],
+
+        // merging content (eg. a tags in p tags)
+        mergeTags: [], // tags to merge innerHtml to one key
+        inlineTags: [], // tags to inline (eg. a, span, abbr, ...)
+        ignoreInlineOn: [], // tags to ignore inlining tags under inlineTags
+
+        // cleanup for keys
+        cleanIndent: true, // removes indent, eg. if a p tag spans multiple lines
+        ignoreCleanIndentFor: ['PRE', 'CODE'], // ignores cleaning up of indent for those tags needing that extra spaceing
+        cleanWhitespace: true, // removes surrounding whitespace from key
+
         namespace: false, // set another name - default namespace will be translation
         namespaceFromPath: false // set true will use namepace based on window.location.pathname
         ns: ['common'] // -> only set if accessing more then one namepace
@@ -150,6 +163,38 @@ setTimeout(function () {
 }, 1000);
 ```
 
+## Merge content
+
+Just set translated attribute:
+
+```html
+<p merge>all inside will be used as on segment, even if having other <a>elements inside</a></p>
+
+// key = all inside will be used as on segment, even if having other <a>elements inside</a>
+```
+Same could be done using options:
+
+```html
+mergeTags: [], // tags to merge innerHtml to one key
+inlineTags: [], // tags to inline (eg. a, span, abbr, ...)
+ignoreInlineOn: [], // tags to ignore inlining tags under inlineTags
+```
+
+## Fragment replacement for links and images
+
+```html
+<img src="/images/{{a.png}}" alt="big A" />
+```
+
+You will find `a.png` to be a key in your translation files - it's value can be replaced to eg. `a-de.png` for german (all other languages will fallback to `a.png`)
+
+```html
+<a href="/{{statistic}}">Open my statistics</a>
+```
+
+`statistic` will be a regular key that can be translated. But be aware you will need to provide that routes - eg. using [localized routes on the server](https://github.com/i18next/i18next-express-middleware#add-localized-routes)
+
+
 ## Avoid translating an element
 
 ###### By  attribute
@@ -200,8 +245,6 @@ Options get inherited from parent to child nodes.
 ```html
 <p i18next-options='{"count": 2}'>plural {{count}} items</p>
 ```
-
-
 
 ## Set different namespaces
 
