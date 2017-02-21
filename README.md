@@ -11,7 +11,7 @@ Drop the locizify script onto your website and it will automatically start to se
 Just drop the following line to your header to deliver your content in any language:
 
 ```html
-<script id="locizify" projectid="[PROJECT_ID]" apikey="[API_KEY]" referencelng="[LNG]" fallbacklng="[LNG]" src="https://cdn.locize.io/locizify.min.js" />
+<script id="locizify" projectid="[PROJECT_ID]" apikey="[API_KEY]" referencelng="[LNG]" fallbacklng="[LNG]" src="https://unpkg.com/locizify@^2.0.0" />
 ```
 
 locizify uses virtual-dom to update your page with translations based on the current content. MutationObserver is used to trigger translations on dynamically added content. So it should play well with any static or dynamic page not using a own virtual-dom implementation.
@@ -33,7 +33,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://cdn.locize.io/locizify.min.js"
+      src="https://unpkg.com/locizify@^2.0.0"
     />
   </head>
   ...
@@ -60,7 +60,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://cdn.locize.io/locizify.min.js"
+      src="https://unpkg.com/locizify@^2.0.0"
 
       /* optional */
       version="[VERSION]"
@@ -76,7 +76,7 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://cdn.locize.io/locizify.min.js"></script>
+    <script src="https://unpkg.com/locizify@^2.0.0"></script>
     <script>
       locizify.init({
         // required
