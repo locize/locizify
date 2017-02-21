@@ -1,3 +1,6 @@
+### 2.0.1
+- browser entrypoint
+
 ### 2.0.0
 - update dependencies
 - breaking new defaults enabling cleaning per default
