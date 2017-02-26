@@ -847,15 +847,8 @@ var LanguageUtil = function () {
     this.logger = baseLogger.create('languageUtils');
   }
 
-  LanguageUtil.prototype.getLanguagePartFromCode = function getLanguagePartFromCode(code) {
-    if (code.indexOf('-') < 0) return code;
-
-    var p = code.split('-');
-    return this.formatLanguageCode(p[0]);
-  };
-
   LanguageUtil.prototype.getScriptPartFromCode = function getScriptPartFromCode(code) {
-    if (code.indexOf('-') < 0) return null;
+    if (!code || code.indexOf('-') < 0) return null;
 
     var p = code.split('-');
     if (p.length === 2) return null;
@@ -864,7 +857,7 @@ var LanguageUtil = function () {
   };
 
   LanguageUtil.prototype.getLanguagePartFromCode = function getLanguagePartFromCode(code) {
-    if (code.indexOf('-') < 0) return code;
+    if (!code || code.indexOf('-') < 0) return code;
 
     var p = code.split('-');
     return this.formatLanguageCode(p[0]);
@@ -913,6 +906,8 @@ var LanguageUtil = function () {
     if (!fallbacks) return [];
     if (typeof fallbacks === 'string') fallbacks = [fallbacks];
     if (Object.prototype.toString.apply(fallbacks) === '[object Array]') return fallbacks;
+
+    if (!code) return fallbacks.default || [];
 
     // asume we have an object defining fallbacks
     var found = fallbacks[code];
@@ -1752,7 +1747,7 @@ var I18n = function (_EventEmitter) {
     _this.options = transformOptions(options);
     _this.services = {};
     _this.logger = baseLogger;
-    _this.modules = {};
+    _this.modules = { external: [] };
 
     if (callback && !_this.isInitialized && !options.isClone) _this.init(options, callback);
     return _this;
@@ -1832,6 +1827,10 @@ var I18n = function (_EventEmitter) {
         s.languageDetector.init(s, this.options.detection, this.options);
       }
 
+      this.modules.external.forEach(function (m) {
+        if (m.init) m.init(_this2);
+      });
+
       this.translator = new Translator(this.services, this.options);
       // pipe events from translator
       this.translator.on('*', function (event) {
@@ -1887,6 +1886,7 @@ var I18n = function (_EventEmitter) {
         var toLoad = [];
 
         var append = function append(lng) {
+          if (!lng) return;
           var lngs = _this3.services.languageUtils.toResolveHierarchy(lng);
           lngs.forEach(function (l) {
             if (toLoad.indexOf(l) < 0) toLoad.push(l);
@@ -1927,7 +1927,7 @@ var I18n = function (_EventEmitter) {
       this.modules.cache = module;
     }
 
-    if (module.type === 'logger' || module.log && module.warn && module.warn) {
+    if (module.type === 'logger' || module.log && module.warn && module.error) {
       this.modules.logger = module;
     }
 
@@ -1937,6 +1937,10 @@ var I18n = function (_EventEmitter) {
 
     if (module.type === 'postProcessor') {
       postProcessor.addPostProcessor(module);
+    }
+
+    if (!module.type) {
+      this.modules.external.push(module);
     }
 
     return this;
@@ -6919,6 +6923,104 @@ var Backend$1 = function () {
 
 Backend$1.type = 'backend';
 
+var _typeof$4 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+function isWindow(obj) {
+  return obj != null && obj === obj.window;
+}
+
+function getWindow(elem) {
+  return isWindow(elem) ? elem : elem.nodeType === 9 && elem.defaultView;
+}
+
+function offset(elem) {
+  var docElem,
+      win,
+      box = { top: 0, left: 0 },
+      doc = elem && elem.ownerDocument;
+
+  docElem = doc.documentElement;
+
+  if (_typeof$4(elem.getBoundingClientRect) !== (typeof undefined === 'undefined' ? 'undefined' : _typeof$4(undefined))) {
+    box = elem.getBoundingClientRect();
+  }
+  win = getWindow(doc);
+  return {
+    top: box.top + win.pageYOffset - docElem.clientTop,
+    left: box.left + win.pageXOffset - docElem.clientLeft
+  };
+}
+
+function getClickedElement(e) {
+  var el = void 0,
+      toHigh = void 0,
+      toLeft = void 0,
+      toLeftNextOffset = void 0;
+
+  if (e.originalEvent && e.originalEvent.explicitOriginalTarget) {
+    el = e.originalEvent.explicitOriginalTarget;
+  } else {
+    var parent = e.srcElement;
+    var left = e.pageX;
+    var top = e.pageY;
+    var pOffset = offset(parent);
+    console.warn(top, left, pOffset);
+    for (var i = 0; i < parent.childNodes.length; i++) {
+      var n = parent.childNodes[i];
+      //if (n.nodeType === 1) {
+      var nOffset = offset(n);
+      console.warn(nOffset, n, n.clientHeight);
+      // if (nOffset.top > pOffset.top) {console.warn('to high')
+      //   if (nOffset.top > top) {
+      //     toHigh = parent.childNodes[i - 1];
+      //   }
+      // } else if (nOffset.top + (n.clientHeight || 0) >= pOffset.top) {console.warn('next row')
+      if (toLeft && (nOffset.top > top || // is below
+      toLeftNextOffset.top > nOffset.top && toLeftNextOffset.left > nOffset.left) // the below element is a textnode with top 0 and is more left
+      ) {
+          console.warn('del to left', nOffset.top < top, toLeftNextOffset.top > nOffset.top && toLeftNextOffset.left > nOffset.left);
+          toLeft = null; // allow next row if not below click
+          toLeftNextOffset = null;
+        }
+      if (!toLeft && nOffset.left > left) {
+        toLeft = parent.childNodes[i - 1];
+        toLeftNextOffset = nOffset;
+      }
+      // }
+      //}
+      if (toHigh && toLeft) {
+        break;
+      }
+      el = n;
+    }
+  }
+  return toLeft || toHigh || el;
+}
+
+var editor = {
+  init: function init(i18next) {
+    var _this = this;
+
+    setTimeout(function () {
+      _this.on();
+    }, 100);
+  },
+  handler: function handler(e) {
+    var el = getClickedElement(e);
+
+    var str = el.textContent || el.text.innerText;
+    var res = str.replace(/\n +/g, '');
+
+    console.warn(el, res);
+  },
+  on: function on() {
+    document.body.addEventListener("click", this.handler);
+  },
+  off: function off() {
+    document.body.removeEventListener("click", this.handler);
+  }
+};
+
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var enforce = {
@@ -6927,7 +7029,7 @@ var enforce = {
 
 var i18next = i18nextify$1.i18next;
 
-i18next.use(Backend$1);
+i18next.use(Backend$1).use(editor);
 
 var originalInit = i18next.init;
 i18next.init = function () {

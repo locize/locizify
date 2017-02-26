@@ -1,12 +1,16 @@
 import i18nextify from 'i18nextify';
 import LocizeBackend from 'i18next-locize-backend';
 
+import editor from './editor';
+
 const enforce = {
   saveMissingTo: 'all'
 };
 
 const { i18next } = i18nextify;
-i18next.use(LocizeBackend);
+i18next
+  .use(LocizeBackend)
+  .use(editor);
 
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {
