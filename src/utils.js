@@ -75,3 +75,34 @@ export function getClickedElement(e) {
   }
   return el;
 }
+
+export function getElementNamespace(str, el, i18next) {
+  let namespace = i18next.options.defaultNS;
+  const nsSeparator = i18next.options.nsSeparator;
+
+  if (str.indexOf(nsSeparator) > -1) {
+    namespace = str.split(nsSeparator)[0];
+  } else {
+    let found;
+
+    const find = (el) => {
+      const opts = el.getAttribute && el.getAttribute('i18next-options');
+      if (opts) {
+        let jsonData = {};
+        try {
+          jsonData = JSON.parse(opts);
+        } catch (e) {
+          // not our problem here in editor
+        }
+        if (jsonData.ns) found = jsonData.ns
+      }
+
+      if (!found && el.parentElement) find(el.parentElement);
+    }
+    find(el);
+
+    if (found) namespace = found;
+  }
+
+  return namespace;
+}

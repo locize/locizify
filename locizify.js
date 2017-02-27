@@ -6941,7 +6941,7 @@ function offset(elem) {
 
   docElem = doc.documentElement;
 
-  if (_typeof$4(elem.getBoundingClientRect) !== (typeof undefined === "undefined" ? "undefined" : _typeof$4(undefined))) {
+  if (_typeof$4(elem.getBoundingClientRect) !== (typeof undefined === 'undefined' ? 'undefined' : _typeof$4(undefined))) {
     box = elem.getBoundingClientRect();
   }
   win = getWindow(doc);
@@ -6989,7 +6989,6 @@ function getClickedElement(e) {
     // check we are inside children lenght
     if (topStartsAt + 1 > parent.childNodes.length) topStartsAt = parent.childNodes.length - 1;
     if (!topBreaksAt) topBreaksAt = parent.childNodes.length;
-
     // console.warn('bound', topStartsAt, topBreaksAt)
 
     // inside our boundaries check when left is to big and out of clicks left
@@ -7008,15 +7007,57 @@ function getClickedElement(e) {
   return el;
 }
 
+function getElementNamespace(str, el, i18next) {
+  var namespace = i18next.options.defaultNS;
+  var nsSeparator = i18next.options.nsSeparator;
+
+  if (str.indexOf(nsSeparator) > -1) {
+    namespace = str.split(nsSeparator)[0];
+  } else {
+    var found = void 0;
+
+    var find = function find(el) {
+      var opts = el.getAttribute && el.getAttribute('i18next-options');
+      if (opts) {
+        var jsonData = {};
+        try {
+          jsonData = JSON.parse(opts);
+        } catch (e) {
+          // not our problem here in editor
+        }
+        if (jsonData.ns) found = jsonData.ns;
+      }
+
+      if (!found && el.parentElement) find(el.parentElement);
+    };
+    find(el);
+
+    if (found) namespace = found;
+  }
+
+  return namespace;
+}
+
 var editor = {
   init: function init(i18next) {
     var _this = this;
 
+    this.subscriber = [];
+    this.i18next = i18next;
     setTimeout(function () {
       _this.on();
     }, 100);
+
+    this.locizeInstance = window.open('/receiver');
+
+    window.subscribeLocizeEditor = this.subscribe.bind(this);
+  },
+  subscribe: function subscribe(fc) {
+    this.subscriber.push(fc);
   },
   handler: function handler(e) {
+    var _this2 = this;
+
     var el = getClickedElement(e);
     if (!el) return;
 
@@ -7024,12 +7065,19 @@ var editor = {
     var res = str.replace(/\n +/g, '');
 
     console.warn(el, res);
+    console.warn(getElementNamespace(res, el, this.i18next));
+    console.warn('projectId', this.i18next.options.backend.projectId);
+    console.warn('language', this.i18next.languages[0]);
+
+    this.subscriber.forEach(function (fc) {
+      fc(_this2.i18next.options.backend.projectId, _this2.i18next.languages[0], getElementNamespace(res, el, _this2.i18next), res);
+    });
   },
   on: function on() {
-    document.body.addEventListener("click", this.handler);
+    document.body.addEventListener("click", this.handler.bind(this));
   },
   off: function off() {
-    document.body.removeEventListener("click", this.handler);
+    document.body.removeEventListener("click", this.handler.bind(this));
   }
 };
 
