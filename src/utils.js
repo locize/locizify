@@ -58,7 +58,6 @@ export function getClickedElement(e) {
     // check we are inside children lenght
     if (topStartsAt + 1 > parent.childNodes.length) topStartsAt = parent.childNodes.length - 1;
     if (!topBreaksAt) topBreaksAt = parent.childNodes.length;
-
     // console.warn('bound', topStartsAt, topBreaksAt)
 
     // inside our boundaries check when left is to big and out of clicks left
