@@ -9,6 +9,7 @@ const editor = {
 
   handler(e) {
     const el = getClickedElement(e);
+    if (!el) return;
 
     const str = el.textContent || el.text.innerText;
     const res = str.replace(/\n +/g, '');

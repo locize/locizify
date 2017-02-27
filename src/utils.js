@@ -8,7 +8,7 @@ export function getWindow(elem) {
 
 export function offset(elem) {
   var docElem, win,
-      box = { top: 0, left: 0 },
+      box = { top: 0, left: 0, right: 0, bottom: 0 },
       doc = elem && elem.ownerDocument;
 
   docElem = doc.documentElement;
@@ -17,9 +17,14 @@ export function offset(elem) {
     box = elem.getBoundingClientRect();
   }
   win = getWindow(doc);
+
+  const top = box.top + win.pageYOffset - docElem.clientTop;
+  const left = box.left + win.pageXOffset - docElem.clientLeft;
   return {
-    top: box.top + win.pageYOffset - docElem.clientTop,
-    left: box.left + win.pageXOffset - docElem.clientLeft
+    top,
+    left,
+    right: left + (box.right - box.left),
+    bottom: top + (box.bottom - box.top)
   };
 };
 
@@ -33,35 +38,41 @@ export function getClickedElement(e) {
     let left = e.pageX;
     let top = e.pageY;
     let pOffset = offset(parent);
-    console.warn(top, left, pOffset)
+    // console.warn('click', top, left);
+    // console.warn('parent', parent, pOffset, parent.clientHeight, parent.offsetHeight);
+
+    let topStartsAt = 0;
+    let topBreaksAt;
     for (let i = 0; i < parent.childNodes.length; i++) {
       let n = parent.childNodes[i];
-      //if (n.nodeType === 1) {
-        let nOffset = offset(n);
-        console.warn(nOffset, n, n.clientHeight)
-        // if (nOffset.top > pOffset.top) {console.warn('to high')
-        //   if (nOffset.top > top) {
-        //     toHigh = parent.childNodes[i - 1];
-        //   }
-        // } else if (nOffset.top + (n.clientHeight || 0) >= pOffset.top) {console.warn('next row')
-          if (toLeft &&
-            ((nOffset.top > top) || // is below
-            (toLeftNextOffset.top > nOffset.top && toLeftNextOffset.left > nOffset.left)) // the below element is a textnode with top 0 and is more left
-          ) {console.warn('del to left', nOffset.top < top, toLeftNextOffset.top > nOffset.top && toLeftNextOffset.left > nOffset.left)
-            toLeft = null; // allow next row if not below click
-            toLeftNextOffset = null;
-          }
-          if (!toLeft && nOffset.left > left) {
-            toLeft = parent.childNodes[i - 1];
-            toLeftNextOffset = nOffset;
-          }
-        // }
-      //}
-      if (toHigh && toLeft) {
+      let nOffset = offset(n);
+      // console.warn('child', n, nOffset, n.clientHeight, n.offsetHeight)
+
+      // if a node is with the bottom over the top click set the next child as start index
+      if (n.nodeType === 1 && nOffset.bottom < top) topStartsAt = i + 1;
+
+      // if node is below top click set end index to this node
+      if (!topBreaksAt && nOffset.top + (n.clientHeight || 0) > top) topBreaksAt = i;
+    }
+
+    // check we are inside children lenght
+    if (topStartsAt + 1 > parent.childNodes.length) topStartsAt = parent.childNodes.length - 1;
+    if (!topBreaksAt) topBreaksAt = parent.childNodes.length;
+
+    // console.warn('bound', topStartsAt, topBreaksAt)
+
+    // inside our boundaries check when left is to big and out of clicks left
+    for (let y = topStartsAt; y < topBreaksAt; y++) {
+      let n = parent.childNodes[y];
+      let nOffset = offset(n);
+
+      if (!toLeft && nOffset.left > left) {
+        el = parent.childNodes[y - 1];
         break;
       }
+
       el = n;
     }
   }
-  return toLeft || toHigh || el;
+  return el;
 }
