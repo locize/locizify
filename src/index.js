@@ -1,7 +1,6 @@
 import i18nextify from 'i18nextify';
 import LocizeBackend from 'i18next-locize-backend';
-
-import editor from './editor';
+import locizeEditor from 'locize-editor';
 
 const enforce = {
   saveMissingTo: 'all'
@@ -10,7 +9,7 @@ const enforce = {
 const { i18next } = i18nextify;
 i18next
   .use(LocizeBackend)
-  .use(editor);
+  .use(locizeEditor);
 
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {
