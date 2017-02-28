@@ -14,6 +14,10 @@ app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
+app.get('/receiver', function(req, res) {
+  res.sendFile(__dirname + '/receiver.html');
+});
+
 app.get('/locizify.js', function(req, res) {
   fs.readFile(__dirname + '/../locizify.js', 'utf-8', function(err, doc) {
     res.send(doc);
