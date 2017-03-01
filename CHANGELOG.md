@@ -1,3 +1,6 @@
+### 2.1.1
+- fix in cimode lng for editor
+
 ### 2.1.0
 - adds editor linking module
 
