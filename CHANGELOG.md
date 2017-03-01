@@ -1,3 +1,6 @@
+### 2.1.0
+- adds editor linking module
+
 ### 2.0.1
 - browser entrypoint
 
