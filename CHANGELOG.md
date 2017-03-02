@@ -1,3 +1,6 @@
+### 2.2.0
+- update editor with new default mode iframe
+
 ### 2.1.1
 - fix in cimode lng for editor
 
