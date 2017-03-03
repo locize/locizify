@@ -1,3 +1,6 @@
+### 2.3.0
+- update editor with new non follow link behaviour
+
 ### 2.2.0
 - update editor with new default mode iframe
 

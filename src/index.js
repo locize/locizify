@@ -6,6 +6,7 @@ const enforce = {
   saveMissingTo: 'all'
 };
 
+i18nextify.editor = locizeEditor;
 const { i18next } = i18nextify;
 i18next
   .use(LocizeBackend)
