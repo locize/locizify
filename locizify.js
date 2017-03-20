@@ -6513,7 +6513,8 @@ function getDefaults() {
     namespace: false,
     namespaceFromPath: false,
     missingKeyHandler: missingHandler,
-    ns: []
+    ns: [],
+    onInitialTranslate: function onInitialTranslate() {}
   };
 }
 
@@ -6682,6 +6683,7 @@ function init$$1() {
 
         waitForInitialRender(children, 0, function () {
           if (options.ele.style && options.ele.style.display === 'none') options.ele.style.display = 'block';
+          options.onInitialTranslate();
         });
       })();
     }
@@ -7067,7 +7069,7 @@ var baseBtn = 'font-family: "Helvetica", "Arial", sans-serif; font-size: 14px; c
 
 function initUI(on, off, options) {
   var cont = document.createElement("div");
-  cont.setAttribute('style', 'z-index: 1001; font-family: "Helvetica", "Arial", sans-serif; position: fixed; bottom: 20px; right: 20px; padding: 10px; background-color: #fff; border: solid 1px #1976d2; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.5);');
+  cont.setAttribute('style', 'z-index: 2001; font-family: "Helvetica", "Arial", sans-serif; position: fixed; bottom: 20px; right: 20px; padding: 10px; background-color: #fff; border: solid 1px #1976d2; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.5);');
   cont.setAttribute('ignorelocizeeditor', '');
   cont.setAttribute('translated', '');
 
@@ -7132,7 +7134,7 @@ var defaultOptions = {
   lngOverrideQS: 'useLng',
   autoOpen: true,
   mode: getQueryVariable('locizeMode') || 'iframe',
-  iframeContainerStyle: 'z-index: 1000; position: fixed; top: 0; right: 0; bottom: 0; width: 500px; box-shadow: -3px 0 5px 0 rgba(0,0,0,0.5);',
+  iframeContainerStyle: 'z-index: 2000; position: fixed; top: 0; right: 0; bottom: 0; width: 500px; box-shadow: -3px 0 5px 0 rgba(0,0,0,0.5);',
   iframeStyle: 'height: 100%; width: 500px; border: none;',
   bodyStyle: 'margin-right: 505px;'
 };

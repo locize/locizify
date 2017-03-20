@@ -1,3 +1,6 @@
+### 2.4.0
+- update dependencies
+
 ### 2.3.0
 - update editor with new non follow link behaviour
 
