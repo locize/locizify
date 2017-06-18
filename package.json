@@ -22,7 +22,7 @@
   "dependencies": {
     "i18next-locize-backend": "1.0.0",
     "i18nextify": "2.1.0",
-    "locize-editor": "1.0.0"
+    "locize-editor": "1.1.0"
   },
   "devDependencies": {
     "aws-sdk": "2.22.0",

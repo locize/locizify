@@ -1,3 +1,6 @@
+### 2.5.0
+- update to locize-editor enabling passthrough of keypress from iframe to editor for toggling on/off
+
 ### 2.4.0
 - update dependencies
 
