@@ -111,7 +111,7 @@ Add the script to your page:
         cleanWhitespace: true, // removes surrounding whitespace from key
 
         namespace: false, // set another name - default namespace will be translation
-        namespaceFromPath: false // set true will use namepace based on window.location.pathname
+        namespaceFromPath: false, // set true will use namepace based on window.location.pathname
         ns: ['common'] // -> only set if accessing more then one namepace
 
         // + all options available in i18next
