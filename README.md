@@ -64,8 +64,9 @@ Add the script to your page:
 
       /* optional */
       version="[VERSION]"
-      savemissing="[true|false (default true)]"
+      saveMissing="[true|false (default true)]"
       debug="[true|false (default false)]"
+      autoPilot="[true|false (default false)]" /* automatically configures fallbackLng and language whitelist */
     ></script>
   </head>
   ...

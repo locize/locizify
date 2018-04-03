@@ -14,12 +14,15 @@
         ignoreIds: ['ignoreMeId'],
         ignoreClasses: ['ignoreMeClass'],
         backend: {
-          referenceLng: 'en',
+          // referenceLng: 'en',
           apiKey: '27e9ecff-8926-43b0-80fd-e683abe49297',
           projectId: 'c8038fbe-7be8-4f96-9692-943b3333185b',
           // version: 'staging',
+          getLanguagesPath: 'https://api-dev.locize.io/languages/{{projectId}}',
           loadPath: 'https://api-dev.locize.io/{{projectId}}/latest/{{lng}}/{{ns}}',
-          addPath: 'https://api-dev.locize.io/missing/{{projectId}}/latest/{{lng}}/{{ns}}'
+          addPath: 'https://api-dev.locize.io/missing/{{projectId}}/latest/{{lng}}/{{ns}}',
+          autoPilot: true,
+          whitelistThreshold: 0.2
         }
       });
       // setTimeout(function () {

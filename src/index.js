@@ -41,7 +41,13 @@ i18next.init = (options = {}, callback) => {
     options.backend = { ...options.backend, ...backend };
   }
 
-  originalInit.call(i18next, { ...options, ...enforce }, callback);
+  if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next, { ...options, ...enforce }, callback);
+
+  const locizeBackend = new LocizeBackend(options.backend);
+  locizeBackend.getOptions((err, opts) => {
+    if (err && typeof console === 'object' && typeof console.error === 'function') console.error(err);
+    originalInit.call(i18next, { ...opts, ...options, ...enforce }, callback);
+  });
 };
 
 i18nextify.getLanguages = function(callback) {
@@ -51,6 +57,18 @@ i18nextify.getLanguages = function(callback) {
     function ready() {
       i18next.off('initialized', ready);
       i18next.services.backendConnector.backend.getLanguages(callback);
+    }
+    i18next.on('initialized', ready);
+  }
+}
+
+i18nextify.getOptions = function(callback) {
+  if (i18next.services.backendConnector) {
+    i18next.services.backendConnector.backend.getOptions(callback);
+  } else {
+    function ready() {
+      i18next.off('initialized', ready);
+      i18next.services.backendConnector.backend.getOptions(callback);
     }
     i18next.on('initialized', ready);
   }

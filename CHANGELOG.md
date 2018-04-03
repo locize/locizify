@@ -1,3 +1,7 @@
+### 2.6.0
+- update dependencies
+- introduce autoPilot option
+
 ### 2.5.0
 - update to locize-editor enabling passthrough of keypress from iframe to editor for toggling on/off
 
