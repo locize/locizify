@@ -6853,6 +6853,8 @@ function ajax$2(url, options, callback, data, cache) {
 function getDefaults$2() {
   return {
     loadPath: 'https://api.locize.io/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
+    privatePath: 'https://api.locize.io/private/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
+    pullPath: 'https://api.locize.io/pull/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
     getLanguagesPath: 'https://api.locize.io/languages/{{projectId}}',
     addPath: 'https://api.locize.io/missing/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
     updatePath: 'https://api.locize.io/update/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
@@ -6860,6 +6862,8 @@ function getDefaults$2() {
     crossDomain: true,
     setContentTypeJSON: false,
     version: 'latest',
+    pull: false,
+    private: false,
     whitelistThreshold: 0.9
   };
 }
@@ -6889,6 +6893,8 @@ var Backend$1 = function () {
 
       this.options = _extends$10({}, getDefaults$2(), this.options, options); // initial
 
+      if (this.options.pull) console.warn('deprecated: pull will be removed in future versions and should be replaced with locize private versions');
+
       if (typeof callback === 'function') {
         this.getOptions(function (err, opts) {
           if (err) return callback(err);
@@ -6906,7 +6912,7 @@ var Backend$1 = function () {
     value: function getLanguages(callback) {
       var url = interpolate(this.options.getLanguagesPath, { projectId: this.options.projectId });
 
-      this.loadUrl(url, callback);
+      this.loadUrl(url, {}, callback);
     }
   }, {
     key: 'getOptions',
@@ -6946,14 +6952,24 @@ var Backend$1 = function () {
   }, {
     key: 'read',
     value: function read(language, namespace, callback) {
-      var url = interpolate(this.options.loadPath, { lng: language, ns: namespace, projectId: this.options.projectId, version: this.options.version });
+      var url = void 0;
+      var options = {};
+      if (this.options.private) {
+        url = interpolate(this.options.privatePath, { lng: language, ns: namespace, projectId: this.options.projectId, version: this.options.version });
+        options = { authorize: true };
+      } else if (this.options.pull) {
+        url = interpolate(this.options.pullPath, { lng: language, ns: namespace, projectId: this.options.projectId, version: this.options.version });
+        options = { authorize: true };
+      } else {
+        url = interpolate(this.options.loadPath, { lng: language, ns: namespace, projectId: this.options.projectId, version: this.options.version });
+      }
 
-      this.loadUrl(url, callback);
+      this.loadUrl(url, options, callback);
     }
   }, {
     key: 'loadUrl',
-    value: function loadUrl(url, callback) {
-      ajax$2(url, this.options, function (data, xhr) {
+    value: function loadUrl(url, options, callback) {
+      ajax$2(url, _extends$10({}, this.options, options), function (data, xhr) {
         if (xhr.status >= 500 && xhr.status < 600) return callback('failed loading ' + url, true /* retry */);
         if (xhr.status >= 400 && xhr.status < 500) return callback('failed loading ' + url, false /* no retry */);
 
@@ -7115,7 +7131,8 @@ function offset(elem) {
       box = { top: 0, left: 0, right: 0, bottom: 0 },
       doc = elem && elem.ownerDocument;
 
-  docElem = doc.documentElement;
+  docElem = doc && doc.documentElement;
+  if (!docElem) return box;
 
   if (_typeof$4(elem.getBoundingClientRect) !== (typeof undefined === 'undefined' ? 'undefined' : _typeof$4(undefined))) {
     box = elem.getBoundingClientRect();
@@ -7133,6 +7150,9 @@ function offset(elem) {
 }
 
 function getClickedElement(e) {
+  // clicked input
+  if (e.srcElement && e.srcElement.nodeType === 1) return e.srcElement;
+
   var el = void 0,
       toHigh = void 0,
       toLeft = void 0,
@@ -7178,7 +7198,7 @@ function getClickedElement(e) {
         break;
       }
 
-      if (_n.nodeType !== 8) el = _n;
+      if (_n && _n.nodeType !== 8) el = _n;
     }
   }
   return el;
@@ -7186,7 +7206,7 @@ function getClickedElement(e) {
 
 function removeNamespace(str, i18next) {
   var res = str;
-  var nsSeparator = i18next.options.nsSeparator;
+  var nsSeparator = i18next.options.nsSeparator || ':';
 
   if (str.indexOf(nsSeparator) > -1) {
     var p = str.split(nsSeparator);
@@ -7198,7 +7218,7 @@ function removeNamespace(str, i18next) {
 
 function getElementNamespace(str, el, i18next) {
   var namespace = i18next.options.defaultNS;
-  var nsSeparator = i18next.options.nsSeparator;
+  var nsSeparator = i18next.options.nsSeparator || ':';
 
   if (str.indexOf(nsSeparator) > -1) {
     namespace = str.split(nsSeparator)[0];
@@ -7208,6 +7228,8 @@ function getElementNamespace(str, el, i18next) {
     var find = function find(el) {
       var opts = el.getAttribute && el.getAttribute('i18next-options');
       if (!opts) opts = el.getAttribute && el.getAttribute('data-i18next-options');
+      if (!opts) opts = el.getAttribute && el.getAttribute('i18n-options');
+      if (!opts) opts = el.getAttribute && el.getAttribute('data-i18n-options');
       if (opts) {
         var jsonData = {};
         try {
@@ -7219,6 +7241,8 @@ function getElementNamespace(str, el, i18next) {
       }
       if (!found) found = el.getAttribute && el.getAttribute('i18next-ns');
       if (!found) found = el.getAttribute && el.getAttribute('data-i18next-ns');
+      if (!found) found = el.getAttribute && el.getAttribute('i18n-ns');
+      if (!found) found = el.getAttribute && el.getAttribute('data-i18n-ns');
       if (!found && el.parentElement) find(el.parentElement);
     };
     find(el);
@@ -7310,16 +7334,31 @@ var defaultOptions = {
   lngOverrideQS: 'useLng',
   autoOpen: true,
   mode: getQueryVariable('locizeMode') || 'iframe',
-  iframeContainerStyle: 'z-index: 2000; position: fixed; top: 0; right: 0; bottom: 0; width: 500px; box-shadow: -3px 0 5px 0 rgba(0,0,0,0.5);',
-  iframeStyle: 'height: 100%; width: 500px; border: none;',
-  bodyStyle: 'margin-right: 505px;'
+  iframeContainerStyle: 'z-index: 2000; position: fixed; top: 0; right: 0; bottom: 0; width: 600px; box-shadow: -3px 0 5px 0 rgba(0,0,0,0.5);',
+  iframeStyle: 'height: 100%; width: 600px; border: none;',
+  bodyStyle: 'margin-right: 605px;'
 };
+
+function convertOptionsToI18next(opts) {
+  return {
+    languages: [opts.lng],
+    nsSeparator: opts.nsSeparator || ':',
+    options: {
+      editor: opts,
+      backend: opts,
+      defaultNS: opts.defaultNS
+    }
+  };
+}
 
 var editor = {
   type: '3rdParty',
 
   init: function init(i18next) {
     var _this = this;
+
+    // convert standalone options
+    if (i18next && !i18next.init) i18next = convertOptionsToI18next(i18next);
 
     this.enabled = false;
     this.i18next = i18next;
@@ -7349,11 +7388,12 @@ var editor = {
     var _this2 = this;
 
     e.preventDefault();
+    e.stopPropagation();
 
     var el = getClickedElement(e);
     if (!el) return;
 
-    var str = el.textContent || el.text.innerText;
+    var str = el.textContent || el.text && el.text.innerText || el.placeholder;
     var res = str.replace(/\n +/g, '').trim();
 
     var send = function send() {
