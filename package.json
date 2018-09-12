@@ -1,6 +1,6 @@
 {
   "name": "locizify",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "main script for using locize service in frontend",
   "main": "dist/commonjs/index.js",
   "jsnext:main": "dist/es/index.js",
@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "i18next-locize-backend": "1.6.0",
-    "i18nextify": "2.2.0",
-    "locize-editor": "1.5.1"
+    "i18nextify": "2.3.0",
+    "locize-editor": "1.6.0"
   },
   "devDependencies": {
     "aws-sdk": "2.22.0",

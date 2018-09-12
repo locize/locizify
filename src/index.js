@@ -6,6 +6,16 @@ const enforce = {
   saveMissingTo: 'all'
 };
 
+const defaults = {
+  reloadOnSave: true
+};
+
+const reloadEditorOptions = {
+  onEditorSaved: function(lng, ns) {
+    location.reload();
+  }
+}
+
 i18nextify.editor = locizeEditor;
 const { i18next } = i18nextify;
 i18next
@@ -20,7 +30,7 @@ i18next.init = (options = {}, callback) => {
     const config = {};
     const backend = {};
 
-    const toRead = ['fallbackLng', 'saveMissing', 'debug'];
+    const toRead = ['fallbackLng', 'saveMissing', 'debug', 'reloadOnSave'];
     const toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
 
     toRead.forEach(attr => {
@@ -37,8 +47,10 @@ i18next.init = (options = {}, callback) => {
       if (value !== undefined && value !== null) backend[attr] = value;
     });
 
-    options = { ...options, ...config  };
+    options = { ...defaults, ...options, ...config  };
     options.backend = { ...options.backend, ...backend };
+
+    if (options.reloadOnSave && !options.editor) options.editor = reloadEditorOptions;
   }
 
   if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next, { ...options, ...enforce }, callback);

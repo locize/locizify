@@ -18,8 +18,6 @@ locizify uses virtual-dom to update your page with translations based on the cur
 
 locizify comes bundled with [i18next](http://i18next.com/).
 
-
-
 # Getting started
 
 Add the script to your page:
@@ -66,11 +64,13 @@ Add the script to your page:
       version="[VERSION]"
       saveMissing="[true|false (default true)]"
       debug="[true|false (default false)]"
+      reloadOnSave="[true|false (default true)]" /* automatically reload your page on saving in editor */
       autoPilot="[true|false (default false)]" /* automatically configures fallbackLng and language whitelist */
     ></script>
   </head>
   ...
 ```
+
 ### via init function
 
 ```html
@@ -90,6 +90,7 @@ Add the script to your page:
         },
 
         // defaults that are set
+        reloadOnSave: true, // automatically reload your page on saving in editor
         autorun: true, // setting to false init will return an object with start function
         ele: document.body, // pass in another element if you like to translate another html element
         ignoreTags: ['SCRIPT'], // tags to ignore
@@ -159,7 +160,7 @@ const translation = locizify.init({
   autorun: false
 });
 
-setTimeout(function () {
+setTimeout(function() {
   translation.start();
 }, 1000);
 ```
@@ -173,6 +174,7 @@ Just set translated attribute:
 
 // key = all inside will be used as on segment, even if having other <a>elements inside</a>
 ```
+
 Same could be done using options:
 
 ```html
@@ -195,10 +197,9 @@ You will find `a.png` to be a key in your translation files - it's value can be 
 
 `statistic` will be a regular key that can be translated. But be aware you will need to provide that routes - eg. using [localized routes on the server](https://github.com/i18next/i18next-express-middleware#add-localized-routes)
 
-
 ## Avoid translating an element
 
-###### By  attribute
+###### By attribute
 
 Just set translated attribute:
 
@@ -212,9 +213,9 @@ Just add needed items to the specific array:
 
 ```js
 locizify.init({
-  ignoreTags: ['SCRIPT'], // need to be uppercased
-  ignoreIds: ['ignoreMeId'],
-  ignoreClasses: ['ignoreMeClass']
+  ignoreTags: ["SCRIPT"], // need to be uppercased
+  ignoreIds: ["ignoreMeId"],
+  ignoreClasses: ["ignoreMeClass"]
 });
 ```
 
@@ -255,7 +256,7 @@ Default would be translation.
 
 ```js
 locizify.init({
-  namespace: 'myNamespace'
+  namespace: "myNamespace"
 });
 ```
 
@@ -285,8 +286,6 @@ locizify.init({
 </div>
 ```
 
-
-
 ## Avoid flickering on initial load
 
 To avoid to show the user the untranslated content in the reference language you can:
@@ -308,5 +307,5 @@ Just set the element style display to none. locizify will change it to block whe
 You can change the namespace after loading to some other file (eg. before transitioning to another page).
 
 ```js
-locizify.changeNamespace('newNamespace');
+locizify.changeNamespace("newNamespace");
 ```

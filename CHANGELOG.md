@@ -1,3 +1,7 @@
+### 2.8.0
+
+- support for reloadOnSave
+
 ### 2.7.0
 
 - update dependencies
