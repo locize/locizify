@@ -165,7 +165,7 @@ setTimeout(function() {
 }, 1000);
 ```
 
-## Merge content
+## Merge content / use html inside your translations
 
 Just set translated attribute:
 
@@ -196,6 +196,28 @@ You will find `a.png` to be a key in your translation files - it's value can be 
 ```
 
 `statistic` will be a regular key that can be translated. But be aware you will need to provide that routes - eg. using [localized routes on the server](https://github.com/i18next/i18next-express-middleware#add-localized-routes)
+
+## Translating javascript code
+
+You can use the [i18next](https://i18next.com) instance used to provide the translation functionality directly. Just make sure the instance is initialized already:
+
+```js
+<script>
+  // use t function of i18next
+  // https://www.i18next.com/translation-function/essentials
+  function useI18next() {
+    var translated = locizify.i18next.t('some key');
+  }
+
+  if (locizify.i18next.isInitialized) {
+    useI18next();
+  } else {
+    locizify.i18next.on('initialized', function(options) {
+      useI18next();
+    })
+  }
+</script>
+```
 
 ## Avoid translating an element
 
