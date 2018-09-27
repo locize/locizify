@@ -30,7 +30,8 @@ i18next.init = (options = {}, callback) => {
     const config = {};
     const backend = {};
 
-    const toRead = ['fallbackLng', 'saveMissing', 'debug', 'reloadOnSave'];
+    const toRead = ['fallbackLng', 'saveMissing', 'debug', 'reloadOnSave', 'autorun', 'ele', 'cleanIndent', 'cleanWhitespace', 'namespace', 'namespaceFromPath'];
+    const toReadAsArray = ['ignoreTags', 'ignoreIds', 'ignoreClasses', 'translateAttributes', 'mergeTags', 'inlineTags', 'ignoreInlineOn', 'ignoreCleanIndentFor', 'ns'];
     const toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
 
     toRead.forEach(attr => {
@@ -38,6 +39,11 @@ i18next.init = (options = {}, callback) => {
       if (value === 'true') value = true;
       if (value === 'false') value = false;
       if (value !== undefined && value !== null) config[attr] = value;
+    });
+
+    toReadAsArray.forEach(attr => {
+      let value = scriptEle.getAttribute(attr.toLowerCase());
+      if (value !== undefined && value !== null) config[attr] = value.split(',').map(item => item.trim());
     });
 
     toReadBackend.forEach(attr => {

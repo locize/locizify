@@ -7410,7 +7410,8 @@ i18next.init = function () {
     var config = {};
     var backend = {};
 
-    var toRead = ['fallbackLng', 'saveMissing', 'debug', 'reloadOnSave'];
+    var toRead = ['fallbackLng', 'saveMissing', 'debug', 'reloadOnSave', 'autorun', 'ele', 'cleanIndent', 'cleanWhitespace', 'namespace', 'namespaceFromPath'];
+    var toReadAsArray = ['ignoreTags', 'ignoreIds', 'ignoreClasses', 'translateAttributes', 'mergeTags', 'inlineTags', 'ignoreInlineOn', 'ignoreCleanIndentFor', 'ns'];
     var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
 
     toRead.forEach(function (attr) {
@@ -7418,6 +7419,13 @@ i18next.init = function () {
       if (value === 'true') value = true;
       if (value === 'false') value = false;
       if (value !== undefined && value !== null) config[attr] = value;
+    });
+
+    toReadAsArray.forEach(function (attr) {
+      var value = scriptEle.getAttribute(attr.toLowerCase());
+      if (value !== undefined && value !== null) config[attr] = value.split(',').map(function (item) {
+        return item.trim();
+      });
     });
 
     toReadBackend.forEach(function (attr) {

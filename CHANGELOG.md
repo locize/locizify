@@ -1,3 +1,7 @@
+### 2.9.0
+
+- make all options configurable via script attributes
+
 ### 2.8.0
 
 - support for reloadOnSave

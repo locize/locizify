@@ -60,12 +60,16 @@ Add the script to your page:
       fallbacklng="[LNG]"
       src="https://unpkg.com/locizify@^2.0.0"
 
-      /* optional */
+      // optional
       version="[VERSION]"
-      saveMissing="[true|false (default true)]"
+      savemissing="[true|false (default true)]"
       debug="[true|false (default false)]"
-      reloadOnSave="[true|false (default true)]" /* automatically reload your page on saving in editor */
-      autoPilot="[true|false (default false)]" /* automatically configures fallbackLng and language whitelist */
+      reloadonsave="[true|false (default true)]" // automatically reload your page on saving in editor
+      autopilot="[true|false (default false)]" // automatically configures fallbackLng and language whitelist
+
+      // others
+      // you can define any other option below just use the lowercased name and for arrays use comma separated values, eg.:
+      ignoreclasses="ignoreMeClass1, ignoreMeClass2, ignoreMeClass3"
     ></script>
   </head>
   ...
