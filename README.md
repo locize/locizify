@@ -45,6 +45,8 @@ Add the script to your page:
 
 4. Reload your page with `?lng='[newLanguage]'`
 
+5. Reload your page with `?locize=true` to show the incontext editor to directly translate on page.
+
 ## Initialize with optional options
 
 ### via attibutes on script element
