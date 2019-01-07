@@ -1,3 +1,7 @@
+### 2.9.1
+
+- just republish on unpkg
+
 ### 2.9.0
 
 - make all options configurable via script attributes
