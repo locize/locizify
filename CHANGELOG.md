@@ -1,3 +1,7 @@
+### v2.10.0
+
+- update dependencies (adds host check for add, update)
+
 ### 2.9.1
 
 - just republish on unpkg

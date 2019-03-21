@@ -11,7 +11,14 @@ Drop the locizify script onto your website and it will automatically start to se
 Just drop the following line to your header to deliver your content in any language:
 
 ```html
-<script id="locizify" projectid="[PROJECT_ID]" apikey="[API_KEY]" referencelng="[LNG]" fallbacklng="[LNG]" src="https://unpkg.com/locizify@^2.0.0"></script>
+<script
+  id="locizify"
+  projectid="[PROJECT_ID]"
+  apikey="[API_KEY]"
+  referencelng="[LNG]"
+  fallbacklng="[LNG]"
+  src="https://unpkg.com/locizify@^2.0.0"
+></script>
 ```
 
 locizify uses virtual-dom to update your page with translations based on the current content. MutationObserver is used to trigger translations on dynamically added content. So it should play well with any static or dynamic page not using a own virtual-dom implementation.
@@ -26,7 +33,8 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script id="locizify"
+    <script
+      id="locizify"
       projectid="[PROJECT_ID]"
       apikey="[API_KEY]"
       referencelng="[LNG]"
@@ -35,6 +43,7 @@ Add the script to your page:
     ></script>
   </head>
   ...
+</html>
 ```
 
 1. Reload your page.
@@ -48,6 +57,8 @@ Add the script to your page:
 5. Reload your page with `?locize=true` to show the incontext editor to directly translate on page.
 
 ## Initialize with optional options
+
+**IMPORTANT** make sure you do not add your apiKey in the production build to avoid misuse by strangers
 
 ### via attibutes on script element
 
@@ -87,26 +98,35 @@ Add the script to your page:
     <script>
       locizify.init({
         // required
-        fallbackLng: '[LNG]',
+        fallbackLng: "[LNG]",
         backend: {
-          projectId: '[PROJECT_ID]',
-          apiKey: '[API_KEY]', // only needed if you like to add missing segments
-          referenceLng: '[LNG]',
-          version: '[VERSION]' // defaults to latest
+          projectId: "[PROJECT_ID]",
+          apiKey: "[API_KEY]", // only needed if you like to add missing segments
+          referenceLng: "[LNG]",
+          version: "[VERSION]", // defaults to latest
+          // hostnames that are allowed to add, update keys
+          // please keep those to your local system, staging, test servers (not production)
+          allowedAddOrUpdateHosts: ["localhost"]
         },
 
         // defaults that are set
         reloadOnSave: true, // automatically reload your page on saving in editor
         autorun: true, // setting to false init will return an object with start function
         ele: document.body, // pass in another element if you like to translate another html element
-        ignoreTags: ['SCRIPT'], // tags to ignore
+        ignoreTags: ["SCRIPT"], // tags to ignore
 
         // optional
-        ignoreIds: ['ignoreMeId'],
-        ignoreClasses: ['ignoreMeClass'],
+        ignoreIds: ["ignoreMeId"],
+        ignoreClasses: ["ignoreMeClass"],
 
         // attributes to translate
-        translateAttributes: ['placeholder', 'title', 'alt', 'value#input.type=button', 'value#input.type=submit'],
+        translateAttributes: [
+          "placeholder",
+          "title",
+          "alt",
+          "value#input.type=button",
+          "value#input.type=submit"
+        ],
 
         // merging content (eg. a tags in p tags)
         mergeTags: [], // tags to merge innerHtml to one key
@@ -115,18 +135,19 @@ Add the script to your page:
 
         // cleanup for keys
         cleanIndent: true, // removes indent, eg. if a p tag spans multiple lines
-        ignoreCleanIndentFor: ['PRE', 'CODE'], // ignores cleaning up of indent for those tags needing that extra spaceing
+        ignoreCleanIndentFor: ["PRE", "CODE"], // ignores cleaning up of indent for those tags needing that extra spaceing
         cleanWhitespace: true, // removes surrounding whitespace from key
 
         namespace: false, // set another name - default namespace will be translation
         namespaceFromPath: false, // set true will use namepace based on window.location.pathname
-        ns: ['common'] // -> only set if accessing more then one namepace
+        ns: ["common"] // -> only set if accessing more then one namepace
 
         // + all options available in i18next
       });
     </script>
   </head>
   ...
+</html>
 ```
 
 ## Get project languages
@@ -176,17 +197,21 @@ setTimeout(function() {
 Just set translated attribute:
 
 ```html
-<p merge>all inside will be used as on segment, even if having other <a>elements inside</a></p>
+<p merge>
+  all inside will be used as on segment, even if having other
+  <a>elements inside</a>
+</p>
 
-// key = all inside will be used as on segment, even if having other <a>elements inside</a>
+// key = all inside will be used as on segment, even if having other
+<a>elements inside</a>
 ```
 
 Same could be done using options:
 
 ```html
-mergeTags: [], // tags to merge innerHtml to one key
-inlineTags: [], // tags to inline (eg. a, span, abbr, ...)
-ignoreInlineOn: [], // tags to ignore inlining tags under inlineTags
+mergeTags: [], // tags to merge innerHtml to one key inlineTags: [], // tags to
+inline (eg. a, span, abbr, ...) ignoreInlineOn: [], // tags to ignore inlining
+tags under inlineTags
 ```
 
 ## Fragment replacement for links and images
@@ -248,9 +273,15 @@ locizify.init({
 ```
 
 ```html
-<script>this will not get translated - nor this elements children</script>
-<div id="ignoreMeId">this will not get translated - nor this elements children</div>
-<div class="ignoreMeClass">this will not get translated - nor this elements children</div>
+<script>
+  this will not get translated - nor this elements children
+</script>
+<div id="ignoreMeId">
+  this will not get translated - nor this elements children
+</div>
+<div class="ignoreMeClass">
+  this will not get translated - nor this elements children
+</div>
 ```
 
 Just add `translated`-attribute
@@ -325,7 +356,9 @@ To avoid to show the user the untranslated content in the reference language you
     ...
   </head>
   <body style="display: none">
-  ...
+    ...
+  </body>
+</html>
 ```
 
 Just set the element style display to none. locizify will change it to block when ready.

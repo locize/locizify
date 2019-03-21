@@ -6791,13 +6791,15 @@ function getDefaults$3() {
     version: 'latest',
     pull: false,
     private: false,
-    whitelistThreshold: 0.9
+    whitelistThreshold: 0.9,
+    failLoadingOnEmptyJSON: false, // useful if using chained backend
+    allowedAddOrUpdateHosts: ['localhost']
   };
 }
 
-var Backend$1 = function () {
-  function Backend(services, options, callback) {
-    _classCallCheck$13(this, Backend);
+var I18NextLocizeBackend = function () {
+  function I18NextLocizeBackend(services, options, callback) {
+    _classCallCheck$13(this, I18NextLocizeBackend);
 
     if (services && services.projectId) {
       this.init(null, services, {}, options);
@@ -6808,7 +6810,7 @@ var Backend$1 = function () {
     this.type = 'backend';
   }
 
-  _createClass$4(Backend, [{
+  _createClass$4(I18NextLocizeBackend, [{
     key: 'init',
     value: function init(services) {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
@@ -6821,6 +6823,13 @@ var Backend$1 = function () {
       this.options = _extends$9({}, getDefaults$3(), this.options, options); // initial
 
       if (this.options.pull) console.warn('deprecated: pull will be removed in future versions and should be replaced with locize private versions');
+
+      var hostname = window.location && window.location.hostname;
+      if (hostname) {
+        this.isAddOrUpdateAllowed = this.options.allowedAddOrUpdateHosts.indexOf(hostname) > -1;
+      } else {
+        this.isAddOrUpdateAllowed = true;
+      }
 
       if (typeof callback === 'function') {
         this.getOptions(function (err, opts) {
@@ -6896,6 +6905,8 @@ var Backend$1 = function () {
   }, {
     key: 'loadUrl',
     value: function loadUrl(url, options, callback) {
+      var _this3 = this;
+
       ajax$2(url, _extends$9({}, this.options, options), function (data, xhr) {
         if (xhr.status >= 500 && xhr.status < 600) return callback('failed loading ' + url, true /* retry */);
         if (xhr.status >= 400 && xhr.status < 500) return callback('failed loading ' + url, false /* no retry */);
@@ -6908,27 +6919,30 @@ var Backend$1 = function () {
           err = 'failed parsing ' + url + ' to json';
         }
         if (err) return callback(err, false);
+        if (_this3.options.failLoadingOnEmptyJSON && !Object.keys(ret).length) return callback('loaded result empty for ' + url, false);
         callback(null, ret);
       });
     }
   }, {
     key: 'create',
     value: function create(languages, namespace, key, fallbackValue, callback, options) {
-      var _this3 = this;
+      var _this4 = this;
 
       if (!callback) callback = function callback() {};
+      if (!this.isAddOrUpdateAllowed) return callback('host is not allowed to create key.');
       if (typeof languages === 'string') languages = [languages];
 
       languages.forEach(function (lng) {
-        if (lng === _this3.options.referenceLng) _this3.queue.call(_this3, _this3.options.referenceLng, namespace, key, fallbackValue, callback, options);
+        if (lng === _this4.options.referenceLng) _this4.queue.call(_this4, _this4.options.referenceLng, namespace, key, fallbackValue, callback, options);
       });
     }
   }, {
     key: 'update',
     value: function update(languages, namespace, key, fallbackValue, callback, options) {
-      var _this4 = this;
+      var _this5 = this;
 
       if (!callback) callback = function callback() {};
+      if (!this.isAddOrUpdateAllowed) return callback('host is not allowed to update key.');
       if (!options) options = {};
       if (typeof languages === 'string') languages = [languages];
 
@@ -6936,13 +6950,13 @@ var Backend$1 = function () {
       options.isUpdate = true;
 
       languages.forEach(function (lng) {
-        if (lng === _this4.options.referenceLng) _this4.queue.call(_this4, _this4.options.referenceLng, namespace, key, fallbackValue, callback, options);
+        if (lng === _this5.options.referenceLng) _this5.queue.call(_this5, _this5.options.referenceLng, namespace, key, fallbackValue, callback, options);
       });
     }
   }, {
     key: 'write',
     value: function write(lng, namespace) {
-      var _this5 = this;
+      var _this6 = this;
 
       var lock = getPath$1(this.queuedWrites, ['locks', lng, namespace]);
       if (lock) return;
@@ -6981,14 +6995,14 @@ var Backend$1 = function () {
 
           if (!todo) {
             // unlock
-            setPath$1(_this5.queuedWrites, ['locks', lng, namespace], false);
+            setPath$1(_this6.queuedWrites, ['locks', lng, namespace], false);
 
             missings.forEach(function (missing) {
               if (missing.callback) missing.callback();
             });
 
             // rerun
-            _this5.debouncedProcess(lng, namespace);
+            _this6.debouncedProcess(lng, namespace);
           }
         };
 
@@ -7016,14 +7030,14 @@ var Backend$1 = function () {
   }, {
     key: 'process',
     value: function process() {
-      var _this6 = this;
+      var _this7 = this;
 
       Object.keys(this.queuedWrites).forEach(function (lng) {
         if (lng === 'locks') return;
-        Object.keys(_this6.queuedWrites[lng]).forEach(function (ns) {
-          var todo = _this6.queuedWrites[lng][ns];
+        Object.keys(_this7.queuedWrites[lng]).forEach(function (ns) {
+          var todo = _this7.queuedWrites[lng][ns];
           if (todo.length) {
-            _this6.write(lng, ns);
+            _this7.write(lng, ns);
           }
         });
       });
@@ -7037,10 +7051,10 @@ var Backend$1 = function () {
     }
   }]);
 
-  return Backend;
+  return I18NextLocizeBackend;
 }();
 
-Backend$1.type = 'backend';
+I18NextLocizeBackend.type = 'backend';
 
 var _typeof$4 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
@@ -7397,7 +7411,7 @@ var reloadEditorOptions = {
 i18nextify$1.editor = editor;
 var i18next = i18nextify$1.i18next;
 
-i18next.use(Backend$1).use(editor);
+i18next.use(I18NextLocizeBackend).use(editor);
 
 var originalInit = i18next.init;
 i18next.init = function () {
@@ -7443,7 +7457,7 @@ i18next.init = function () {
 
   if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next, _extends({}, options, enforce), callback);
 
-  var locizeBackend = new Backend$1(options.backend);
+  var locizeBackend = new I18NextLocizeBackend(options.backend);
   locizeBackend.getOptions(function (err, opts) {
     if (err && (typeof console === 'undefined' ? 'undefined' : _typeof(console)) === 'object' && typeof console.error === 'function') console.error(err);
     originalInit.call(i18next, _extends({}, opts, options, enforce), callback);

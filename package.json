@@ -1,6 +1,6 @@
 {
   "name": "locizify",
-  "version": "2.9.1",
+  "version": "2.10.0",
   "description": "main script for using locize service in frontend",
   "main": "dist/commonjs/index.js",
   "jsnext:main": "dist/es/index.js",
@@ -20,7 +20,7 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-locize-backend": "1.6.0",
+    "i18next-locize-backend": "1.9.0",
     "i18nextify": "2.3.0",
     "locize-editor": "1.6.0"
   },
