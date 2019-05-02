@@ -115,6 +115,10 @@ Add the script to your page:
         ele: document.body, // pass in another element if you like to translate another html element
         ignoreTags: ["SCRIPT"], // tags to ignore
 
+        // using keys instead of content as keys
+        keyAttr: "i18next-key", // node attribute to use as key
+        ignoreWithoutKey: false, // set to true to only support nodes having a key
+
         // optional
         ignoreIds: ["ignoreMeId"],
         ignoreClasses: ["ignoreMeClass"],
@@ -208,7 +212,7 @@ Just set translated attribute:
 
 Same could be done using options:
 
-```html
+```js
 mergeTags: [], // tags to merge innerHtml to one key inlineTags: [], // tags to
 inline (eg. a, span, abbr, ...) ignoreInlineOn: [], // tags to ignore inlining
 tags under inlineTags
@@ -369,4 +373,65 @@ You can change the namespace after loading to some other file (eg. before transi
 
 ```js
 locizify.changeNamespace("newNamespace");
+```
+
+## Specify own keys for the translation segments
+
+Per default the virtualdom implementation will use the extracted content as keys leading to translation JSON in the form:
+
+```js
+// <div>This is my text.</div>
+// <a href="#" title="My Link Title" >My Link</a>
+{
+  "This is my text.": "This is my text.",
+  "My Link": "My Link",
+  "My Link Title": "My Link Title"
+}
+```
+
+In some situations you like to define an explicit key for that segment:
+
+```js
+// <div i18next-key="myKey">This is my text.</div>
+// <a i18next-key="myLink" href="#" title="My Link Title" >My Link</a>
+{
+  "myKey": "This is my text.",
+  "myLink": "My Link",
+  "myLink.title": "My Link Title"
+}
+```
+
+There are two init options to configure this further:
+
+```js
+locizify.init({
+  // ...
+
+  keyAttr: "i18next-key", // node attribute to use as key
+  ignoreWithoutKey: false // set to true to only extract/translate nodes having a key
+
+  // ...
+});
+```
+
+Setting `ignoreWithoutKey: true` is recommended when using keys to get a clean key-based result.
+
+**Important** The locizify script does not support nested JSON structures like:
+
+```js
+{
+  "myKey": {
+    "attr1": "value",
+    "attr2": "value"
+  }
+}
+```
+
+You will have to enforce flat JSON in your locize project (settings -> publish format -> JSON flat)
+
+```js
+{
+  "myKey.attr1": "value",
+  "myKey.attr2": "value"
+}
 ```

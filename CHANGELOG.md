@@ -1,3 +1,7 @@
+### v2.11.0
+
+- update i18nextify to allow key usage `keyAttr: 'i18next-key'`, `ignoreWithoutKey: false`
+
 ### v2.10.0
 
 - update dependencies (adds host check for add, update)

@@ -6210,7 +6210,9 @@ function isUnTranslated(node) {
 function isNotExcluded(node) {
   var ret = !node.properties || !node.properties.attributes || node.properties.attributes.translated !== '';
 
-  if (ret && node.tagName && i18next$2.options.ignoreTags.indexOf(node.tagName) > -1) ret = false;
+  if (ret && node.tagName && i18next$2.options.ignoreTags.indexOf(node.tagName) > -1) {
+    ret = false;
+  }
 
   if (ret && i18next$2.options.ignoreClasses && node.properties && node.properties.className) {
     var p = node.properties.className.split(' ');
@@ -6221,7 +6223,9 @@ function isNotExcluded(node) {
   }
 
   if (ret && i18next$2.options.ignoreIds) {
-    if (i18next$2.options.ignoreIds.indexOf(node.properties && node.properties.id) > -1) ret = false;
+    if (i18next$2.options.ignoreIds.indexOf(node.properties && node.properties.id) > -1) {
+      ret = false;
+    }
   }
 
   return ret;
@@ -6229,10 +6233,14 @@ function isNotExcluded(node) {
 
 function translate(str) {
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var overrideKey = arguments[2];
 
-  var key = str.trim();
+  var hasContent = str.trim();
+  var key = overrideKey || str.trim();
   if (!options.defaultValue) options.defaultValue = str;
-  if (key) return i18next$2.t(key, options);
+  if (hasContent && !i18next$2.options.ignoreWithoutKey || hasContent && i18next$2.options.ignoreWithoutKey && overrideKey) {
+    return i18next$2.t(key, options);
+  }
   return str;
 }
 
@@ -6240,6 +6248,7 @@ var replaceInside = ['src', 'href'];
 var REGEXP = new RegExp('%7B%7B(.+?)%7D%7D', 'g'); // urlEncoded {{}}
 function translateProps(node, props) {
   var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+  var overrideKey = arguments[3];
 
   if (!props) return props;
 
@@ -6256,12 +6265,16 @@ function translateProps(node, props) {
       value = getPath(props.attributes, item.attr);
       if (value) wasOnAttr = true;
     }
-    if (value) setPath(wasOnAttr ? props.attributes : props, item.attr, translate(value, _extends$8({}, options)));
+    if (value) {
+      setPath(wasOnAttr ? props.attributes : props, item.attr, translate(value, _extends$8({}, options), overrideKey ? overrideKey + '.' + item.attr : ''));
+    }
   });
 
   replaceInside.forEach(function (attr) {
     var value = getPath(props, attr);
-    if (value) value = value.replace(/\{\{/g, '%7B%7B').replace(/\}\}/g, '%7D%7D'); // fix for safari
+    if (value) {
+      value = value.replace(/\{\{/g, '%7B%7B').replace(/\}\}/g, '%7D%7D');
+    } // fix for safari
     if (value && value.indexOf('%7B') > -1) {
       var arr = [];
 
@@ -6271,7 +6284,7 @@ function translateProps(node, props) {
         if (!index || index % 2 === 0) {
           mem.push(match);
         } else {
-          mem.push(translate(match, _extends$8({}, options)));
+          mem.push(translate(match, _extends$8({}, options), overrideKey ? overrideKey + '.' + attr : ''));
         }
         return mem;
       }, arr);
@@ -6291,9 +6304,11 @@ function getTOptions(opts, node) {
       console.warn('failed parsing options on node', node);
     }
   }
-  if (optsOnNode && optsOnNode.inlineTags) optsOnNode.inlineTags = optsOnNode.inlineTags.map(function (s) {
-    return s.toUpperCase();
-  });
+  if (optsOnNode && optsOnNode.inlineTags) {
+    optsOnNode.inlineTags = optsOnNode.inlineTags.map(function (s) {
+      return s.toUpperCase();
+    });
+  }
 
   return _extends$8({}, opts || {}, optsOnNode || {});
 }
@@ -6306,7 +6321,9 @@ function removeIndent(str, substitution) {
 }
 
 function canInline(node, tOptions) {
-  if (!node.children || !node.children.length || i18next$2.options.ignoreInlineOn.indexOf(node.tagName) > -1) return false;
+  if (!node.children || !node.children.length || i18next$2.options.ignoreInlineOn.indexOf(node.tagName) > -1) {
+    return false;
+  }
   if (i18next$2.options.mergeTags.indexOf(node.tagName) > -1) return true;
 
   var baseTags = tOptions.inlineTags || i18next$2.options.inlineTags;
@@ -6315,17 +6332,26 @@ function canInline(node, tOptions) {
   var inlineable = true;
   var hadNonTextNode = false;
   node.children.forEach(function (child) {
-    if (!child.text && inlineTags.indexOf(child.tagName) < 0) inlineable = false;
+    if (!child.text && inlineTags.indexOf(child.tagName) < 0) {
+      inlineable = false;
+    }
     if (child.tagName) hadNonTextNode = true;
   });
 
   return inlineable && hadNonTextNode;
 }
 
-function walk$1(node, tOptions, parent) {
+function walk$1(node, tOptions, parent, parentOverrideKey) {
+  var currentDepth = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+
   var nodeIsNotExcluded = isNotExcluded(node);
   var nodeIsUnTranslated = isUnTranslated(node);
   tOptions = getTOptions(tOptions, node);
+  var parentKey = currentDepth === 0 ? parentOverrideKey : '';
+  if (currentDepth > 0 && parentOverrideKey && !i18next$2.options.ignoreWithoutKey) {
+    parentKey = parentOverrideKey + '.' + currentDepth;
+  }
+  var overrideKey = getAttribute(node, i18next$2.options.keyAttr) || parentKey; // normally we use content as key, but optionally we allow to override it
 
   // translate node as one block
   var mergeFlag = getAttribute(node, 'merge');
@@ -6336,22 +6362,25 @@ function walk$1(node, tOptions, parent) {
       var key = removeIndent(index$9(dummyNode), '').replace('<i18nextifydummy>', '').replace('</i18nextifydummy>', '');
 
       // translate that's children and surround it again with a dummy node to parse to vdom
-      var translation = '<i18nextifydummy>' + translate(key, tOptions) + '</i18nextifydummy>';
+      var translation = '<i18nextifydummy>' + translate(key, tOptions, overrideKey) + '</i18nextifydummy>';
       var newNode = index$12((translation || '').trim());
 
       // replace children on passed in node
       node.children = newNode.children;
 
-      if (node.properties && node.properties.attributes) node.properties.attributes.localized = '';
+      if (node.properties && node.properties.attributes) {
+        node.properties.attributes.localized = '';
+      }
     }
 
     return node;
   }
 
   if (node.children) {
-    node.children.forEach(function (child) {
+    node.children.forEach(function (child, i) {
       if (nodeIsNotExcluded && nodeIsUnTranslated && child.text || !child.text && isNotExcluded(child)) {
-        walk$1(child, tOptions, node);
+        walk$1(child, tOptions, node, overrideKey, node.children.length > 1 ? i + 1 : i // if only a inner text node - keep it index 0, else add a index number + 1
+        );
       }
     });
   }
@@ -6376,14 +6405,18 @@ function walk$1(node, tOptions, parent) {
       }
 
       if (!ignore && match && match.length > 1 && i18next$2.options.cleanWhitespace) {
-        var _translation = translate(match[1], tOptions);
+        var _translation = translate(match[1], tOptions, overrideKey || '');
         node.text = txt.replace(match[1], _translation);
       } else {
-        node.text = translate(txt, tOptions);
+        node.text = translate(txt, tOptions, overrideKey || '');
       }
     }
-    if (node.properties) node.properties = translateProps(node, node.properties, tOptions);
-    if (node.properties && node.properties.attributes) node.properties.attributes.localized = '';
+    if (node.properties) {
+      node.properties = translateProps(node, node.properties, tOptions, overrideKey);
+    }
+    if (node.properties && node.properties.attributes) {
+      node.properties.attributes.localized = '';
+    }
   }
 
   return node;
@@ -6456,6 +6489,8 @@ function getDefaults() {
   return {
     autorun: true,
     ele: document.body,
+    keyAttr: 'i18next-key',
+    ignoreWithoutKey: false,
     ignoreTags: ['SCRIPT'],
     ignoreIds: [],
     ignoreClasses: [],
@@ -6542,21 +6577,31 @@ function init$$1() {
     lastOptions = options;
   }
 
-  if (options.ignoreTags) options.ignoreTags = options.ignoreTags.map(function (s) {
-    return s.toUpperCase();
-  });
-  if (options.ignoreCleanIndentFor) options.ignoreCleanIndentFor = options.ignoreCleanIndentFor.map(function (s) {
-    return s.toUpperCase();
-  });
-  if (options.inlineTags) options.inlineTags = options.inlineTags.map(function (s) {
-    return s.toUpperCase();
-  });
-  if (options.ignoreInlineOn) options.ignoreInlineOn = options.ignoreInlineOn.map(function (s) {
-    return s.toUpperCase();
-  });
-  if (options.mergeTags) options.mergeTags = options.mergeTags.map(function (s) {
-    return s.toUpperCase();
-  });
+  if (options.ignoreTags) {
+    options.ignoreTags = options.ignoreTags.map(function (s) {
+      return s.toUpperCase();
+    });
+  }
+  if (options.ignoreCleanIndentFor) {
+    options.ignoreCleanIndentFor = options.ignoreCleanIndentFor.map(function (s) {
+      return s.toUpperCase();
+    });
+  }
+  if (options.inlineTags) {
+    options.inlineTags = options.inlineTags.map(function (s) {
+      return s.toUpperCase();
+    });
+  }
+  if (options.ignoreInlineOn) {
+    options.ignoreInlineOn = options.ignoreInlineOn.map(function (s) {
+      return s.toUpperCase();
+    });
+  }
+  if (options.mergeTags) {
+    options.mergeTags = options.mergeTags.map(function (s) {
+      return s.toUpperCase();
+    });
+  }
   options.translateAttributes = options.translateAttributes.reduce(function (mem, attr) {
     var res = { attr: attr };
     if (attr.indexOf('#') > -1) {
@@ -6621,7 +6666,7 @@ function init$$1() {
   if (options.autorun === false) todo++;
 
   function done() {
-    todo = todo - 1;
+    todo -= 1;
     if (!todo) {
       if (!options.ele) options.ele = document.body;
       var children = options.ele.children;
@@ -6637,7 +6682,9 @@ function init$$1() {
       });
 
       waitForInitialRender(children, 0, function () {
-        if (options.ele.style && options.ele.style.display === 'none') options.ele.style.display = 'block';
+        if (options.ele.style && options.ele.style.display === 'none') {
+          options.ele.style.display = 'block';
+        }
         options.onInitialTranslate();
       });
     }
