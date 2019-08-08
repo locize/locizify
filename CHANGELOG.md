@@ -1,3 +1,7 @@
+### v2.12.0
+
+- update editor and backend
+
 ### v2.11.0
 
 - update i18nextify to allow key usage `keyAttr: 'i18next-key'`, `ignoreWithoutKey: false`
