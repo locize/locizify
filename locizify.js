@@ -7356,6 +7356,7 @@ function appendIframe(url, options) {
 
 var defaultOptions = {
   url: 'https://www.locize.io',
+  openDashboard: false,
   enabled: false,
   enableByQS: 'locize',
   toggleKeyCode: 24,
@@ -7391,8 +7392,8 @@ var editor = {
     if (i18next && !i18next.init) i18next = convertOptionsToI18next(i18next);
     this.enabled = false;
     this.i18next = i18next;
-    this.options = _objectSpread({}, defaultOptions, i18next.options.editor);
-    this.locizeUrl = i18next.options.editor && i18next.options.editor.url || 'https://www.locize.io';
+    this.options = _objectSpread({}, defaultOptions, i18next.options.editor); //this.locizeUrl = (i18next.options.editor && i18next.options.editor.url) || 'https://www.locize.io';
+
     this.handler = this.handler.bind(this);
 
     if (this.options.enabled || this.options.enableByQS && getQueryVariable(this.options.enableByQS) === 'true') {
@@ -7424,7 +7425,7 @@ var editor = {
     e.preventDefault();
     e.stopPropagation();
     var str = el.textContent || el.text && el.text.innerText || el.placeholder;
-    if (typeof str !== "string") return;
+    if (typeof str !== 'string') return;
     var res = str.replace(/\n +/g, '').trim();
 
     var send = function send() {
@@ -7461,16 +7462,18 @@ var editor = {
     }
   },
   open: function open() {
-    if (this.options.mode === "iframe") return this.locizeInstance = appendIframe(this.options.url, this.options);
-    this.locizeInstance = window.open(this.options.url);
+    var url = this.options.url;
+    if (!this.options.openDashboard) url = "".concat(url, "/pid/").concat(this.options.projectId, "/v/").concat(this.i18next.options.backend.version || 'latest');
+    if (this.options.mode === 'iframe') return this.locizeInstance = appendIframe(url, this.options);
+    this.locizeInstance = window.open(url);
   },
   on: function on() {
-    document.body.addEventListener("click", this.handler, true);
+    document.body.addEventListener('click', this.handler, true);
     this.toggleUI(true);
     this.enabled = true;
   },
   off: function off() {
-    document.body.removeEventListener("click", this.handler, true);
+    document.body.removeEventListener('click', this.handler, true);
     this.toggleUI(false);
     this.enabled = false;
   }

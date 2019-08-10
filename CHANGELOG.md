@@ -1,3 +1,7 @@
+### v2.13.0
+
+- editor now by default opens the project instead of dashboard
+
 ### v2.12.0
 
 - update editor and backend
