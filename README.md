@@ -27,6 +27,20 @@ locizify comes bundled with [i18next](http://i18next.com/).
 
 # Getting started
 
+## Find more information
+
+locizify wraps some other modules from locize and i18next so there are additional valuable resources to read to get details on all the provided options:
+
+- locize editor: `?locize=true` --> [readme](https://github.com/locize/locize-editor)
+- i18next language detector: `?lng=de` --> [readme](https://github.com/i18next/i18next-browser-languageDetector)
+- locize backend --> [readme](https://github.com/locize/i18next-locize-backend)
+- i18next --> [website](https://www.i18next.com)
+
+Like always if not finding a solution of got a question - just ping us at support@locize.com.
+
+
+## Adding locizify to your page
+
 Add the script to your page:
 
 ```html
