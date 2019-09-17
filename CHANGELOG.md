@@ -1,3 +1,7 @@
+### v2.13.1
+
+- update locize-editor version
+
 ### v2.13.0
 
 - editor now by default opens the project instead of dashboard
