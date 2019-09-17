@@ -1,3 +1,7 @@
+### v2.13.2
+
+- update locize-editor version
+
 ### v2.13.1
 
 - update locize-editor version
