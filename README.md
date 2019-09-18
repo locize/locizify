@@ -123,6 +123,7 @@ Add the script to your page:
         },
 
         // defaults that are set
+        bindSavedMissing: true, // will connect backend supporting onSaved and trigger a reload on saved missings
         reloadOnSave: true, // automatically reload your page on saving in editor
         autorun: true, // setting to false init will return an object with start function
         ele: document.body, // pass in another element if you like to translate another html element

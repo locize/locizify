@@ -7,64 +7,114 @@ const enforce = {
 };
 
 const defaults = {
-  reloadOnSave: true
+  reloadOnSave: true,
+  bindSavedMissing: true
 };
 
 const reloadEditorOptions = {
   onEditorSaved: function(lng, ns) {
     location.reload();
   }
-}
+};
 
 i18nextify.editor = locizeEditor;
 const { i18next } = i18nextify;
-i18next
-  .use(LocizeBackend)
-  .use(locizeEditor);
+i18next.use(LocizeBackend).use(locizeEditor);
 
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {
+  options = { ...defaults, ...options };
   const scriptEle = document.getElementById('locizify');
 
   if (scriptEle) {
     const config = {};
     const backend = {};
 
-    const toRead = ['fallbackLng', 'saveMissing', 'debug', 'reloadOnSave', 'autorun', 'ele', 'cleanIndent', 'cleanWhitespace', 'namespace', 'namespaceFromPath'];
-    const toReadAsArray = ['ignoreTags', 'ignoreIds', 'ignoreClasses', 'translateAttributes', 'mergeTags', 'inlineTags', 'ignoreInlineOn', 'ignoreCleanIndentFor', 'ns'];
+    const toRead = [
+      'fallbackLng',
+      'saveMissing',
+      'debug',
+      'reloadOnSave',
+      'autorun',
+      'ele',
+      'cleanIndent',
+      'cleanWhitespace',
+      'namespace',
+      'namespaceFromPath'
+    ];
+    const toReadAsArray = [
+      'ignoreTags',
+      'ignoreIds',
+      'ignoreClasses',
+      'translateAttributes',
+      'mergeTags',
+      'inlineTags',
+      'ignoreInlineOn',
+      'ignoreCleanIndentFor',
+      'ns'
+    ];
     const toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
 
     toRead.forEach(attr => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
-      if (value !== undefined && value !== null) config[attr] = value;
+      if (value !== undefined && value !== null) config[attr] = value;
     });
 
     toReadAsArray.forEach(attr => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
-      if (value !== undefined && value !== null) config[attr] = value.split(',').map(item => item.trim());
+      if (value !== undefined && value !== null)
+        config[attr] = value.split(',').map(item => item.trim());
     });
 
     toReadBackend.forEach(attr => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
-      if (value !== undefined && value !== null) backend[attr] = value;
+      if (value !== undefined && value !== null) backend[attr] = value;
     });
 
-    options = { ...defaults, ...options, ...config  };
+    options = { ...defaults, ...options, ...config };
     options.backend = { ...options.backend, ...backend };
 
-    if (options.reloadOnSave && !options.editor) options.editor = reloadEditorOptions;
+    if (options.reloadOnSave && !options.editor)
+      options.editor = reloadEditorOptions;
   }
 
-  if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next, { ...options, ...enforce }, callback);
+  if (options.bindSavedMissing) {
+    options.backend.onSaved = (lng, ns) => {
+      locizeEditor.handleSavedMissing(lng, ns);
+    };
+  }
+
+  function handleI18nextInitialized(err, t) {
+    // ready now
+
+    // call orginal callback
+    callback(err, t);
+  }
+
+  if (!options.backend.autoPilot || options.backend.autoPilot === 'false')
+    return originalInit.call(
+      i18next,
+      { ...options, ...enforce },
+      handleI18nextInitialized
+    );
 
   const locizeBackend = new LocizeBackend(options.backend);
   locizeBackend.getOptions((err, opts) => {
-    if (err && typeof console === 'object' && typeof console.error === 'function') console.error(err);
-    originalInit.call(i18next, { ...opts, ...options, ...enforce }, callback);
+    if (
+      err &&
+      typeof console === 'object' &&
+      typeof console.error === 'function'
+    )
+      console.error(err);
+    originalInit.call(
+      i18next,
+      { ...opts, ...options, ...enforce },
+      handleI18nextInitialized
+    );
   });
 };
 
@@ -78,7 +128,7 @@ i18nextify.getLanguages = function(callback) {
     }
     i18next.on('initialized', ready);
   }
-}
+};
 
 i18nextify.getOptions = function(callback) {
   if (i18next.services.backendConnector) {
@@ -90,6 +140,6 @@ i18nextify.getOptions = function(callback) {
     }
     i18next.on('initialized', ready);
   }
-}
+};
 
 export default i18nextify;

@@ -1,3 +1,8 @@
+### v2.14.0
+
+- update locize-editor, i18next-locize-backend
+- adds option bindSavedMissing (default true)
+
 ### v2.13.2
 
 - update locize-editor version
