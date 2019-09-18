@@ -38,7 +38,6 @@ locizify wraps some other modules from locize and i18next so there are additiona
 
 Like always if not finding a solution of got a question - just ping us at support@locize.com.
 
-
 ## Adding locizify to your page
 
 Add the script to your page:
@@ -112,38 +111,38 @@ Add the script to your page:
     <script>
       locizify.init({
         // required
-        fallbackLng: "[LNG]",
+        fallbackLng: '[LNG]',
         backend: {
-          projectId: "[PROJECT_ID]",
-          apiKey: "[API_KEY]", // only needed if you like to add missing segments
-          referenceLng: "[LNG]",
-          version: "[VERSION]", // defaults to latest
+          projectId: '[PROJECT_ID]',
+          apiKey: '[API_KEY]', // only needed if you like to add missing segments
+          referenceLng: '[LNG]',
+          version: '[VERSION]', // defaults to latest
           // hostnames that are allowed to add, update keys
           // please keep those to your local system, staging, test servers (not production)
-          allowedAddOrUpdateHosts: ["localhost"]
+          allowedAddOrUpdateHosts: ['localhost']
         },
 
         // defaults that are set
         reloadOnSave: true, // automatically reload your page on saving in editor
         autorun: true, // setting to false init will return an object with start function
         ele: document.body, // pass in another element if you like to translate another html element
-        ignoreTags: ["SCRIPT"], // tags to ignore
+        ignoreTags: ['SCRIPT'], // tags to ignore
 
         // using keys instead of content as keys
-        keyAttr: "i18next-key", // node attribute to use as key
+        keyAttr: 'i18next-key', // node attribute to use as key
         ignoreWithoutKey: false, // set to true to only support nodes having a key
 
         // optional
-        ignoreIds: ["ignoreMeId"],
-        ignoreClasses: ["ignoreMeClass"],
+        ignoreIds: ['ignoreMeId'],
+        ignoreClasses: ['ignoreMeClass'],
 
         // attributes to translate
         translateAttributes: [
-          "placeholder",
-          "title",
-          "alt",
-          "value#input.type=button",
-          "value#input.type=submit"
+          'placeholder',
+          'title',
+          'alt',
+          'value#input.type=button',
+          'value#input.type=submit'
         ],
 
         // merging content (eg. a tags in p tags)
@@ -153,12 +152,12 @@ Add the script to your page:
 
         // cleanup for keys
         cleanIndent: true, // removes indent, eg. if a p tag spans multiple lines
-        ignoreCleanIndentFor: ["PRE", "CODE"], // ignores cleaning up of indent for those tags needing that extra spaceing
+        ignoreCleanIndentFor: ['PRE', 'CODE'], // ignores cleaning up of indent for those tags needing that extra spaceing
         cleanWhitespace: true, // removes surrounding whitespace from key
 
         namespace: false, // set another name - default namespace will be translation
         namespaceFromPath: false, // set true will use namepace based on window.location.pathname
-        ns: ["common"] // -> only set if accessing more then one namepace
+        ns: ['common'] // -> only set if accessing more then one namepace
 
         // + all options available in i18next
       });
@@ -227,9 +226,9 @@ Just set translated attribute:
 Same could be done using options:
 
 ```js
-mergeTags: [], // tags to merge innerHtml to one key inlineTags: [], // tags to
-inline (eg. a, span, abbr, ...) ignoreInlineOn: [], // tags to ignore inlining
-tags under inlineTags
+mergeTags: [], // tags to merge innerHtml to one key
+inlineTags: [], // tags to inline (eg. a, span, abbr, ...)
+ignoreInlineOn: [], // tags to ignore inlining tags under inlineTags
 ```
 
 ## Fragment replacement for links and images
@@ -284,9 +283,9 @@ Just add needed items to the specific array:
 
 ```js
 locizify.init({
-  ignoreTags: ["SCRIPT"], // need to be uppercased
-  ignoreIds: ["ignoreMeId"],
-  ignoreClasses: ["ignoreMeClass"]
+  ignoreTags: ['SCRIPT'], // need to be uppercased
+  ignoreIds: ['ignoreMeId'],
+  ignoreClasses: ['ignoreMeClass']
 });
 ```
 
@@ -333,7 +332,7 @@ Default would be translation.
 
 ```js
 locizify.init({
-  namespace: "myNamespace"
+  namespace: 'myNamespace'
 });
 ```
 
@@ -386,7 +385,7 @@ Just set the element style display to none. locizify will change it to block whe
 You can change the namespace after loading to some other file (eg. before transitioning to another page).
 
 ```js
-locizify.changeNamespace("newNamespace");
+locizify.changeNamespace('newNamespace');
 ```
 
 ## Specify own keys for the translation segments
@@ -421,7 +420,7 @@ There are two init options to configure this further:
 locizify.init({
   // ...
 
-  keyAttr: "i18next-key", // node attribute to use as key
+  keyAttr: 'i18next-key', // node attribute to use as key
   ignoreWithoutKey: false // set to true to only extract/translate nodes having a key
 
   // ...
