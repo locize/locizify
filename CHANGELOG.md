@@ -1,3 +1,7 @@
+### v2.14.1
+
+- update editor
+
 ### v2.14.0
 
 - update locize-editor, i18next-locize-backend
