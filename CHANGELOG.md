@@ -1,3 +1,7 @@
+### v2.14.2
+
+- append editor reloadOnSave also if having editor options set already
+
 ### v2.14.1
 
 - update editor

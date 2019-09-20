@@ -7627,9 +7627,9 @@ i18next.init = function () {
 
     options = _extends({}, defaults, options, config);
     options.backend = _extends({}, options.backend, backend);
-
-    if (options.reloadOnSave && !options.editor) options.editor = reloadEditorOptions;
   }
+
+  if (options.reloadOnSave && (!options.editor || !options.editor.onEditorSaved)) options.editor = _extends({}, options.editor, reloadEditorOptions);
 
   if (options.bindSavedMissing) {
     options.backend.onSaved = function (lng, ns) {

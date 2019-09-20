@@ -77,10 +77,13 @@ i18next.init = (options = {}, callback) => {
 
     options = { ...defaults, ...options, ...config };
     options.backend = { ...options.backend, ...backend };
-
-    if (options.reloadOnSave && !options.editor)
-      options.editor = reloadEditorOptions;
   }
+
+  if (
+    options.reloadOnSave &&
+    (!options.editor || !options.editor.onEditorSaved)
+  )
+    options.editor = { ...options.editor, ...reloadEditorOptions };
 
   if (options.bindSavedMissing) {
     options.backend.onSaved = (lng, ns) => {
