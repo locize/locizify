@@ -2,6 +2,8 @@ import i18nextify from 'i18nextify';
 import LocizeBackend from 'i18next-locize-backend';
 import locizeEditor from 'locize-editor';
 
+const { i18next } = i18nextify;
+
 const enforce = {
   saveMissingTo: 'all'
 };
@@ -13,12 +15,14 @@ const defaults = {
 
 const reloadEditorOptions = {
   onEditorSaved: function(lng, ns) {
-    location.reload();
+    // location.reload();
+    i18next.reloadResources(lng, ns, () => {
+      i18nextify.forceRerender();
+    });
   }
 };
 
 i18nextify.editor = locizeEditor;
-const { i18next } = i18nextify;
 i18next.use(LocizeBackend).use(locizeEditor);
 
 const originalInit = i18next.init;

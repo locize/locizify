@@ -6204,6 +6204,9 @@ function getAttribute(node, attr) {
 var _extends$8 = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 function isUnTranslated(node) {
+  var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { retranslate: false };
+
+  if (opts && opts.retranslate) return true;
   return !node.properties || !node.properties.attributes || node.properties.attributes.localized !== '';
 }
 
@@ -6247,8 +6250,10 @@ function translate(str) {
 var replaceInside = ['src', 'href'];
 var REGEXP = new RegExp('%7B%7B(.+?)%7D%7D', 'g'); // urlEncoded {{}}
 function translateProps(node, props) {
-  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+  var tOptions = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
   var overrideKey = arguments[3];
+  var realNodeIsUnTranslated = arguments[4];
+  var opts = arguments[5];
 
   if (!props) return props;
 
@@ -6265,8 +6270,19 @@ function translateProps(node, props) {
       value = getPath(props.attributes, item.attr);
       if (value) wasOnAttr = true;
     }
+
+    if (opts.retranslate) {
+      var usedValue = node.properties && node.properties && node.properties.attributes[item.attr + '-i18next-orgval'];
+      if (!usedValue) usedValue = value;
+      value = usedValue;
+    }
+
     if (value) {
-      setPath(wasOnAttr ? props.attributes : props, item.attr, translate(value, _extends$8({}, options), overrideKey ? overrideKey + '.' + item.attr : ''));
+      if (realNodeIsUnTranslated) {
+        node.properties.attributes[item.attr + '-i18next-orgval'] = value;
+      }
+
+      setPath(wasOnAttr ? props.attributes : props, item.attr, translate(value, _extends$8({}, tOptions), overrideKey ? overrideKey + '.' + item.attr : ''));
     }
   });
 
@@ -6284,7 +6300,7 @@ function translateProps(node, props) {
         if (!index || index % 2 === 0) {
           mem.push(match);
         } else {
-          mem.push(translate(match, _extends$8({}, options), overrideKey ? overrideKey + '.' + attr : ''));
+          mem.push(translate(match, _extends$8({}, tOptions), overrideKey ? overrideKey + '.' + attr : ''));
         }
         return mem;
       }, arr);
@@ -6343,9 +6359,11 @@ function canInline(node, tOptions) {
 
 function walk$1(node, tOptions, parent, parentOverrideKey) {
   var currentDepth = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+  var opts = arguments[5];
 
   var nodeIsNotExcluded = isNotExcluded(node);
-  var nodeIsUnTranslated = isUnTranslated(node);
+  var nodeIsUnTranslated = isUnTranslated(node, opts);
+  var realNodeIsUnTranslated = isUnTranslated(node); // ignoring forced threatment
   tOptions = getTOptions(tOptions, node);
   var parentKey = currentDepth === 0 ? parentOverrideKey : '';
   if (currentDepth > 0 && parentOverrideKey && !i18next$2.options.ignoreWithoutKey) {
@@ -6361,12 +6379,30 @@ function walk$1(node, tOptions, parent, parentOverrideKey) {
       var dummyNode = new vnode('I18NEXTIFYDUMMY', null, node.children);
       var key = removeIndent(index$9(dummyNode), '').replace('<i18nextifydummy>', '').replace('</i18nextifydummy>', '');
 
+      // grab orginial text if we enforce a retranslate
+      if (opts.retranslate) {
+        var usedKey = node.properties && node.properties.attributes && node.properties.attributes['i18next-orgval'];
+        if (!usedKey) {
+          usedKey = parent && parent.properties && parent.properties.attributes && parent.properties.attributes['i18next-orgval-' + currentDepth];
+        }
+        if (!usedKey) usedKey = key;
+
+        key = usedKey;
+      }
+
       // translate that's children and surround it again with a dummy node to parse to vdom
       var translation = '<i18nextifydummy>' + translate(key, tOptions, overrideKey) + '</i18nextifydummy>';
       var newNode = index$12((translation || '').trim());
 
       // replace children on passed in node
       node.children = newNode.children;
+
+      // persist original key for future retranslate
+      if (realNodeIsUnTranslated && node.properties && node.properties.attributes) {
+        node.properties.attributes['i18next-orgval'] = key;
+      } else if (realNodeIsUnTranslated && parent && parent.properties && parent.properties.attributes) {
+        parent.properties.attributes['i18next-orgval-' + currentDepth] = key;
+      }
 
       if (node.properties && node.properties.attributes) {
         node.properties.attributes.localized = '';
@@ -6379,8 +6415,8 @@ function walk$1(node, tOptions, parent, parentOverrideKey) {
   if (node.children) {
     node.children.forEach(function (child, i) {
       if (nodeIsNotExcluded && nodeIsUnTranslated && child.text || !child.text && isNotExcluded(child)) {
-        walk$1(child, tOptions, node, overrideKey, node.children.length > 1 ? i + 1 : i // if only a inner text node - keep it index 0, else add a index number + 1
-        );
+        walk$1(child, tOptions, node, overrideKey, node.children.length > 1 ? i + 1 : i, // if only a inner text node - keep it index 0, else add a index number + 1
+        opts);
       }
     });
   }
@@ -6392,12 +6428,25 @@ function walk$1(node, tOptions, parent, parentOverrideKey) {
     if (node.text) {
       var match = void 0;
       var txt = node.text;
+      var originalText = node.text;
+
+      // grab orginial text if we enforce a retranslate
+      if (opts.retranslate) {
+        var usedText = node.properties && node.properties.attributes && node.properties.attributes['i18next-orgval'];
+        if (!usedText) {
+          usedText = parent && parent.properties && parent.properties.attributes && parent.properties.attributes['i18next-orgval-' + currentDepth];
+        }
+        if (!usedText) usedText = node.text;
+
+        txt = usedText;
+        originalText = usedText;
+      }
 
       // exclude whitespace replacement eg on PRE, CODE
       var ignore = i18next$2.options.ignoreCleanIndentFor.indexOf(parent.tagName) > -1;
 
       if (!ignore) {
-        txt = removeIndent(node.text, '\n');
+        txt = removeIndent(txt, '\n');
         if (i18next$2.options.cleanWhitespace) {
           var regex = /^\s*(.*[^\s])\s*$/g;
           match = regex.exec(txt);
@@ -6410,10 +6459,25 @@ function walk$1(node, tOptions, parent, parentOverrideKey) {
       } else {
         node.text = translate(txt, tOptions, overrideKey || '');
       }
+
+      // persist original text (key) for future retranslate
+      if (realNodeIsUnTranslated && node.properties && node.properties.attributes) {
+        if (originalText) {
+          node.properties.attributes['i18next-orgval'] = originalText;
+        }
+      } else if (realNodeIsUnTranslated && parent && parent.properties && parent.properties.attributes) {
+        if (originalText) {
+          parent.properties.attributes['i18next-orgval-' + currentDepth] = originalText;
+        }
+      }
     }
+
+    // translate propertied
     if (node.properties) {
-      node.properties = translateProps(node, node.properties, tOptions, overrideKey);
+      node.properties = translateProps(node, node.properties, tOptions, overrideKey, realNodeIsUnTranslated, opts);
     }
+
+    // set translated
     if (node.properties && node.properties.attributes) {
       node.properties.attributes.localized = '';
     }
@@ -6422,11 +6486,11 @@ function walk$1(node, tOptions, parent, parentOverrideKey) {
   return node;
 }
 
-function localize(node) {
+function localize(node, retranslate) {
   var recurseTime = new Instrument();
   recurseTime.start();
 
-  var localized = walk$1(node);
+  var localized = walk$1(node, null, null, null, null, { retranslate: retranslate });
 
   i18next$2.services.logger.log('localization took: ' + recurseTime.end() + 'ms');
 
@@ -6445,9 +6509,9 @@ function createVdom(node) {
 
 var renderer = function (root, observer) {
   var ret = {};
-  ret.render = function render() {
+  ret.render = function render(retranslate) {
     var newNode = createVdom(root);
-    var localized = localize(udc(newNode));
+    var localized = localize(udc(newNode), retranslate);
 
     var patches = diff_1(newNode, localized);
     if (patches['0']) observer.reset(); // reset observer if having patches
@@ -6555,6 +6619,8 @@ function changeNamespace(ns) {
   });
 }
 
+var renderers = [];
+
 function init$$1() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -6630,7 +6696,6 @@ function init$$1() {
   }, []);
 
   initialized = true;
-  var renderers = [];
 
   var observer = void 0;
 
@@ -6698,10 +6763,17 @@ function init$$1() {
   if (options.autorun === false) return { start: done };
 }
 
+function forceRerender() {
+  renderers.forEach(function (r) {
+    r.render(true); // enforce a rerender
+  });
+}
+
 var i18nextify$1 = {
   init: init$$1,
   i18next: i18next$2,
-  changeNamespace: changeNamespace
+  changeNamespace: changeNamespace,
+  forceRerender: forceRerender
 };
 
 function _defineProperty(obj, key, value) {
@@ -7568,6 +7640,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+var i18next = i18nextify$1.i18next;
+
+
 var enforce = {
   saveMissingTo: 'all'
 };
@@ -7579,13 +7654,14 @@ var defaults = {
 
 var reloadEditorOptions = {
   onEditorSaved: function onEditorSaved(lng, ns) {
-    location.reload();
+    // location.reload();
+    i18next.reloadResources(lng, ns, function () {
+      i18nextify$1.forceRerender();
+    });
   }
 };
 
 i18nextify$1.editor = editor;
-var i18next = i18nextify$1.i18next;
-
 i18next.use(I18NextLocizeBackend).use(editor);
 
 var originalInit = i18next.init;

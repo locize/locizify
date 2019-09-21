@@ -1,3 +1,7 @@
+### v2.15.0
+
+- use the forceRerender on i18nextify to make the DX nicer
+
 ### v2.14.2
 
 - append editor reloadOnSave also if having editor options set already
