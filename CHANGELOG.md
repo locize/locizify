@@ -1,3 +1,7 @@
+### v2.15.1
+
+- update deps
+
 ### v2.15.0
 
 - use the forceRerender on i18nextify to make the DX nicer
