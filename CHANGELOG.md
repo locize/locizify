@@ -1,3 +1,9 @@
+### v3.0.0
+
+- update deps using `locize.app` instead of `locize.io`
+- remove bower
+
+
 ### v2.15.1
 
 - update deps

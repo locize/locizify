@@ -70,28 +70,14 @@
 
   var defineProperty = _defineProperty$1;
 
-  function _typeof2(obj) {
+  function _typeof(obj) {
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof2 = function _typeof2(obj) {
+      _typeof = function _typeof(obj) {
         return typeof obj;
       };
     } else {
-      _typeof2 = function _typeof2(obj) {
+      _typeof = function _typeof(obj) {
         return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof2(obj);
-  }
-
-  function _typeof(obj) {
-    if (typeof Symbol === "function" && _typeof2(Symbol.iterator) === "symbol") {
-      _typeof = function _typeof(obj) {
-        return _typeof2(obj);
-      };
-    } else {
-      _typeof = function _typeof(obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : _typeof2(obj);
       };
     }
 
@@ -3083,28 +3069,14 @@
   }
 
   var _typeof_1 = createCommonjsModule(function (module) {
-  function _typeof2(obj) {
+  function _typeof(obj) {
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof2 = function _typeof2(obj) {
+      module.exports = _typeof = function _typeof(obj) {
         return typeof obj;
       };
     } else {
-      _typeof2 = function _typeof2(obj) {
+      module.exports = _typeof = function _typeof(obj) {
         return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof2(obj);
-  }
-
-  function _typeof(obj) {
-    if (typeof Symbol === "function" && _typeof2(Symbol.iterator) === "symbol") {
-      module.exports = _typeof = function _typeof(obj) {
-        return _typeof2(obj);
-      };
-    } else {
-      module.exports = _typeof = function _typeof(obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : _typeof2(obj);
       };
     }
 
@@ -7590,17 +7562,15 @@
 
   function getDefaults$3() {
     return {
-      loadPath: 'https://api.locize.io/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
-      privatePath: 'https://api.locize.io/private/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
-      pullPath: 'https://api.locize.io/pull/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
-      getLanguagesPath: 'https://api.locize.io/languages/{{projectId}}',
-      addPath: 'https://api.locize.io/missing/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
-      updatePath: 'https://api.locize.io/update/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
+      loadPath: 'https://api.locize.app/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
+      privatePath: 'https://api.locize.app/private/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
+      getLanguagesPath: 'https://api.locize.app/languages/{{projectId}}',
+      addPath: 'https://api.locize.app/missing/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
+      updatePath: 'https://api.locize.app/update/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
       referenceLng: 'en',
       crossDomain: true,
       setContentTypeJSON: false,
       version: 'latest',
-      pull: false,
       "private": false,
       whitelistThreshold: 0.9,
       failLoadingOnEmptyJSON: false,
@@ -7636,7 +7606,7 @@
         this.options = _objectSpread$3({}, getDefaults$3(), {}, this.options, {}, options); // initial
 
         this.services = services;
-        if (this.options.pull) console.warn('deprecated: pull will be removed in future versions and should be replaced with locize private versions');
+        if (this.options.pull) console.warn('The pull API was removed use "private: true" option instead: https://docs.locize.com/integration/api#fetch-private-namespace-resources');
         var hostname = typeof window !== 'undefined' && window.location && window.location.hostname;
 
         if (hostname) {
@@ -7716,23 +7686,10 @@
           options = {
             authorize: true
           };
-        } else if (this.options.pull) {
-          var _isMissing = isMissingOption(this.options, ['projectId', 'version', 'apiKey']);
+        } else {
+          var _isMissing = isMissingOption(this.options, ['projectId', 'version']);
 
           if (_isMissing) return callback(new Error(_isMissing), false);
-          url = interpolate(this.options.pullPath, {
-            lng: language,
-            ns: namespace,
-            projectId: this.options.projectId,
-            version: this.options.version
-          });
-          options = {
-            authorize: true
-          };
-        } else {
-          var _isMissing2 = isMissingOption(this.options, ['projectId', 'version']);
-
-          if (_isMissing2) return callback(new Error(_isMissing2), false);
           url = interpolate(this.options.loadPath, {
             lng: language,
             ns: namespace,
@@ -8141,7 +8098,7 @@
   }
 
   var defaultOptions = {
-    url: 'https://www.locize.io',
+    url: 'https://www.locize.app',
     openDashboard: false,
     enabled: false,
     enableByQS: 'locize',
@@ -8179,7 +8136,7 @@
       if (i18next && !i18next.init) i18next = convertOptionsToI18next(i18next);
       this.enabled = false;
       this.i18next = i18next;
-      this.options = _objectSpread({}, defaultOptions, i18next.options.editor); //this.locizeUrl = (i18next.options.editor && i18next.options.editor.url) || 'https://www.locize.io';
+      this.options = _objectSpread({}, defaultOptions, i18next.options.editor); //this.locizeUrl = (i18next.options.editor && i18next.options.editor.url) || 'https://www.locize.app';
 
       this.handler = this.handler.bind(this);
       this.handleSavedMissing = this.handleSavedMissing.bind(this);
