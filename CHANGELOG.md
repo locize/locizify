@@ -1,3 +1,7 @@
+### v3.0.1
+
+- update dependencies
+
 ### v3.0.0
 
 - update deps using `locize.app` instead of `locize.io`

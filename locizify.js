@@ -7611,7 +7611,7 @@
 
         if (hostname) {
           this.isAddOrUpdateAllowed = typeof this.options.allowedAddOrUpdateHosts === 'function' ? this.options.allowedAddOrUpdateHosts(hostname) : this.options.allowedAddOrUpdateHosts.indexOf(hostname) > -1;
-          if (i18nextOptions.saveMissing && !this.isAddOrUpdateAllowed) services && services.logger && services.logger.warn("locize-backend: will not save missings because the host \"".concat(hostname, "\" was not in the list of allowedAddOrUpdateHosts: ").concat(this.options.allowedAddOrUpdateHosts.join(', '), " (matches need to be exact)."));
+          if (i18nextOptions.saveMissing && !this.isAddOrUpdateAllowed) services && services.logger && services.logger.warn(typeof this.options.allowedAddOrUpdateHosts === 'function' ? "locize-backend: will not save missings because allowedAddOrUpdateHosts returned false for the host \"".concat(hostname, "\".") : "locize-backend: will not save missings because the host \"".concat(hostname, "\" was not in the list of allowedAddOrUpdateHosts: ").concat(this.options.allowedAddOrUpdateHosts.join(', '), " (matches need to be exact)."));
         } else {
           this.isAddOrUpdateAllowed = true;
         }
@@ -7706,6 +7706,10 @@
         var _this3 = this;
 
         ajax$1(url, _objectSpread$3({}, this.options, {}, options), function (data, xhr) {
+          if (xhr.status === 408 || xhr.status === 400) // extras for timeouts on cloudfront
+            return callback('failed loading ' + url, true
+            /* retry */
+            );
           if (xhr.status >= 500 && xhr.status < 600) return callback('failed loading ' + url, true
           /* retry */
           );
