@@ -71,6 +71,8 @@
   var defineProperty = _defineProperty$1;
 
   function _typeof(obj) {
+    "@babel/helpers - typeof";
+
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
       _typeof = function _typeof(obj) {
         return typeof obj;
@@ -101,8 +103,8 @@
 
   function _objectSpread(target) {
     for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-      var ownKeys = Object.keys(Object(source));
+      var source = arguments[i] != null ? Object(arguments[i]) : {};
+      var ownKeys = Object.keys(source);
 
       if (typeof Object.getOwnPropertySymbols === 'function') {
         ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) {
@@ -187,26 +189,39 @@
     if (superClass) _setPrototypeOf(subClass, superClass);
   }
 
-  function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) {
-        arr2[i] = arr[i];
-      }
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
 
-      return arr2;
+    for (var i = 0, arr2 = new Array(len); i < len; i++) {
+      arr2[i] = arr[i];
     }
+
+    return arr2;
+  }
+
+  function _arrayWithoutHoles(arr) {
+    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
   }
 
   function _iterableToArray(iter) {
-    if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+  }
+
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(n);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
   }
 
   function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance");
+    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   function _toConsumableArray(arr) {
-    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
   }
 
   function _arrayWithHoles(arr) {
@@ -214,10 +229,7 @@
   }
 
   function _iterableToArrayLimit(arr, i) {
-    if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
-      return;
-    }
-
+    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
     var _arr = [];
     var _n = true;
     var _d = false;
@@ -244,11 +256,11 @@
   }
 
   function _nonIterableRest() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   function _slicedToArray(arr, i) {
-    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
   }
 
   var consoleLogger = {
@@ -271,9 +283,7 @@
     }
   };
 
-  var Logger =
-  /*#__PURE__*/
-  function () {
+  var Logger = /*#__PURE__*/function () {
     function Logger(concreteLogger) {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
@@ -353,9 +363,7 @@
 
   var baseLogger = new Logger();
 
-  var EventEmitter =
-  /*#__PURE__*/
-  function () {
+  var EventEmitter = /*#__PURE__*/function () {
     function EventEmitter() {
       _classCallCheck(this, EventEmitter);
 
@@ -549,9 +557,7 @@
     return data;
   }
 
-  var ResourceStore =
-  /*#__PURE__*/
-  function (_EventEmitter) {
+  var ResourceStore = /*#__PURE__*/function (_EventEmitter) {
     _inherits(ResourceStore, _EventEmitter);
 
     function ResourceStore(data) {
@@ -726,9 +732,7 @@
   };
   var checkedLoadedFor = {};
 
-  var Translator =
-  /*#__PURE__*/
-  function (_EventEmitter) {
+  var Translator = /*#__PURE__*/function (_EventEmitter) {
     _inherits(Translator, _EventEmitter);
 
     function Translator(services) {
@@ -1080,9 +1084,7 @@
     return string.charAt(0).toUpperCase() + string.slice(1);
   }
 
-  var LanguageUtil =
-  /*#__PURE__*/
-  function () {
+  var LanguageUtil = /*#__PURE__*/function () {
     function LanguageUtil(options) {
       _classCallCheck(this, LanguageUtil);
 
@@ -1374,9 +1376,7 @@
     return rules;
   }
 
-  var PluralResolver =
-  /*#__PURE__*/
-  function () {
+  var PluralResolver = /*#__PURE__*/function () {
     function PluralResolver(languageUtils) {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
@@ -1470,9 +1470,7 @@
     return PluralResolver;
   }();
 
-  var Interpolator =
-  /*#__PURE__*/
-  function () {
+  var Interpolator = /*#__PURE__*/function () {
     function Interpolator() {
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -1682,9 +1680,7 @@
     }
   }
 
-  var Connector =
-  /*#__PURE__*/
-  function (_EventEmitter) {
+  var Connector = /*#__PURE__*/function (_EventEmitter) {
     _inherits(Connector, _EventEmitter);
 
     function Connector(backend, store, services) {
@@ -2033,9 +2029,7 @@
 
   function noop() {}
 
-  var I18n =
-  /*#__PURE__*/
-  function (_EventEmitter) {
+  var I18n = /*#__PURE__*/function (_EventEmitter) {
     _inherits(I18n, _EventEmitter);
 
     function I18n() {
@@ -2627,9 +2621,7 @@
     };
   }
 
-  var Backend =
-  /*#__PURE__*/
-  function () {
+  var Backend = /*#__PURE__*/function () {
     function Backend(services) {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
@@ -2943,9 +2935,7 @@
     };
   }
 
-  var Browser =
-  /*#__PURE__*/
-  function () {
+  var Browser = /*#__PURE__*/function () {
     function Browser(services) {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
@@ -3070,6 +3060,8 @@
 
   var _typeof_1 = createCommonjsModule(function (module) {
   function _typeof(obj) {
+    "@babel/helpers - typeof";
+
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
       module.exports = _typeof = function _typeof(obj) {
         return typeof obj;
@@ -3147,9 +3139,7 @@
 
   var inherits = _inherits$1;
 
-  var EventEmitter$1 =
-  /*#__PURE__*/
-  function () {
+  var EventEmitter$1 = /*#__PURE__*/function () {
     function EventEmitter() {
       classCallCheck(this, EventEmitter);
 
@@ -3209,9 +3199,7 @@
     return EventEmitter;
   }();
 
-  var Observer =
-  /*#__PURE__*/
-  function (_EventEmitter) {
+  var Observer = /*#__PURE__*/function (_EventEmitter) {
     inherits(Observer, _EventEmitter);
 
     function Observer(ele) {
@@ -5341,9 +5329,7 @@
   });
   });
 
-  var Instrument =
-  /*#__PURE__*/
-  function () {
+  var Instrument = /*#__PURE__*/function () {
     function Instrument() {
       classCallCheck(this, Instrument);
     }
@@ -6642,10 +6628,7 @@
   var arrayWithHoles = _arrayWithHoles$1;
 
   function _iterableToArrayLimit$1(arr, i) {
-    if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
-      return;
-    }
-
+    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
     var _arr = [];
     var _n = true;
     var _d = false;
@@ -6673,14 +6656,37 @@
 
   var iterableToArrayLimit = _iterableToArrayLimit$1;
 
+  function _arrayLikeToArray$1(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) {
+      arr2[i] = arr[i];
+    }
+
+    return arr2;
+  }
+
+  var arrayLikeToArray = _arrayLikeToArray$1;
+
+  function _unsupportedIterableToArray$1(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(n);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return arrayLikeToArray(o, minLen);
+  }
+
+  var unsupportedIterableToArray = _unsupportedIterableToArray$1;
+
   function _nonIterableRest$1() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   var nonIterableRest = _nonIterableRest$1;
 
   function _slicedToArray$1(arr, i) {
-    return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || nonIterableRest();
+    return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || unsupportedIterableToArray(arr, i) || nonIterableRest();
   }
 
   var slicedToArray = _slicedToArray$1;
@@ -7576,13 +7582,79 @@
       failLoadingOnEmptyJSON: false,
       // useful if using chained backend
       allowedAddOrUpdateHosts: ['localhost'],
-      onSaved: false
+      onSaved: false,
+      checkForProjectTimeout: 3 * 1000,
+      storageExpiration: 60 * 60 * 1000
     };
   }
 
-  var I18NextLocizeBackend =
-  /*#__PURE__*/
-  function () {
+  var hasLocalStorageSupport$1;
+
+  try {
+    hasLocalStorageSupport$1 = window !== 'undefined' && window.localStorage !== null;
+    var testKey$1 = 'notExistingLocizeProject';
+    window.localStorage.setItem(testKey$1, 'foo');
+    window.localStorage.removeItem(testKey$1);
+  } catch (e) {
+    hasLocalStorageSupport$1 = false;
+  }
+
+  function getStorage(storageExpiration) {
+    var setProjectNotExisting = function setProjectNotExisting() {};
+
+    var isProjectNotExisting = function isProjectNotExisting() {};
+
+    if (hasLocalStorageSupport$1) {
+      setProjectNotExisting = function setProjectNotExisting(projectId) {
+        window.localStorage.setItem("notExistingLocizeProject_".concat(projectId), Date.now());
+      };
+
+      isProjectNotExisting = function isProjectNotExisting(projectId) {
+        var ret = window.localStorage.getItem("notExistingLocizeProject_".concat(projectId));
+        if (!ret) return false;
+
+        if (Date.now() - ret > storageExpiration) {
+          window.localStorage.removeItem("notExistingLocizeProject_".concat(projectId));
+          return false;
+        }
+
+        return true;
+      };
+    } else {
+      setProjectNotExisting = function setProjectNotExisting(projectId) {
+        var date = new Date();
+        date.setTime(date.getTime() + storageExpiration);
+        var expires = "; expires=".concat(date.toGMTString());
+        var name = "notExistingLocizeProject_".concat(projectId);
+        document.cookie = "".concat(name, "=").concat(Date.now()).concat(expires, ";path=/");
+      };
+
+      isProjectNotExisting = function isProjectNotExisting(projectId) {
+        var name = "notExistingLocizeProject_".concat(projectId);
+        var nameEQ = "".concat(name, "=");
+        var ca = document.cookie.split(';');
+
+        for (var i = 0; i < ca.length; i++) {
+          var c = ca[i];
+
+          while (c.charAt(0) === ' ') {
+            c = c.substring(1, c.length);
+          }
+
+          if (c.indexOf(nameEQ) === 0) return true; // return c.substring(nameEQ.length,c.length);
+        }
+
+        return false;
+      };
+    }
+
+    return {
+      setProjectNotExisting: setProjectNotExisting,
+      isProjectNotExisting: isProjectNotExisting
+    };
+  }
+
+  var I18NextLocizeBackend = /*#__PURE__*/function () {
     function I18NextLocizeBackend(services, options, callback) {
       _classCallCheck(this, I18NextLocizeBackend);
 
@@ -7606,6 +7678,9 @@
         this.options = _objectSpread$3({}, getDefaults$3(), {}, this.options, {}, options); // initial
 
         this.services = services;
+        this.somethingLoaded = false;
+        this.isProjectNotExisting = false;
+        this.storage = getStorage(this.options.storageExpiration);
         if (this.options.pull) console.warn('The pull API was removed use "private: true" option instead: https://docs.locize.com/integration/api#fetch-private-namespace-resources');
         var hostname = typeof window !== 'undefined' && window.location && window.location.hostname;
 
@@ -7630,17 +7705,36 @@
     }, {
       key: "getLanguages",
       value: function getLanguages(callback) {
+        var _this2 = this;
+
         var isMissing = isMissingOption(this.options, ['projectId']);
         if (isMissing) return callback(new Error(isMissing));
         var url = interpolate(this.options.getLanguagesPath, {
           projectId: this.options.projectId
         });
-        this.loadUrl(url, {}, callback);
+
+        if (!this.isProjectNotExisting && this.storage.isProjectNotExisting(this.options.projectId)) {
+          this.isProjectNotExisting = true;
+        }
+
+        if (this.isProjectNotExisting) return callback(new Error("locize project ".concat(this.options.projectId, " does not exist!")));
+        this.loadUrl(url, {}, function (err, ret, info) {
+          if (!_this2.somethingLoaded && info && info.resourceNotExisting) {
+            _this2.isProjectNotExisting = true;
+
+            _this2.storage.setProjectNotExisting(_this2.options.projectId);
+
+            return callback(new Error("locize project ".concat(_this2.options.projectId, " does not exist!")));
+          }
+
+          _this2.somethingLoaded = true;
+          callback(err, ret);
+        });
       }
     }, {
       key: "getOptions",
       value: function getOptions(callback) {
-        var _this2 = this;
+        var _this3 = this;
 
         this.getLanguages(function (err, data) {
           if (err) return callback(err);
@@ -7653,7 +7747,7 @@
           }, '');
           var whitelist = keys.reduce(function (mem, k) {
             var item = data[k];
-            if (item.translated[_this2.options.version] && item.translated[_this2.options.version] >= _this2.options.whitelistThreshold) mem.push(k);
+            if (item.translated[_this3.options.version] && item.translated[_this3.options.version] >= _this3.options.whitelistThreshold) mem.push(k);
             return mem;
           }, []);
           var hasRegion = keys.reduce(function (mem, k) {
@@ -7669,8 +7763,32 @@
         });
       }
     }, {
+      key: "checkIfProjectExists",
+      value: function checkIfProjectExists(callback) {
+        var logger = this.services.logger;
+
+        if (this.somethingLoaded) {
+          if (callback) callback(null);
+          return;
+        }
+
+        this.getLanguages(function (err) {
+          if (err && err.message && err.message.indexOf('does not exist') > 0) {
+            if (callback) return callback(err);
+            logger.error(err.message);
+          }
+        });
+      }
+    }, {
       key: "read",
       value: function read(language, namespace, callback) {
+        var _this4 = this;
+
+        var _ref = this.services || {
+          logger: console
+        },
+            logger = _ref.logger;
+
         var url;
         var options = {};
 
@@ -7698,24 +7816,54 @@
           });
         }
 
-        this.loadUrl(url, options, callback);
+        if (!this.isProjectNotExisting && this.storage.isProjectNotExisting(this.options.projectId)) {
+          this.isProjectNotExisting = true;
+        }
+
+        if (this.isProjectNotExisting) {
+          var err = new Error("locize project ".concat(this.options.projectId, " does not exist!"));
+          logger.error(err.message);
+          if (callback) callback(err);
+          return;
+        }
+
+        this.loadUrl(url, options, function (err, ret, info) {
+          if (!_this4.somethingLoaded) {
+            if (info && info.resourceNotExisting) {
+              setTimeout(function () {
+                return _this4.checkIfProjectExists();
+              }, _this4.options.checkForProjectTimeout);
+            } else {
+              _this4.somethingLoaded = true;
+            }
+          }
+
+          callback(err, ret);
+        });
       }
     }, {
       key: "loadUrl",
       value: function loadUrl(url, options, callback) {
-        var _this3 = this;
+        var _this5 = this;
 
         ajax$1(url, _objectSpread$3({}, this.options, {}, options), function (data, xhr) {
+          var resourceNotExisting = xhr.getResponseHeader('x-cache') === 'Error from cloudfront';
           if (xhr.status === 408 || xhr.status === 400) // extras for timeouts on cloudfront
             return callback('failed loading ' + url, true
             /* retry */
-            );
+            , {
+              resourceNotExisting: resourceNotExisting
+            });
           if (xhr.status >= 500 && xhr.status < 600) return callback('failed loading ' + url, true
           /* retry */
-          );
+          , {
+            resourceNotExisting: resourceNotExisting
+          });
           if (xhr.status >= 400 && xhr.status < 500) return callback('failed loading ' + url, false
           /* no retry */
-          );
+          , {
+            resourceNotExisting: resourceNotExisting
+          });
           var ret, err;
 
           try {
@@ -7725,55 +7873,65 @@
           }
 
           if (err) return callback(err, false);
-          if (_this3.options.failLoadingOnEmptyJSON && !Object.keys(ret).length) return callback('loaded result empty for ' + url, false);
-          callback(null, ret);
+          if (_this5.options.failLoadingOnEmptyJSON && !Object.keys(ret).length) return callback('loaded result empty for ' + url, false, {
+            resourceNotExisting: resourceNotExisting
+          });
+          callback(null, ret, {
+            resourceNotExisting: resourceNotExisting
+          });
         });
       }
     }, {
       key: "create",
       value: function create(languages, namespace, key, fallbackValue, callback, options) {
-        var _this4 = this;
+        var _this6 = this;
 
-        if (!callback) callback = function callback() {}; // missing options
+        if (!callback) callback = function callback() {};
+        this.checkIfProjectExists(function (err) {
+          if (err) return callback(err); // missing options
 
-        var isMissing = isMissingOption(this.options, ['projectId', 'version', 'apiKey', 'referenceLng']);
-        if (isMissing) return callback(new Error(isMissing)); // unallowed host
+          var isMissing = isMissingOption(_this6.options, ['projectId', 'version', 'apiKey', 'referenceLng']);
+          if (isMissing) return callback(new Error(isMissing)); // unallowed host
 
-        if (!this.isAddOrUpdateAllowed) return callback('host is not allowed to create key.');
-        if (typeof languages === 'string') languages = [languages];
+          if (!_this6.isAddOrUpdateAllowed) return callback('host is not allowed to create key.');
+          if (typeof languages === 'string') languages = [languages];
 
-        if (languages.filter(function (l) {
-          return l === _this4.options.referenceLng;
-        }).length < 1) {
-          this.services && this.services.logger && this.services.logger.warn("locize-backend: will not save missings because the reference language \"".concat(this.options.referenceLng, "\" was not in the list of to save languages: ").concat(languages.join(', '), " (open your site in the reference language to save missings)."));
-        }
+          if (languages.filter(function (l) {
+            return l === _this6.options.referenceLng;
+          }).length < 1) {
+            _this6.services && _this6.services.logger && _this6.services.logger.warn("locize-backend: will not save missings because the reference language \"".concat(_this6.options.referenceLng, "\" was not in the list of to save languages: ").concat(languages.join(', '), " (open your site in the reference language to save missings)."));
+          }
 
-        languages.forEach(function (lng) {
-          if (lng === _this4.options.referenceLng) _this4.queue.call(_this4, _this4.options.referenceLng, namespace, key, fallbackValue, callback, options);
+          languages.forEach(function (lng) {
+            if (lng === _this6.options.referenceLng) _this6.queue.call(_this6, _this6.options.referenceLng, namespace, key, fallbackValue, callback, options);
+          });
         });
       }
     }, {
       key: "update",
       value: function update(languages, namespace, key, fallbackValue, callback, options) {
-        var _this5 = this;
+        var _this7 = this;
 
-        if (!callback) callback = function callback() {}; // missing options
+        if (!callback) callback = function callback() {};
+        this.checkIfProjectExists(function (err) {
+          if (err) return callback(err); // missing options
 
-        var isMissing = isMissingOption(this.options, ['projectId', 'version', 'apiKey', 'referenceLng']);
-        if (isMissing) return callback(new Error(isMissing));
-        if (!this.isAddOrUpdateAllowed) return callback('host is not allowed to update key.');
-        if (!options) options = {};
-        if (typeof languages === 'string') languages = [languages]; // mark as update
+          var isMissing = isMissingOption(_this7.options, ['projectId', 'version', 'apiKey', 'referenceLng']);
+          if (isMissing) return callback(new Error(isMissing));
+          if (!_this7.isAddOrUpdateAllowed) return callback('host is not allowed to update key.');
+          if (!options) options = {};
+          if (typeof languages === 'string') languages = [languages]; // mark as update
 
-        options.isUpdate = true;
-        languages.forEach(function (lng) {
-          if (lng === _this5.options.referenceLng) _this5.queue.call(_this5, _this5.options.referenceLng, namespace, key, fallbackValue, callback, options);
+          options.isUpdate = true;
+          languages.forEach(function (lng) {
+            if (lng === _this7.options.referenceLng) _this7.queue.call(_this7, _this7.options.referenceLng, namespace, key, fallbackValue, callback, options);
+          });
         });
       }
     }, {
       key: "write",
       value: function write(lng, namespace) {
-        var _this6 = this;
+        var _this8 = this;
 
         var lock = getPath$2(this.queuedWrites, ['locks', lng, namespace]);
         if (lock) return;
@@ -7824,14 +7982,14 @@
 
             if (!todo) {
               // unlock
-              setPath$2(_this6.queuedWrites, ['locks', lng, namespace], false);
+              setPath$2(_this8.queuedWrites, ['locks', lng, namespace], false);
               missings.forEach(function (missing) {
                 if (missing.callback) missing.callback();
               }); // emit notification onSaved
 
-              if (_this6.options.onSaved) _this6.options.onSaved(lng, namespace); // rerun
+              if (_this8.options.onSaved) _this8.options.onSaved(lng, namespace); // rerun
 
-              _this6.debouncedProcess(lng, namespace);
+              _this8.debouncedProcess(lng, namespace);
             }
           };
 
@@ -7861,15 +8019,15 @@
     }, {
       key: "process",
       value: function process() {
-        var _this7 = this;
+        var _this9 = this;
 
         Object.keys(this.queuedWrites).forEach(function (lng) {
           if (lng === 'locks') return;
-          Object.keys(_this7.queuedWrites[lng]).forEach(function (ns) {
-            var todo = _this7.queuedWrites[lng][ns];
+          Object.keys(_this9.queuedWrites[lng]).forEach(function (ns) {
+            var todo = _this9.queuedWrites[lng][ns];
 
             if (todo.length) {
-              _this7.write(lng, ns);
+              _this9.write(lng, ns);
             }
           });
         });
