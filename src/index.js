@@ -57,7 +57,7 @@ i18next.init = (options = {}, callback) => {
       'ignoreCleanIndentFor',
       'ns'
     ];
-    const toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version'];
+    const toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version', 'allowedAddOrUpdateHost'];
 
     toRead.forEach(attr => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
@@ -78,6 +78,11 @@ i18next.init = (options = {}, callback) => {
       if (value === 'false') value = false;
       if (value !== undefined && value !== null) backend[attr] = value;
     });
+
+    if (backend.allowedAddOrUpdateHost) {
+      backend.allowedAddOrUpdateHosts = [backend.allowedAddOrUpdateHost];
+      delete backend.allowedAddOrUpdateHost;
+    }
 
     options = { ...defaults, ...options, ...config };
     options.backend = { ...options.backend, ...backend };

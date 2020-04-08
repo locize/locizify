@@ -1,3 +1,7 @@
+### v3.1.2
+
+- update dependencies and introduce allowedAddOrUpdateHost option
+
 ### v3.1.1
 
 - update dependencies

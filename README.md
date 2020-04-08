@@ -89,6 +89,7 @@ Add the script to your page:
       // optional
       version="[VERSION]"
       savemissing="[true|false (default true)]"
+      allowedAddOrUpdateHost="[mydomain.com (default localhost)]"
       debug="[true|false (default false)]"
       reloadonsave="[true|false (default true)]" // automatically reload your page on saving in editor
       autopilot="[true|false (default false)]" // automatically configures fallbackLng and language whitelist
