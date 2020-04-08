@@ -7939,12 +7939,8 @@
         });
       }
     }, {
-      key: "write",
-      value: function write(lng, namespace) {
-        var _this9 = this;
-
-        var lock = getPath$2(this.queuedWrites, ['locks', lng, namespace]);
-        if (lock) return;
+      key: "writePage",
+      value: function writePage(lng, namespace, missings, callback) {
         var missingUrl = interpolate(this.options.addPath, {
           lng: lng,
           ns: namespace,
@@ -7957,40 +7953,74 @@
           projectId: this.options.projectId,
           version: this.options.version
         });
+        var hasMissing = false;
+        var hasUpdates = false;
+        var payloadMissing = {};
+        var payloadUpdate = {};
+        missings.forEach(function (item) {
+          var value = item.options && item.options.tDescription ? {
+            value: item.fallbackValue || '',
+            context: {
+              text: item.options.tDescription
+            }
+          } : item.fallbackValue || '';
+
+          if (item.options && item.options.isUpdate) {
+            if (!hasUpdates) hasUpdates = true;
+            payloadUpdate[item.key] = value;
+          } else {
+            if (!hasMissing) hasMissing = true;
+            payloadMissing[item.key] = value;
+          }
+        });
+        var todo = 0;
+        if (hasMissing) todo++;
+        if (hasUpdates) todo++;
+
+        var doneOne = function doneOne() {
+          todo--;
+          if (!todo) callback();
+        };
+
+        if (!todo) doneOne();
+
+        if (hasMissing) {
+          ajax$1(missingUrl, _objectSpread$3({}, {
+            authorize: true
+          }, {}, this.options), function (data, xhr) {
+            //const statusCode = xhr.status.toString();
+            // TODO: if statusCode === 4xx do log
+            doneOne();
+          }, payloadMissing);
+        }
+
+        if (hasUpdates) {
+          ajax$1(updatesUrl, _objectSpread$3({}, {
+            authorize: true
+          }, {}, this.options), function (data, xhr) {
+            //const statusCode = xhr.status.toString();
+            // TODO: if statusCode === 4xx do log
+            doneOne();
+          }, payloadUpdate);
+        }
+      }
+    }, {
+      key: "write",
+      value: function write(lng, namespace) {
+        var _this9 = this;
+
+        var lock = getPath$2(this.queuedWrites, ['locks', lng, namespace]);
+        if (lock) return;
         var missings = getPath$2(this.queuedWrites, [lng, namespace]);
         setPath$2(this.queuedWrites, [lng, namespace], []);
+        var pageSize = 1000;
 
         if (missings.length) {
-          // lock
-          setPath$2(this.queuedWrites, ['locks', lng, namespace], true);
-          var hasMissing = false;
-          var hasUpdates = false;
-          var payloadMissing = {};
-          var payloadUpdate = {};
-          missings.forEach(function (item) {
-            var value = item.options && item.options.tDescription ? {
-              value: item.fallbackValue || '',
-              context: {
-                text: item.options.tDescription
-              }
-            } : item.fallbackValue || '';
+          (function () {
+            // lock
+            setPath$2(_this9.queuedWrites, ['locks', lng, namespace], true);
 
-            if (item.options && item.options.isUpdate) {
-              if (!hasUpdates) hasUpdates = true;
-              payloadUpdate[item.key] = value;
-            } else {
-              if (!hasMissing) hasMissing = true;
-              payloadMissing[item.key] = value;
-            }
-          });
-          var todo = 0;
-          if (hasMissing) todo++;
-          if (hasUpdates) todo++;
-
-          var doneOne = function doneOne() {
-            todo--;
-
-            if (!todo) {
+            var namespaceSaved = function namespaceSaved() {
               // unlock
               setPath$2(_this9.queuedWrites, ['locks', lng, namespace], false);
               missings.forEach(function (missing) {
@@ -8000,30 +8030,25 @@
               if (_this9.options.onSaved) _this9.options.onSaved(lng, namespace); // rerun
 
               _this9.debouncedProcess(lng, namespace);
+            };
+
+            var amountOfPages = missings.length / pageSize;
+            var pagesDone = 0;
+            var page = missings.splice(0, pageSize);
+
+            _this9.writePage(lng, namespace, page, function () {
+              pagesDone++;
+              if (pagesDone >= amountOfPages) namespaceSaved();
+            });
+
+            while (page.length === pageSize) {
+              page = missings.splice(0, pageSize);
+              if (page.length) _this9.writePage(lng, namespace, page, function () {
+                pagesDone++;
+                if (pagesDone >= amountOfPages) namespaceSaved();
+              });
             }
-          };
-
-          if (!todo) doneOne();
-
-          if (hasMissing) {
-            ajax$1(missingUrl, _objectSpread$3({}, {
-              authorize: true
-            }, {}, this.options), function (data, xhr) {
-              //const statusCode = xhr.status.toString();
-              // TODO: if statusCode === 4xx do log
-              doneOne();
-            }, payloadMissing);
-          }
-
-          if (hasUpdates) {
-            ajax$1(updatesUrl, _objectSpread$3({}, {
-              authorize: true
-            }, {}, this.options), function (data, xhr) {
-              //const statusCode = xhr.status.toString();
-              // TODO: if statusCode === 4xx do log
-              doneOne();
-            }, payloadUpdate);
-          }
+          })();
         }
       }
     }, {
