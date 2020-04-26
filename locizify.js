@@ -7921,7 +7921,7 @@
       this.alreadyRequestedCheckIfProjectExists = true;
       this.getLanguages(err => {
         if (err && err.message && err.message.indexOf('does not exist') > 0) {
-          logger.error(err.message);
+          if (logger) logger.error(err.message);
         }
 
         if (callback) callback(err);
@@ -7967,7 +7967,7 @@
 
       if (this.isProjectNotExisting) {
         var err = new Error("locize project ".concat(this.options.projectId, " does not exist!"));
-        logger.error(err.message);
+        if (logger) logger.error(err.message);
         if (callback) callback(err);
         return;
       }
