@@ -20,12 +20,11 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-locize-backend": "4.0.6",
+    "i18next-locize-backend": "4.0.10",
     "i18nextify": "2.5.6",
     "locize-editor": "3.0.0"
   },
   "devDependencies": {
-    "aws-sdk": "2.22.0",
     "@babel/cli": "^7.2.3",
     "@babel/core": "^7.2.2",
     "@babel/plugin-proposal-async-generator-functions": "^7.2.0",
@@ -36,6 +35,7 @@
     "@babel/preset-env": "^7.3.1",
     "@babel/preset-react": "^7.0.0",
     "@babel/register": "^7.0.0",
+    "aws-sdk": "2.22.0",
     "eslint": "6.7.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-import": "2.18.2",

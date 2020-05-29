@@ -212,7 +212,7 @@
     if (typeof o === "string") return _arrayLikeToArray(o, minLen);
     var n = Object.prototype.toString.call(o).slice(8, -1);
     if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(n);
+    if (n === "Map" || n === "Set") return Array.from(o);
     if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
   }
 
@@ -6673,7 +6673,7 @@
     if (typeof o === "string") return arrayLikeToArray(o, minLen);
     var n = Object.prototype.toString.call(o).slice(8, -1);
     if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(n);
+    if (n === "Map" || n === "Set") return Array.from(o);
     if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return arrayLikeToArray(o, minLen);
   }
 
@@ -7566,7 +7566,8 @@
   }
 
   if (!fetchApi$1 && fetchNode) fetchApi$1 = undefined || fetchNode; // because of strange export
-  // fetch api stuff
+
+  if (typeof fetchApi$1 !== 'function') fetchApi$1 = undefined; // fetch api stuff
 
   var requestWithFetch = (options, url, payload, callback) => {
     fetchApi$1(url, {
@@ -8143,15 +8144,15 @@
       if (!todo) doneOne();
 
       if (hasMissing) {
-        request(_objectSpread2({}, {
+        request(defaults$2({
           authorize: true
-        }, {}, this.options), missingUrl, payloadMissing, doneOne);
+        }, this.options), missingUrl, payloadMissing, doneOne);
       }
 
       if (hasUpdates) {
-        request(_objectSpread2({}, {
+        request(defaults$2({
           authorize: true
-        }, {}, this.options), updatesUrl, payloadUpdate, doneOne);
+        }, this.options), updatesUrl, payloadUpdate, doneOne);
       }
     }
 
@@ -8609,7 +8610,7 @@
   i18next$1.init = function () {
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     var callback = arguments.length > 1 ? arguments[1] : undefined;
-    options = _objectSpread2({}, defaults$3, {}, options);
+    options = _objectSpread2(_objectSpread2({}, defaults$3), options);
     var scriptEle = document.getElementById('locizify');
 
     if (scriptEle) {
@@ -8640,11 +8641,11 @@
         delete backend.allowedAddOrUpdateHost;
       }
 
-      options = _objectSpread2({}, defaults$3, {}, options, {}, config);
-      options.backend = _objectSpread2({}, options.backend, {}, backend);
+      options = _objectSpread2(_objectSpread2(_objectSpread2({}, defaults$3), options), config);
+      options.backend = _objectSpread2(_objectSpread2({}, options.backend), backend);
     }
 
-    if (options.reloadOnSave && (!options.editor || !options.editor.onEditorSaved)) options.editor = _objectSpread2({}, options.editor, {}, reloadEditorOptions);
+    if (options.reloadOnSave && (!options.editor || !options.editor.onEditorSaved)) options.editor = _objectSpread2(_objectSpread2({}, options.editor), reloadEditorOptions);
 
     if (options.bindSavedMissing) {
       options.backend.onSaved = (lng, ns) => {
@@ -8658,11 +8659,11 @@
       callback(err, t);
     }
 
-    if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next$1, _objectSpread2({}, options, {}, enforce), handleI18nextInitialized);
+    if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next$1, _objectSpread2(_objectSpread2({}, options), enforce), handleI18nextInitialized);
     var locizeBackend = new I18NextLocizeBackend(options.backend);
     locizeBackend.getOptions((err, opts) => {
       if (err && typeof console === 'object' && typeof console.error === 'function') console.error(err);
-      originalInit.call(i18next$1, _objectSpread2({}, opts, {}, options, {}, enforce), handleI18nextInitialized);
+      originalInit.call(i18next$1, _objectSpread2(_objectSpread2(_objectSpread2({}, opts), options), enforce), handleI18nextInitialized);
     });
   };
 
