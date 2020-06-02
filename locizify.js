@@ -7524,7 +7524,7 @@
     }
   }
 
-  if (typeof require !== 'undefined') {
+  if (typeof require !== 'undefined' && (typeof window === 'undefined' || typeof window.document === 'undefined')) {
     var f = fetchApi || require('node-fetch');
     if (f.default) f = f.default;
     exports.default = f;
@@ -8575,11 +8575,13 @@
     },
     on: function on() {
       document.body.addEventListener('click', this.handler, true);
+      if (!this.toggleUI) this.open();
       this.toggleUI(true);
       this.enabled = true;
     },
     off: function off() {
       document.body.removeEventListener('click', this.handler, true);
+      if (!this.toggleUI) this.open();
       this.toggleUI(false);
       this.enabled = false;
     }
