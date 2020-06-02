@@ -1,3 +1,7 @@
+### v4.0.4
+
+- update dependencies
+
 ### v4.0.3
 
 - update dependencies
