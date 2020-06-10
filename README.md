@@ -121,6 +121,8 @@ Add the script to your page:
           // hostnames that are allowed to add, update keys
           // please keep those to your local system, staging, test servers (not production)
           allowedAddOrUpdateHosts: ['localhost']
+          // alternatively, pass a function:
+          isAddOrUpdateAllowed: function(hostname) { return hostname.endsWith('staging.example.com') }
         },
 
         // defaults that are set
