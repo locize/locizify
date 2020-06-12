@@ -122,7 +122,7 @@ Add the script to your page:
           // please keep those to your local system, staging, test servers (not production)
           allowedAddOrUpdateHosts: ['localhost']
           // alternatively, pass a function:
-          allowedAddOrUpdateHosts: function(hostname) { return hostname.endsWith('staging.example.com') }
+          isAddOrUpdateAllowed: function(hostname) { return hostname.endsWith('staging.example.com') }
         },
 
         // defaults that are set
