@@ -92,7 +92,7 @@ Add the script to your page:
       allowedAddOrUpdateHost="[mydomain.com (default localhost)]"
       debug="[true|false (default false)]"
       reloadonsave="[true|false (default true)]" // automatically reload your page on saving in editor
-      autopilot="[true|false (default false)]" // automatically configures fallbackLng and language whitelist
+      autopilot="[true|false (default false)]" // automatically configures fallbackLng and supportedLngs
 
       // others
       // you can define any other option below just use the lowercased name and for arrays use comma separated values, eg.:
