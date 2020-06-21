@@ -1,7 +1,6 @@
 [![Travis](https://img.shields.io/travis/locize/locizify/master.svg?style=flat-square)](https://travis-ci.org/locize/locizify)
 [![Coveralls](https://img.shields.io/coveralls/locize/locizify/master.svg?style=flat-square)](https://coveralls.io/github/locize/locizify)
 [![npm version](https://img.shields.io/npm/v/locizify.svg?style=flat-square)](https://www.npmjs.com/package/locizify)
-[![Bower](https://img.shields.io/bower/v/locizify.svg)]()
 [![David](https://img.shields.io/david/locize/locizify.svg?style=flat-square)](https://david-dm.org/locize/locizify)
 
 # locizify
@@ -17,7 +16,7 @@ Just drop the following line to your header to deliver your content in any langu
   apikey="[API_KEY]"
   referencelng="[LNG]"
   fallbacklng="[LNG]"
-  src="https://unpkg.com/locizify@^4.0.1"
+  src="https://unpkg.com/locizify@^4.0.7"
 ></script>
 ```
 
@@ -52,7 +51,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^4.0.1"
+      src="https://unpkg.com/locizify@^4.0.7"
     ></script>
   </head>
   ...
@@ -84,7 +83,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^4.0.1"
+      src="https://unpkg.com/locizify@^4.0.7"
 
       // optional
       version="[VERSION]"
@@ -108,7 +107,7 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://unpkg.com/locizify@^4.0.1"></script>
+    <script src="https://unpkg.com/locizify@^4.0.7"></script>
     <script>
       locizify.init({
         // required
