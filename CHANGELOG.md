@@ -1,3 +1,7 @@
+### v4.0.8
+
+- update dependencies
+
 ### v4.0.7
 
 - update i18nextify
