@@ -8958,7 +8958,7 @@
     if (scriptEle) {
       var config = {};
       var backend = {};
-      var toRead = ['fallbackLng', 'saveMissing', 'debug', 'reloadOnSave', 'autorun', 'ele', 'cleanIndent', 'cleanWhitespace', 'namespace', 'namespaceFromPath'];
+      var toRead = ['fallbackLng', 'saveMissing', 'debug', 'reloadOnSave', 'autorun', 'ele', 'cleanIndent', 'cleanWhitespace', 'namespace', 'namespaceFromPath', 'load'];
       var toReadAsArray = ['ignoreTags', 'ignoreIds', 'ignoreClasses', 'translateAttributes', 'mergeTags', 'inlineTags', 'ignoreInlineOn', 'ignoreCleanIndentFor', 'ns'];
       var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version', 'allowedAddOrUpdateHost'];
       toRead.forEach(attr => {

@@ -16,7 +16,7 @@ Just drop the following line to your header to deliver your content in any langu
   apikey="[API_KEY]"
   referencelng="[LNG]"
   fallbacklng="[LNG]"
-  src="https://unpkg.com/locizify@^4.0.7"
+  src="https://unpkg.com/locizify@^4.0.11"
 ></script>
 ```
 
@@ -51,7 +51,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^4.0.7"
+      src="https://unpkg.com/locizify@^4.0.11"
     ></script>
   </head>
   ...
@@ -83,7 +83,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^4.0.7"
+      src="https://unpkg.com/locizify@^4.0.11"
 
       // optional
       version="[VERSION]"
@@ -92,6 +92,7 @@ Add the script to your page:
       debug="[true|false (default false)]"
       reloadonsave="[true|false (default true)]" // automatically reload your page on saving in editor
       autopilot="[true|false (default false)]" // automatically configures fallbackLng and supportedLngs
+      load="[all|currentOnly|languageOnly (default all)]" // https://www.i18next.com/overview/configuration-options
 
       // others
       // you can define any other option below just use the lowercased name and for arrays use comma separated values, eg.:
@@ -107,7 +108,7 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://unpkg.com/locizify@^4.0.7"></script>
+    <script src="https://unpkg.com/locizify@^4.0.11"></script>
     <script>
       locizify.init({
         // required

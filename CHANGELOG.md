@@ -1,3 +1,7 @@
+### v4.0.11
+
+- lookup load option in html element
+
 ### v4.0.10
 
 - update dependencies

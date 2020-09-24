@@ -44,7 +44,8 @@ i18next.init = (options = {}, callback) => {
       'cleanIndent',
       'cleanWhitespace',
       'namespace',
-      'namespaceFromPath'
+      'namespaceFromPath',
+      'load'
     ];
     const toReadAsArray = [
       'ignoreTags',
