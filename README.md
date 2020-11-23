@@ -452,3 +452,9 @@ You will have to enforce flat JSON in your locize project (settings -> publish f
   "myKey.attr2": "value"
 }
 ```
+
+## force a retranslation:
+
+```js
+locizify.forceRerender();
+```

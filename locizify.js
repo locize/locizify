@@ -8927,6 +8927,275 @@
     }
   };
 
+  function _typeof$2(obj) {
+    "@babel/helpers - typeof";
+
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof$2 = function _typeof(obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof$2 = function _typeof(obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof$2(obj);
+  }
+
+  function isWindow$1(obj) {
+    return obj != null && obj === obj.window;
+  }
+
+  function getWindow$1(elem) {
+    return isWindow$1(elem) ? elem : elem.nodeType === 9 && elem.defaultView;
+  }
+
+  function offset$1(elem) {
+    var box = {
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0
+    };
+    var doc = elem && elem.ownerDocument;
+    var docElem = doc && doc.documentElement;
+    if (!docElem) return box;
+
+    if (_typeof$2(elem.getBoundingClientRect) !== "undefined") {
+      box = elem.getBoundingClientRect();
+    }
+
+    var win = getWindow$1(doc);
+    var top = box.top + win.pageYOffset - docElem.clientTop;
+    var left = box.left + win.pageXOffset - docElem.clientLeft;
+    return {
+      top: top,
+      left: left,
+      right: left + (box.right - box.left),
+      bottom: top + (box.bottom - box.top)
+    };
+  }
+
+  function getClickedElement$1(e) {
+    // clicked input
+    if (e.srcElement && e.srcElement.nodeType === 1) {
+      if (e.srcElement.getAttribute && e.srcElement.getAttribute('ignorelocizeeditor') === '') return null;
+      return e.srcElement;
+    }
+
+    var el;
+
+    if (e.originalEvent && e.originalEvent.explicitOriginalTarget) {
+      el = e.originalEvent.explicitOriginalTarget;
+    } else {
+      var parent = e.srcElement;
+      if (parent.getAttribute && parent.getAttribute('ignorelocizeeditor') === '') return null;
+      var left = e.pageX;
+      var top = e.pageY; // let pOffset = offset(parent);
+      // console.warn('click', top, left);
+      // console.warn('parent', parent, pOffset, parent.clientHeight, parent.offsetHeight);
+
+      var topStartsAt = 0;
+      var topBreaksAt; // eslint-disable-next-line no-plusplus
+
+      for (var i = 0; i < parent.childNodes.length; i++) {
+        var n = parent.childNodes[i];
+        var nOffset = offset$1(n); // console.warn('child', n, nOffset, n.clientHeight, n.offsetHeight)
+        // if a node is with the bottom over the top click set the next child as start index
+
+        if (n.nodeType === 1 && nOffset.bottom < top) topStartsAt = i + 1; // if node is below top click set end index to this node
+
+        if (!topBreaksAt && nOffset.top + (n.clientHeight || 0) > top) topBreaksAt = i;
+      } // check we are inside children lenght
+
+
+      if (topStartsAt + 1 > parent.childNodes.length) topStartsAt = parent.childNodes.length - 1;
+      if (!topBreaksAt) topBreaksAt = parent.childNodes.length; // console.warn('bound', topStartsAt, topBreaksAt)
+      // inside our boundaries check when left is to big and out of clicks left
+      // eslint-disable-next-line no-plusplus
+
+      for (var y = topStartsAt; y < topBreaksAt; y++) {
+        var _n = parent.childNodes[y];
+
+        var _nOffset = offset$1(_n);
+
+        if (_nOffset.left > left) {
+          break;
+        }
+
+        if (_n && _n.nodeType !== 8) el = _n;
+      }
+    }
+
+    return el;
+  }
+
+  function getElementText(el) {
+    var str = el.textContent || el.text && el.text.innerText || el.placeholder;
+    if (typeof str !== 'string') return; // eslint-disable-next-line consistent-return
+
+    return str.replace(/\n +/g, '').trim();
+  }
+
+  function getAttribute$1(el, name) {
+    return el && el.getAttribute && el.getAttribute(name);
+  }
+
+  function getElementNamespace$1(el) {
+    var found;
+
+    var find = function find(ele) {
+      var opts = getAttribute$1(ele, 'i18next-options');
+      if (!opts) opts = getAttribute$1(ele, 'data-i18next-options');
+      if (!opts) opts = getAttribute$1(ele, 'i18n-options');
+      if (!opts) opts = getAttribute$1(ele, 'data-i18n-options');
+
+      if (opts) {
+        var jsonData = {};
+
+        try {
+          jsonData = JSON.parse(opts);
+        } catch (e) {// not our problem here in editor
+        }
+
+        if (jsonData.ns) found = jsonData.ns;
+      }
+
+      if (!found) found = getAttribute$1(ele, 'i18next-ns');
+      if (!found) found = getAttribute$1(ele, 'data-i18next-ns');
+      if (!found) found = getAttribute$1(ele, 'i18n-ns');
+      if (!found) found = getAttribute$1(ele, 'data-i18n-ns');
+      if (!found && ele.parentElement) find(ele.parentElement);
+    };
+
+    find(el);
+    return found;
+  }
+  /* eslint-disable import/prefer-default-export */
+
+
+  function createClickHandler(cb) {
+    // eslint-disable-next-line consistent-return
+    var handler = function handler(e) {
+      var el = getClickedElement$1(e);
+      if (!el) return {};
+      e.preventDefault();
+      e.stopPropagation();
+      var text = getElementText(el);
+
+      var _el$getBoundingClient = el.getBoundingClientRect(),
+          top = _el$getBoundingClient.top,
+          left = _el$getBoundingClient.left,
+          width = _el$getBoundingClient.width,
+          height = _el$getBoundingClient.height;
+
+      var style = window.getComputedStyle(el, null);
+      var pT = parseFloat(style.getPropertyValue('padding-top'));
+      var pB = parseFloat(style.getPropertyValue('padding-bottom'));
+      var pR = parseFloat(style.getPropertyValue('padding-right'));
+      var pL = parseFloat(style.getPropertyValue('padding-left'));
+      var sizing = style.getPropertyValue('box-sizing');
+      cb({
+        tagName: el.tagName,
+        text: text,
+        ns: getElementNamespace$1(el),
+        box: {
+          top: top,
+          left: left,
+          width: sizing === 'border-box' ? width : width - pR - pL,
+          height: sizing === 'border-box' ? height : height - pT - pB
+        },
+        style: style.cssText
+      });
+    };
+
+    return handler;
+  }
+
+  var source;
+  var origin;
+  var handler;
+  var clickInterceptionEnabled;
+  var handleLocizeSaved; // let i18next;
+
+  function addLocizeSavedHandler(hnd) {
+    handleLocizeSaved = hnd;
+  }
+
+  function onAddedKey(lng, ns, key, value) {
+    if (source) {
+      source.postMessage({
+        message: 'added',
+        lng: lng,
+        ns: ns,
+        key: key,
+        value: value
+      }, origin);
+    }
+  }
+
+  var locizePlugin = {
+    type: '3rdParty',
+    init: function init(i18n) {
+      // i18next = i18n;
+      addLocizeSavedHandler(function (res) {
+        res.updated.forEach(function (item) {
+          var lng = item.lng,
+              ns = item.ns,
+              key = item.key,
+              data = item.data;
+          i18n.addResource(lng, ns, key, data.value, {
+            silent: true
+          });
+          i18n.emit('editorSaved');
+        });
+      });
+
+      i18n.options.missingKeyHandler = function (lng, ns, k, val, isUpdate, opts) {
+        if (!isUpdate) onAddedKey(lng, ns, k, val);
+      };
+    }
+  };
+  window.addEventListener('message', function (e) {
+    if (e.data.message === 'isLocizeEnabled') {
+      // console.warn("result: ", ev.data);
+      // parent => ev.source;
+      if (!source) {
+        source = e.source;
+        origin = e.origin;
+        handler = createClickHandler(function (payload) {
+          source.postMessage({
+            message: 'clickedElement',
+            payload: payload
+          }, origin);
+        }); // document.body.addEventListener('click', handler, true);
+        // clickInterceptionEnabled = true;
+      }
+
+      source.postMessage({
+        message: 'locizeIsEnabled',
+        enabled: true
+      }, e.origin);
+    } else if (e.data.message === 'turnOn') {
+      if (!clickInterceptionEnabled) window.document.body.addEventListener('click', handler, true);
+      clickInterceptionEnabled = true;
+      source.postMessage({
+        message: 'turnedOn'
+      }, origin);
+    } else if (e.data.message === 'turnOff') {
+      if (clickInterceptionEnabled) window.document.body.removeEventListener('click', handler, true);
+      clickInterceptionEnabled = false;
+      source.postMessage({
+        message: 'turnedOff'
+      }, origin);
+    } else if (e.data.message === 'committed') {
+      var data = e.data.payload;
+      if (window.locizeSavedHandler) window.locizeSavedHandler(data);
+      if (handleLocizeSaved) handleLocizeSaved(data);
+    }
+  });
+
   var {
     i18next: i18next$1
   } = i18nextify;
@@ -8939,14 +9208,17 @@
   };
   var reloadEditorOptions = {
     onEditorSaved: function onEditorSaved(lng, ns) {
-      // location.reload();
       i18next$1.reloadResources(lng, ns, () => {
-        i18nextify.forceRerender();
+        i18next$1.emit('editorSaved');
       });
     }
   };
   i18nextify.editor = editor;
-  i18next$1.use(I18NextLocizeBackend).use(editor);
+  i18next$1.use(I18NextLocizeBackend).use(locizePlugin).use(editor); // locize-editor is for old client
+
+  i18next$1.on('editorSaved', () => {
+    i18nextify.forceRerender();
+  });
   var originalInit = i18next$1.init;
 
   i18next$1.init = function () {
@@ -8987,9 +9259,11 @@
       options.backend = _objectSpread2(_objectSpread2({}, options.backend), backend);
     }
 
-    if (options.reloadOnSave && (!options.editor || !options.editor.onEditorSaved)) options.editor = _objectSpread2(_objectSpread2({}, options.editor), reloadEditorOptions);
+    if ( // locize-editor is for old client
+    options.reloadOnSave && (!options.editor || !options.editor.onEditorSaved)) options.editor = _objectSpread2(_objectSpread2({}, options.editor), reloadEditorOptions);
 
     if (options.bindSavedMissing) {
+      // locize-editor is for old client
       options.backend.onSaved = (lng, ns) => {
         editor.handleSavedMissing(lng, ns);
       };

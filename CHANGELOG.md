@@ -1,3 +1,7 @@
+### v5.0.0
+
+- should now work for new and for old client
+
 ### v4.0.11
 
 - lookup load option in html element
