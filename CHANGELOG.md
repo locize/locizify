@@ -1,4 +1,4 @@
-### v5.0.0
+### v4.1.0
 
 - should now work for new and for old client
 
