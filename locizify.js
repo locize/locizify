@@ -8733,12 +8733,28 @@
 
   function initUI(on, off, options) {
     var cont = document.createElement("div");
-    cont.setAttribute('style', 'z-index: 2147483647; font-family: "Helvetica", "Arial", sans-serif; position: fixed; bottom: 20px; right: 20px; padding: 10px; background-color: #fff; border: solid 1px #1976d2; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.5);');
+    var style = 'font-family: "Helvetica", "Arial", sans-serif; bottom: 20px; right: 20px; padding: 10px; background-color: #fff; border: solid 1px #1976d2; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.5);';
+
+    if (options.locizeEditorToggle.appendTarget) {
+      style += 'position: absolute;';
+    } else {
+      style += ' z-index: 2147483647; position: fixed;';
+    }
+
+    cont.setAttribute('style', style);
     cont.setAttribute('ignorelocizeeditor', '');
     cont.setAttribute('translated', '');
+
+    if (options.locizeEditorToggle.containerClasses) {
+      var classes = options.locizeEditorToggle.containerClasses.length > 1 ? options.locizeEditorToggle.containerClasses.split(' ') : options.locizeEditorToggle.containerClasses;
+      classes.forEach(function (cssClass) {
+        cont.classList.add(cssClass);
+      });
+    }
+
     var title = document.createElement("h4");
     title.id = "locize-title";
-    title.innerHTML = "locize editor";
+    title.innerHTML = options.locizeEditorToggle.title || "locize editor";
     title.setAttribute('style', 'font-family: "Helvetica", "Arial", sans-serif; font-size: 14px; margin: 0 0 5px 0; color: #1976d2; font-weight: 300;');
     title.setAttribute('ignorelocizeeditor', '');
     cont.appendChild(title);
@@ -8754,7 +8770,12 @@
     turnOn.onclick = on;
     turnOn.setAttribute('ignorelocizeeditor', '');
     cont.appendChild(turnOn);
-    document.body.appendChild(cont);
+
+    if (options.locizeEditorToggle.appendTarget) {
+      options.locizeEditorToggle.appendTarget.appendChild(cont);
+    } else {
+      document.body.appendChild(cont);
+    }
 
     var toggle = function toggle(on) {
       turnOff.style.display = on ? 'block' : 'none';
@@ -8765,19 +8786,38 @@
   }
 
   function appendIframe(url, options) {
+    if (options.locizeEditorWindow.appendTarget) {
+      options.iframeContainerStyle = 'position: absolute; top: 0; right: 0; bottom: 0; left: 0;';
+      options.iframeStyle += ' width: 100%;';
+    }
+
     var cont = document.createElement("div");
     cont.setAttribute('style', options.iframeContainerStyle);
     cont.setAttribute('ignorelocizeeditor', '');
     cont.setAttribute('translated', '');
+
+    if (options.locizeEditorWindow.containerClasses) {
+      var classes = options.locizeEditorWindow.containerClasses.length > 1 ? options.locizeEditorWindow.containerClasses.split(' ') : options.locizeEditorWindow.containerClasses;
+      classes.forEach(function (cssClass) {
+        cont.classList.add(cssClass);
+      });
+    }
+
     var iframe = document.createElement("iframe");
     iframe.setAttribute('style', options.iframeStyle);
     iframe.setAttribute('ignorelocizeeditor', '');
     iframe.setAttribute('translated', '');
     iframe.setAttribute('src', url);
     cont.appendChild(iframe);
-    document.body.appendChild(cont);
-    var bodyStyle = document.body.getAttribute('style');
-    document.body.setAttribute('style', "".concat(bodyStyle, "; ").concat(options.bodyStyle));
+
+    if (options.locizeEditorWindow.appendTarget) {
+      options.locizeEditorWindow.appendTarget.appendChild(cont);
+    } else {
+      document.body.appendChild(cont);
+      var bodyStyle = document.body.getAttribute('style');
+      document.body.setAttribute('style', "".concat(bodyStyle, "; ").concat(options.bodyStyle));
+    }
+
     return iframe.contentWindow;
   }
 
@@ -8796,7 +8836,16 @@
     mode: getQueryVariable('locizeMode') || 'iframe',
     iframeContainerStyle: 'z-index: 2147480000; position: fixed; top: 0; right: 0; bottom: 0; width: 600px; box-shadow: -3px 0 5px 0 rgba(0,0,0,0.5);',
     iframeStyle: 'height: 100%; width: 600px; border: none;',
-    bodyStyle: 'margin-right: 605px;'
+    bodyStyle: 'margin-right: 605px;',
+    locizeEditorWindow: {
+      appendTarget: false,
+      containerClasses: false
+    },
+    locizeEditorToggle: {
+      appendTarget: false,
+      containerClasses: false,
+      title: false
+    }
   };
 
   function convertOptionsToI18next(opts) {
@@ -8979,7 +9028,7 @@
 
   function getClickedElement$1(e) {
     // clicked input
-    if (e.srcElement && e.srcElement.nodeType === 1) {
+    if (e.srcElement && e.srcElement.nodeType === 1 && (e.srcElement.nodeName === 'BUTTON' || e.srcElement.nodeName === 'INPUT')) {
       if (e.srcElement.getAttribute && e.srcElement.getAttribute('ignorelocizeeditor') === '') return null;
       return e.srcElement;
     }
@@ -9083,21 +9132,22 @@
       e.preventDefault();
       e.stopPropagation();
       var text = getElementText(el);
+      var rectEl = el.getBoundingClientRect ? el : el.parentElement;
 
-      var _el$getBoundingClient = el.getBoundingClientRect(),
-          top = _el$getBoundingClient.top,
-          left = _el$getBoundingClient.left,
-          width = _el$getBoundingClient.width,
-          height = _el$getBoundingClient.height;
+      var _rectEl$getBoundingCl = rectEl.getBoundingClientRect(),
+          top = _rectEl$getBoundingCl.top,
+          left = _rectEl$getBoundingCl.left,
+          width = _rectEl$getBoundingCl.width,
+          height = _rectEl$getBoundingCl.height;
 
-      var style = window.getComputedStyle(el, null);
+      var style = window.getComputedStyle(rectEl, null);
       var pT = parseFloat(style.getPropertyValue('padding-top'));
       var pB = parseFloat(style.getPropertyValue('padding-bottom'));
       var pR = parseFloat(style.getPropertyValue('padding-right'));
       var pL = parseFloat(style.getPropertyValue('padding-left'));
       var sizing = style.getPropertyValue('box-sizing');
       cb({
-        tagName: el.tagName,
+        tagName: rectEl.tagName,
         text: text,
         ns: getElementNamespace$1(el),
         box: {

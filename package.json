@@ -22,7 +22,7 @@
   "dependencies": {
     "i18next-locize-backend": "4.1.8",
     "i18nextify": "2.5.11",
-    "locize": "2.2.1",
+    "locize": "2.2.2",
     "locize-editor": "3.1.0"
   },
   "devDependencies": {

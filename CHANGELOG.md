@@ -1,3 +1,7 @@
+### v4.1.1
+
+- update locize dependency
+
 ### v4.1.0
 
 - should now work for new and for old client
