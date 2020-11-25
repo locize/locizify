@@ -9180,15 +9180,21 @@
     handleLocizeSaved = hnd;
   }
 
+  var pendingMsgs = [];
+
   function onAddedKey(lng, ns, key, value) {
+    var msg = {
+      message: 'added',
+      lng: lng,
+      ns: ns,
+      key: key,
+      value: value
+    };
+
     if (source) {
-      source.postMessage({
-        message: 'added',
-        lng: lng,
-        ns: ns,
-        key: key,
-        value: value
-      }, origin);
+      source.postMessage(msg, origin);
+    } else {
+      pendingMsgs.push(msg);
     }
   }
 
@@ -9236,6 +9242,10 @@
         message: 'locizeIsEnabled',
         enabled: true
       }, e.origin);
+      pendingMsgs.forEach(function (m) {
+        source.postMessage(m, e.origin);
+      });
+      pendingMsgs = [];
     } else if (e.data.message === 'turnOn') {
       if (!clickInterceptionEnabled) window.document.body.addEventListener('click', handler, true);
       clickInterceptionEnabled = true;
