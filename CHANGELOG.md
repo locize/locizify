@@ -1,3 +1,7 @@
+### v4.1.4
+
+- update locize-editor dependency
+
 ### v4.1.3
 
 - update locize dependency
