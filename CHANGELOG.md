@@ -1,3 +1,7 @@
+### v4.2.0
+
+- update i18next dependencies
+
 ### v4.1.4
 
 - update locize-editor dependency

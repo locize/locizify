@@ -383,7 +383,12 @@
       if (canNotTraverseDeeper()) return {};
       var key = cleanKey(stack.shift());
       if (!object[key] && Empty) object[key] = new Empty();
-      object = object[key];
+
+      if (Object.prototype.hasOwnProperty.call(object, key)) {
+        object = object[key];
+      } else {
+        object = {};
+      }
     }
 
     if (canNotTraverseDeeper()) return {};
@@ -432,7 +437,7 @@
 
   function deepExtend(target, source, overwrite) {
     for (var prop in source) {
-      if (prop !== '__proto__') {
+      if (prop !== '__proto__' && prop !== 'constructor') {
         if (prop in target) {
           if (typeof target[prop] === 'string' || target[prop] instanceof String || typeof source[prop] === 'string' || source[prop] instanceof String) {
             if (overwrite) target[prop] = source[prop];
@@ -473,6 +478,43 @@
 
   var isIE10 = typeof window !== 'undefined' && window.navigator && window.navigator.userAgent && window.navigator.userAgent.indexOf('MSIE') > -1;
 
+  function deepFind(obj, path) {
+    var keySeparator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '.';
+    if (!obj) return undefined;
+    if (obj[path]) return obj[path];
+    var paths = path.split(keySeparator);
+    var current = obj;
+
+    for (var i = 0; i < paths.length; ++i) {
+      if (typeof current[paths[i]] === 'string' && i + 1 < paths.length) {
+        return undefined;
+      }
+
+      if (current[paths[i]] === undefined) {
+        var j = 2;
+        var p = paths.slice(i, i + j).join(keySeparator);
+        var mix = current[p];
+
+        while (mix === undefined && paths.length > i + j) {
+          j++;
+          p = paths.slice(i, i + j).join(keySeparator);
+          mix = current[p];
+        }
+
+        if (mix === undefined) return undefined;
+        if (typeof mix === 'string') return mix;
+        if (p && typeof mix[p] === 'string') return mix[p];
+        var joinedPath = paths.slice(i + j).join(keySeparator);
+        if (joinedPath) return deepFind(mix, joinedPath, keySeparator);
+        return undefined;
+      }
+
+      current = current[paths[i]];
+    }
+
+    return current;
+  }
+
   var ResourceStore = function (_EventEmitter) {
     _inherits(ResourceStore, _EventEmitter);
 
@@ -499,6 +541,10 @@
         _this.options.keySeparator = '.';
       }
 
+      if (_this.options.ignoreJSONStructure === undefined) {
+        _this.options.ignoreJSONStructure = true;
+      }
+
       return _this;
     }
 
@@ -523,6 +569,7 @@
       value: function getResource(lng, ns, key) {
         var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
         var keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
+        var ignoreJSONStructure = options.ignoreJSONStructure !== undefined ? options.ignoreJSONStructure : this.options.ignoreJSONStructure;
         var path = [lng, ns];
         if (key && typeof key !== 'string') path = path.concat(key);
         if (key && typeof key === 'string') path = path.concat(keySeparator ? key.split(keySeparator) : key);
@@ -531,7 +578,9 @@
           path = lng.split('.');
         }
 
-        return getPath(this.data, path);
+        var result = getPath(this.data, path);
+        if (result || !ignoreJSONStructure || typeof key !== 'string') return result;
+        return deepFind(this.data && this.data[lng] && this.data[lng][ns], key, keySeparator);
       }
     }, {
       key: "addResource",
@@ -768,21 +817,21 @@
 
           if (keySeparator) {
             var resTypeIsArray = resType === '[object Array]';
-            var copy$$1 = resTypeIsArray ? [] : {};
+            var copy = resTypeIsArray ? [] : {};
             var newKeyToUse = resTypeIsArray ? resExactUsedKey : resUsedKey;
 
             for (var m in res) {
               if (Object.prototype.hasOwnProperty.call(res, m)) {
                 var deepKey = "".concat(newKeyToUse).concat(keySeparator).concat(m);
-                copy$$1[m] = this.translate(deepKey, _objectSpread({}, options, {
+                copy[m] = this.translate(deepKey, _objectSpread({}, options, {
                   joinArrays: false,
                   ns: namespaces
                 }));
-                if (copy$$1[m] === deepKey) copy$$1[m] = res[m];
+                if (copy[m] === deepKey) copy[m] = res[m];
               }
             }
 
-            res = copy$$1;
+            res = copy;
           }
         } else if (handleAsObjectInI18nFormat && typeof joinArrays === 'string' && resType === '[object Array]') {
           res = res.join(joinArrays);
@@ -790,16 +839,14 @@
         } else {
           var usedDefault = false;
           var usedKey = false;
+          var needsPluralHandling = options.count !== undefined && typeof options.count !== 'string';
+          var hasDefaultValue = Translator.hasDefaultValue(options);
+          var defaultValueSuffix = needsPluralHandling ? this.pluralResolver.getSuffix(lng, options.count) : '';
+          var defaultValue = options["defaultValue".concat(defaultValueSuffix)] || options.defaultValue;
 
-          if (!this.isValidLookup(res) && options.defaultValue !== undefined) {
+          if (!this.isValidLookup(res) && hasDefaultValue) {
             usedDefault = true;
-
-            if (options.count !== undefined) {
-              var suffix = this.pluralResolver.getSuffix(lng, options.count);
-              res = options["defaultValue".concat(suffix)];
-            }
-
-            if (!res) res = options.defaultValue;
+            res = defaultValue;
           }
 
           if (!this.isValidLookup(res)) {
@@ -807,10 +854,10 @@
             res = key;
           }
 
-          var updateMissing = options.defaultValue && options.defaultValue !== res && this.options.updateMissing;
+          var updateMissing = hasDefaultValue && defaultValue !== res && this.options.updateMissing;
 
           if (usedKey || usedDefault || updateMissing) {
-            this.logger.log(updateMissing ? 'updateKey' : 'missingKey', lng, namespace, key, updateMissing ? options.defaultValue : res);
+            this.logger.log(updateMissing ? 'updateKey' : 'missingKey', lng, namespace, key, updateMissing ? defaultValue : res);
 
             if (keySeparator) {
               var fk = this.resolve(key, _objectSpread({}, options, {
@@ -832,29 +879,25 @@
               lngs.push(options.lng || this.language);
             }
 
-            var send = function send(l, k) {
+            var send = function send(l, k, fallbackValue) {
               if (_this2.options.missingKeyHandler) {
-                _this2.options.missingKeyHandler(l, namespace, k, updateMissing ? options.defaultValue : res, updateMissing, options);
+                _this2.options.missingKeyHandler(l, namespace, k, updateMissing ? fallbackValue : res, updateMissing, options);
               } else if (_this2.backendConnector && _this2.backendConnector.saveMissing) {
-                _this2.backendConnector.saveMissing(l, namespace, k, updateMissing ? options.defaultValue : res, updateMissing, options);
+                _this2.backendConnector.saveMissing(l, namespace, k, updateMissing ? fallbackValue : res, updateMissing, options);
               }
 
               _this2.emit('missingKey', l, namespace, k, res);
             };
 
             if (this.options.saveMissing) {
-              var needsPluralHandling = options.count !== undefined && typeof options.count !== 'string';
-
               if (this.options.saveMissingPlurals && needsPluralHandling) {
-                lngs.forEach(function (l) {
-                  var plurals = _this2.pluralResolver.getPluralFormsOfKey(l, key);
-
-                  plurals.forEach(function (p) {
-                    return send([l], p);
+                lngs.forEach(function (language) {
+                  _this2.pluralResolver.getSuffixes(language).forEach(function (suffix) {
+                    send([language], key + suffix, options["defaultValue".concat(suffix)] || defaultValue);
                   });
                 });
               } else {
-                send(lngs, key);
+                send(lngs, key, defaultValue);
               }
             }
           }
@@ -902,7 +945,7 @@
               args[_key] = arguments[_key];
             }
 
-            if (lastKey && lastKey[0] === args[0]) {
+            if (lastKey && lastKey[0] === args[0] && !options.context) {
               _this3.logger.warn("It seems you are nesting recursively key: ".concat(args[0], " in key: ").concat(key[0]));
 
               return null;
@@ -1004,6 +1047,19 @@
         var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
         if (this.i18nFormat && this.i18nFormat.getResource) return this.i18nFormat.getResource(code, ns, key, options);
         return this.resourceStore.getResource(code, ns, key, options);
+      }
+    }], [{
+      key: "hasDefaultValue",
+      value: function hasDefaultValue(options) {
+        var prefix = 'defaultValue';
+
+        for (var option in options) {
+          if (Object.prototype.hasOwnProperty.call(options, option) && prefix === option.substring(0, prefix.length) && undefined !== options[option]) {
+            return true;
+          }
+        }
+
+        return false;
       }
     }]);
 
@@ -1119,6 +1175,7 @@
       key: "getFallbackCodes",
       value: function getFallbackCodes(fallbacks, code) {
         if (!fallbacks) return [];
+        if (typeof fallbacks === 'function') fallbacks = fallbacks(code);
         if (typeof fallbacks === 'string') fallbacks = [fallbacks];
         if (Object.prototype.toString.apply(fallbacks) === '[object Array]') return fallbacks;
         if (!code) return fallbacks["default"] || [];
@@ -1166,7 +1223,7 @@
   }();
 
   var sets = [{
-    lngs: ['ach', 'ak', 'am', 'arn', 'br', 'fil', 'gun', 'ln', 'mfe', 'mg', 'mi', 'oc', 'pt', 'pt-BR', 'tg', 'ti', 'tr', 'uz', 'wa'],
+    lngs: ['ach', 'ak', 'am', 'arn', 'br', 'fil', 'gun', 'ln', 'mfe', 'mg', 'mi', 'oc', 'pt', 'pt-BR', 'tg', 'tl', 'ti', 'tr', 'uz', 'wa'],
     nr: [1, 2],
     fc: 1
   }, {
@@ -1371,17 +1428,24 @@
     }, {
       key: "getPluralFormsOfKey",
       value: function getPluralFormsOfKey(code, key) {
+        return this.getSuffixes(code).map(function (suffix) {
+          return key + suffix;
+        });
+      }
+    }, {
+      key: "getSuffixes",
+      value: function getSuffixes(code) {
         var _this = this;
 
-        var ret = [];
         var rule = this.getRule(code);
-        if (!rule) return ret;
-        rule.numbers.forEach(function (n) {
-          var suffix = _this.getSuffix(code, n);
 
-          ret.push("".concat(key).concat(suffix));
+        if (!rule) {
+          return [];
+        }
+
+        return rule.numbers.map(function (number) {
+          return _this.getSuffix(code, number);
         });
-        return ret;
       }
     }, {
       key: "getSuffix",
@@ -2076,7 +2140,12 @@
           });
         }
 
-        if (!this.modules.languageDetector && !this.options.lng) {
+        if (this.options.fallbackLng && !this.services.languageDetector && !this.options.lng) {
+          var codes = this.services.languageUtils.getFallbackCodes(this.options.fallbackLng);
+          if (codes.length > 0 && codes[0] !== 'dev') this.options.lng = codes[0];
+        }
+
+        if (!this.services.languageDetector && !this.options.lng) {
           this.logger.warn('init: no languageDetector is used and no lng is defined');
         }
 
@@ -2101,16 +2170,20 @@
         var deferred = defer();
 
         var load = function load() {
-          _this2.changeLanguage(_this2.options.lng, function (err, t) {
+          var finish = function finish(err, t) {
+            if (_this2.isInitialized) _this2.logger.warn('init: i18next is already initialized. You should call init just once!');
             _this2.isInitialized = true;
-
-            _this2.logger.log('initialized', _this2.options);
+            if (!_this2.options.isClone) _this2.logger.log('initialized', _this2.options);
 
             _this2.emit('initialized', _this2.options);
 
             deferred.resolve(t);
             callback(err, t);
-          });
+          };
+
+          if (_this2.languages && _this2.options.compatibilityAPI !== 'v1' && !_this2.isInitialized) return finish(null, _this2.t.bind(_this2));
+
+          _this2.changeLanguage(_this2.options.lng, finish);
         };
 
         if (this.options.resources || !this.options.initImmediate) {
@@ -2463,6 +2536,22 @@
 
   var i18next = new I18n();
 
+  function _typeof$1(obj) {
+    "@babel/helpers - typeof";
+
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof$1 = function _typeof(obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof$1 = function _typeof(obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof$1(obj);
+  }
+
   var arr = [];
   var each = arr.forEach;
   var slice = arr.slice;
@@ -2475,6 +2564,9 @@
       }
     });
     return obj;
+  }
+  function hasXMLHttpRequest() {
+    return typeof XMLHttpRequest === 'function' || (typeof XMLHttpRequest === "undefined" ? "undefined" : _typeof$1(XMLHttpRequest)) === 'object';
   }
 
   var fetchApi;
@@ -2497,20 +2589,20 @@
     __proto__: null
   });
 
-  function _typeof$1(obj) {
+  function _typeof$2(obj) {
     "@babel/helpers - typeof";
 
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof$1 = function _typeof(obj) {
+      _typeof$2 = function _typeof(obj) {
         return typeof obj;
       };
     } else {
-      _typeof$1 = function _typeof(obj) {
+      _typeof$2 = function _typeof(obj) {
         return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
       };
     }
 
-    return _typeof$1(obj);
+    return _typeof$2(obj);
   }
   var fetchApi$1;
 
@@ -2524,7 +2616,7 @@
 
   var XmlHttpRequestApi;
 
-  if (typeof XMLHttpRequest === 'function') {
+  if (hasXMLHttpRequest) {
     if (typeof global !== 'undefined' && global.XMLHttpRequest) {
       XmlHttpRequestApi = global.XMLHttpRequest;
     } else if (typeof window !== 'undefined' && window.XMLHttpRequest) {
@@ -2546,7 +2638,7 @@
   if (typeof fetchApi$1 !== 'function') fetchApi$1 = undefined;
 
   var addQueryString = function addQueryString(url, params) {
-    if (params && _typeof$1(params) === 'object') {
+    if (params && _typeof$2(params) === 'object') {
       var queryString = '';
 
       for (var paramName in params) {
@@ -2565,7 +2657,7 @@
       url = addQueryString(url, options.queryStringParams);
     }
 
-    var headers = defaults({}, options.customHeaders);
+    var headers = defaults({}, typeof options.customHeaders === 'function' ? options.customHeaders() : options.customHeaders);
     if (payload) headers['Content-Type'] = 'application/json';
     fetchApi$1(url, defaults({
       method: payload ? 'POST' : 'GET',
@@ -2585,7 +2677,7 @@
   };
 
   var requestWithXmlHttpRequest = function requestWithXmlHttpRequest(options, url, payload, callback) {
-    if (payload && _typeof$1(payload) === 'object') {
+    if (payload && _typeof$2(payload) === 'object') {
       payload = addQueryString('', payload).slice(1);
     }
 
@@ -2652,7 +2744,7 @@
       return requestWithFetch(options, url, payload, callback);
     }
 
-    if (typeof XMLHttpRequest === 'function' || typeof ActiveXObject === 'function') {
+    if (hasXMLHttpRequest || typeof ActiveXObject === 'function') {
       return requestWithXmlHttpRequest(options, url, payload, callback);
     }
   };
@@ -2746,7 +2838,7 @@
         this.options = defaults(options, this.options || {}, getDefaults());
         this.allOptions = allOptions;
 
-        if (this.options.reloadInterval) {
+        if (this.services && this.options.reloadInterval) {
           setInterval(function () {
             return _this.reload();
           }, this.options.reloadInterval);
@@ -2788,9 +2880,9 @@
         var _this2 = this;
 
         this.options.request(this.options, url, undefined, function (err, res) {
-          if (res && (res.status >= 500 && res.status < 600 || !res.status)) return callback('failed loading ' + url, true);
-          if (res && res.status >= 400 && res.status < 500) return callback('failed loading ' + url, false);
-          if (!res && err && err.message && err.message.indexOf('Failed to fetch') > -1) return callback('failed loading ' + url, true);
+          if (res && (res.status >= 500 && res.status < 600 || !res.status)) return callback('failed loading ' + url + '; status code: ' + res.status, true);
+          if (res && res.status >= 400 && res.status < 500) return callback('failed loading ' + url + '; status code: ' + res.status, false);
+          if (!res && err && err.message && err.message.indexOf('Failed to fetch') > -1) return callback('failed loading ' + url + ': ' + err.message, true);
           if (err) return callback(err, false);
           var ret, parseErr;
 
@@ -2810,19 +2902,36 @@
       }
     }, {
       key: "create",
-      value: function create(languages, namespace, key, fallbackValue) {
+      value: function create(languages, namespace, key, fallbackValue, callback) {
         var _this3 = this;
 
         if (!this.options.addPath) return;
         if (typeof languages === 'string') languages = [languages];
         var payload = this.options.parsePayload(namespace, key, fallbackValue);
+        var finished = 0;
+        var dataArray = [];
+        var resArray = [];
         languages.forEach(function (lng) {
-          var url = _this3.services.interpolator.interpolate(_this3.options.addPath, {
+          var addPath = _this3.options.addPath;
+
+          if (typeof _this3.options.addPath === 'function') {
+            addPath = _this3.options.addPath(lng, namespace);
+          }
+
+          var url = _this3.services.interpolator.interpolate(addPath, {
             lng: lng,
             ns: namespace
           });
 
-          _this3.options.request(_this3.options, url, payload, function (data, res) {});
+          _this3.options.request(_this3.options, url, payload, function (data, res) {
+            finished += 1;
+            dataArray.push(data);
+            resArray.push(res);
+
+            if (finished === languages.length) {
+              if (callback) callback(dataArray, resArray);
+            }
+          });
         });
       }
     }, {
@@ -3976,7 +4085,7 @@
   }
 
   var isObject = function isObject(x) {
-    return typeof x === "object" && x !== null;
+    return typeof x === 'object' && x !== null;
   };
 
   var diffProps_1 = diffProps;
@@ -7811,6 +7920,21 @@
     __proto__: null
   });
 
+  function _typeof$3(obj) {
+    "@babel/helpers - typeof";
+
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof$3 = function _typeof(obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof$3 = function _typeof(obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof$3(obj);
+  }
   var fetchApi$3;
 
   if (typeof fetch === 'function') {
@@ -7823,7 +7947,7 @@
 
   var XmlHttpRequestApi$1;
 
-  if (typeof XMLHttpRequest === 'function') {
+  if (typeof XMLHttpRequest === 'function' || (typeof XMLHttpRequest === "undefined" ? "undefined" : _typeof$3(XMLHttpRequest)) === 'object') {
     if (typeof global !== 'undefined' && global.XMLHttpRequest) {
       XmlHttpRequestApi$1 = global.XMLHttpRequest;
     } else if (typeof window !== 'undefined' && window.XMLHttpRequest) {
@@ -7919,7 +8043,7 @@
       return requestWithFetch$1(options, url, payload, callback);
     }
 
-    if (typeof XMLHttpRequest === 'function' || typeof ActiveXObject === 'function') {
+    if (typeof XMLHttpRequest === 'function' || (typeof XMLHttpRequest === "undefined" ? "undefined" : _typeof$3(XMLHttpRequest)) === 'object' || typeof ActiveXObject === 'function') {
       return requestWithXmlHttpRequest$1(options, url, payload, callback);
     }
   };
@@ -8976,20 +9100,20 @@
     }
   };
 
-  function _typeof$2(obj) {
+  function _typeof$4(obj) {
     "@babel/helpers - typeof";
 
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof$2 = function _typeof(obj) {
+      _typeof$4 = function _typeof(obj) {
         return typeof obj;
       };
     } else {
-      _typeof$2 = function _typeof(obj) {
+      _typeof$4 = function _typeof(obj) {
         return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
       };
     }
 
-    return _typeof$2(obj);
+    return _typeof$4(obj);
   }
 
   function isWindow$1(obj) {
@@ -9011,7 +9135,7 @@
     var docElem = doc && doc.documentElement;
     if (!docElem) return box;
 
-    if (_typeof$2(elem.getBoundingClientRect) !== "undefined") {
+    if (_typeof$4(elem.getBoundingClientRect) !== "undefined") {
       box = elem.getBoundingClientRect();
     }
 
