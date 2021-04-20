@@ -161,9 +161,10 @@ Add the script to your page:
 
         namespace: false, // set another name - default namespace will be translation
         namespaceFromPath: false, // set true will use namepace based on window.location.pathname
-        ns: ['common'] // -> only set if accessing more then one namepace
+        ns: ['common'], // -> only set if accessing more then one namepace
 
         // + all options available in i18next
+        saveMissing: false // saveMissing and other i18next options: https://www.i18next.com/overview/configuration-options#missing-keys
       });
     </script>
   </head>
