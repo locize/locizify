@@ -1,3 +1,7 @@
+### v5.0.2
+
+- update i18nextify dependency
+
 ### v5.0.1
 
 - update i18nextify dependency
