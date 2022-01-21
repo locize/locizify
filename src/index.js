@@ -1,6 +1,5 @@
 import i18nextify from 'i18nextify';
 import LocizeBackend from 'i18next-locize-backend';
-import locizeEditor from 'locize-editor'; // locize-editor is for old client
 import { locizePlugin } from 'locize';
 
 const { i18next } = i18nextify;
@@ -22,8 +21,7 @@ const reloadEditorOptions = {
   }
 };
 
-i18nextify.editor = locizeEditor;
-i18next.use(LocizeBackend).use(locizePlugin).use(locizeEditor); // locize-editor is for old client
+i18next.use(LocizeBackend).use(locizePlugin);
 
 i18next.on('editorSaved', () => {
   i18nextify.forceRerender();
@@ -42,7 +40,6 @@ i18next.init = (options = {}, callback) => {
       'fallbackLng',
       'saveMissing',
       'debug',
-      'reloadOnSave',
       'autorun',
       'ele',
       'cleanIndent',
@@ -91,18 +88,6 @@ i18next.init = (options = {}, callback) => {
 
     options = { ...defaults, ...options, ...config };
     options.backend = { ...options.backend, ...backend };
-  }
-
-  if ( // locize-editor is for old client
-    options.reloadOnSave &&
-    (!options.editor || !options.editor.onEditorSaved)
-  )
-    options.editor = { ...options.editor, ...reloadEditorOptions };
-
-  if (options.bindSavedMissing) { // locize-editor is for old client
-    options.backend.onSaved = (lng, ns) => {
-      locizeEditor.handleSavedMissing(lng, ns);
-    };
   }
 
   function handleI18nextInitialized(err, t) {

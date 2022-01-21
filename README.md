@@ -41,7 +41,6 @@ Per default only `localhost` is allowed to send missing keys ([or update missing
 
 locizify wraps some other modules from locize and i18next so there are additional valuable resources to read to get details on all the provided options:
 
-- locize editor: `?locize=true` --> [readme](https://github.com/locize/locize-editor)
 - i18next language detector: `?lng=de` --> [readme](https://github.com/i18next/i18next-browser-languageDetector)
 - locize backend --> [readme](https://github.com/locize/i18next-locize-backend)
 - i18next --> [website](https://www.i18next.com)
@@ -77,7 +76,7 @@ Add the script to your page:
 
 4. Reload your page with `?lng='[newLanguage]'`
 
-5. Reload your page with `?locize=true` to show the incontext editor to directly translate on page.
+5. Reload your page in the locize incontext editor to directly translate on page.
 
 ## Initialize with optional options
 
@@ -101,7 +100,6 @@ Add the script to your page:
       savemissing="[true|false (default true)]"
       allowedAddOrUpdateHost="[mydomain.com (default localhost)]"
       debug="[true|false (default false)]"
-      reloadonsave="[true|false (default true)]" // automatically reload your page on saving in editor
       autopilot="[true|false (default false)]" // automatically configures fallbackLng and supportedLngs
       load="[all|currentOnly|languageOnly (default all)]" // https://www.i18next.com/overview/configuration-options
 
@@ -138,7 +136,6 @@ Add the script to your page:
 
         // defaults that are set
         bindSavedMissing: true, // will connect backend supporting onSaved and trigger a reload on saved missings
-        reloadOnSave: true, // automatically reload your page on saving in editor
         autorun: true, // setting to false init will return an object with start function
         ele: document.body, // pass in another element if you like to translate another html element
         ignoreTags: ['SCRIPT'], // tags to ignore

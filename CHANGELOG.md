@@ -1,3 +1,8 @@
+### v5.0.3
+
+- update i18next dependencies
+- remove old locize-editor
+
 ### v5.0.2
 
 - update i18nextify dependency
