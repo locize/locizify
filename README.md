@@ -16,7 +16,7 @@ Just drop the following line to your header to deliver your content in any langu
   apikey="[API_KEY]"
   referencelng="[LNG]"
   fallbacklng="[LNG]"
-  src="https://unpkg.com/locizify@^4.0.11"
+  src="https://unpkg.com/locizify@^5.0.3"
 ></script>
 ```
 
@@ -61,7 +61,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^4.0.11"
+      src="https://unpkg.com/locizify@^5.0.3"
     ></script>
   </head>
   ...
@@ -93,7 +93,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^4.0.11"
+      src="https://unpkg.com/locizify@^5.0.3"
 
       // optional
       version="[VERSION]"
@@ -117,7 +117,7 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://unpkg.com/locizify@^4.0.11"></script>
+    <script src="https://unpkg.com/locizify@^5.0.3"></script>
     <script>
       locizify.init({
         // required
