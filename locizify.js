@@ -53,7 +53,18 @@
     return target;
   }
 
-  function _defineProperty$1(obj, key, value) {
+  var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+  function unwrapExports (x) {
+  	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+  }
+
+  function createCommonjsModule(fn, module) {
+  	return module = { exports: {} }, fn(module, module.exports), module.exports;
+  }
+
+  var defineProperty = createCommonjsModule(function (module) {
+  function _defineProperty(obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
         value: value,
@@ -68,22 +79,19 @@
     return obj;
   }
 
-  var defineProperty = _defineProperty$1;
+  module.exports = _defineProperty, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
+
+  var _defineProperty$1 = unwrapExports(defineProperty);
 
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
-    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof = function _typeof(obj) {
-        return typeof obj;
-      };
-    } else {
-      _typeof = function _typeof(obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof(obj);
+    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, _typeof(obj);
   }
 
   function _classCallCheck(instance, Constructor) {
@@ -105,6 +113,9 @@
   function _createClass(Constructor, protoProps, staticProps) {
     if (protoProps) _defineProperties(Constructor.prototype, protoProps);
     if (staticProps) _defineProperties(Constructor, staticProps);
+    Object.defineProperty(Constructor, "prototype", {
+      writable: false
+    });
     return Constructor;
   }
 
@@ -137,12 +148,17 @@
         configurable: true
       }
     });
+    Object.defineProperty(subClass, "prototype", {
+      writable: false
+    });
     if (superClass) _setPrototypeOf(subClass, superClass);
   }
 
   function _possibleConstructorReturn(self, call) {
     if (call && (_typeof(call) === "object" || typeof call === "function")) {
       return call;
+    } else if (call !== void 0) {
+      throw new TypeError("Derived constructors may only return object or undefined");
     }
 
     return _assertThisInitialized(self);
@@ -175,7 +191,7 @@
   }
 
   function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
   }
 
   function _arrayLikeToArray(arr, len) {
@@ -1158,7 +1174,14 @@
 
           res = this.extendTranslation(res, keys, options, resolved, lastKey);
           if (usedKey && res === key && this.options.appendNamespaceToMissingKey) res = "".concat(namespace, ":").concat(key);
-          if ((usedKey || usedDefault) && this.options.parseMissingKeyHandler) res = this.options.parseMissingKeyHandler(res);
+
+          if ((usedKey || usedDefault) && this.options.parseMissingKeyHandler) {
+            if (this.options.compatibilityAPI !== 'v1') {
+              res = this.options.parseMissingKeyHandler(key, usedDefault ? res : undefined);
+            } else {
+              res = this.options.parseMissingKeyHandler(res);
+            }
+          }
         }
 
         return res;
@@ -1176,7 +1199,7 @@
           if (options.interpolation) this.interpolator.init(_objectSpread$2(_objectSpread$2({}, options), {
             interpolation: _objectSpread$2(_objectSpread$2({}, this.options.interpolation), options.interpolation)
           }));
-          var skipOnVariables = typeof res === 'string' && (options.interpolation && options.interpolation.skipOnVariables || this.options.interpolation.skipOnVariables);
+          var skipOnVariables = typeof res === 'string' && (options && options.interpolation && options.interpolation.skipOnVariables !== undefined ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables);
           var nestBef;
 
           if (skipOnVariables) {
@@ -1941,7 +1964,7 @@
 
         this.resetRegExp();
         var missingInterpolationHandler = options && options.missingInterpolationHandler || this.options.missingInterpolationHandler;
-        var skipOnVariables = options && options.interpolation && options.interpolation.skipOnVariables || this.options.interpolation.skipOnVariables;
+        var skipOnVariables = options && options.interpolation && options.interpolation.skipOnVariables !== undefined ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables;
         var todos = [{
           regex: this.regexpUnescape,
           safeValue: function safeValue(val) {
@@ -1957,17 +1980,20 @@
           replaces = 0;
 
           while (match = todo.regex.exec(str)) {
-            value = handleFormat(match[1].trim());
+            var matchedVar = match[1].trim();
+            value = handleFormat(matchedVar);
 
             if (value === undefined) {
               if (typeof missingInterpolationHandler === 'function') {
                 var temp = missingInterpolationHandler(str, match, options);
                 value = typeof temp === 'string' ? temp : '';
+              } else if (options && options.hasOwnProperty(matchedVar)) {
+                value = '';
               } else if (skipOnVariables) {
                 value = match[0];
                 continue;
               } else {
-                _this.logger.warn("missed to pass in variable ".concat(match[1], " for interpolating ").concat(str));
+                _this.logger.warn("missed to pass in variable ".concat(matchedVar, " for interpolating ").concat(str));
 
                 value = '';
               }
@@ -2188,7 +2214,7 @@
     }, {
       key: "add",
       value: function add(name, fc) {
-        this.formats[name] = fc;
+        this.formats[name.toLowerCase().trim()] = fc;
       }
     }, {
       key: "format",
@@ -3730,28 +3756,6 @@
 
   Backend.type = 'backend';
 
-  function _classCallCheck$2(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
-  }
-
-  function _defineProperties$2(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }
-
-  function _createClass$2(Constructor, protoProps, staticProps) {
-    if (protoProps) _defineProperties$2(Constructor.prototype, protoProps);
-    if (staticProps) _defineProperties$2(Constructor, staticProps);
-    return Constructor;
-  }
-
   var arr$1 = [];
   var each$1 = arr$1.forEach;
   var slice$1 = arr$1.slice;
@@ -4087,14 +4091,14 @@
     function Browser(services) {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-      _classCallCheck$2(this, Browser);
+      _classCallCheck(this, Browser);
 
       this.type = 'languageDetector';
       this.detectors = {};
       this.init(services, options);
     }
 
-    _createClass$2(Browser, [{
+    _createClass(Browser, [{
       key: "init",
       value: function init(services) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
@@ -4156,15 +4160,20 @@
 
   Browser.type = 'languageDetector';
 
-  function _classCallCheck$3(instance, Constructor) {
+  var classCallCheck = createCommonjsModule(function (module) {
+  function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
     }
   }
 
-  var classCallCheck = _classCallCheck$3;
+  module.exports = _classCallCheck, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
 
-  function _defineProperties$3(target, props) {
+  var _classCallCheck$2 = unwrapExports(classCallCheck);
+
+  var createClass = createCommonjsModule(function (module) {
+  function _defineProperties(target, props) {
     for (var i = 0; i < props.length; i++) {
       var descriptor = props[i];
       descriptor.enumerable = descriptor.enumerable || false;
@@ -4174,34 +4183,36 @@
     }
   }
 
-  function _createClass$3(Constructor, protoProps, staticProps) {
-    if (protoProps) _defineProperties$3(Constructor.prototype, protoProps);
-    if (staticProps) _defineProperties$3(Constructor, staticProps);
+  function _createClass(Constructor, protoProps, staticProps) {
+    if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) _defineProperties(Constructor, staticProps);
+    Object.defineProperty(Constructor, "prototype", {
+      writable: false
+    });
     return Constructor;
   }
 
-  var createClass = _createClass$3;
+  module.exports = _createClass, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
 
-  var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
-  function createCommonjsModule(fn, module) {
-  	return module = { exports: {} }, fn(module, module.exports), module.exports;
-  }
+  var _createClass$2 = unwrapExports(createClass);
 
   var setPrototypeOf = createCommonjsModule(function (module) {
   function _setPrototypeOf(o, p) {
     module.exports = _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
       o.__proto__ = p;
       return o;
-    };
-
+    }, module.exports.__esModule = true, module.exports["default"] = module.exports;
     return _setPrototypeOf(o, p);
   }
 
-  module.exports = _setPrototypeOf;
+  module.exports = _setPrototypeOf, module.exports.__esModule = true, module.exports["default"] = module.exports;
   });
 
-  function _inherits$1(subClass, superClass) {
+  unwrapExports(setPrototypeOf);
+
+  var inherits = createCommonjsModule(function (module) {
+  function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
     }
@@ -4213,32 +4224,35 @@
         configurable: true
       }
     });
+    Object.defineProperty(subClass, "prototype", {
+      writable: false
+    });
     if (superClass) setPrototypeOf(subClass, superClass);
   }
 
-  var inherits = _inherits$1;
+  module.exports = _inherits, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
+
+  var _inherits$1 = unwrapExports(inherits);
 
   var _typeof_1 = createCommonjsModule(function (module) {
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
-    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      module.exports = _typeof = function _typeof(obj) {
-        return typeof obj;
-      };
-    } else {
-      module.exports = _typeof = function _typeof(obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof(obj);
+    return (module.exports = _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, module.exports.__esModule = true, module.exports["default"] = module.exports), _typeof(obj);
   }
 
-  module.exports = _typeof;
+  module.exports = _typeof, module.exports.__esModule = true, module.exports["default"] = module.exports;
   });
 
-  function _assertThisInitialized$1(self) {
+  unwrapExports(_typeof_1);
+
+  var assertThisInitialized = createCommonjsModule(function (module) {
+  function _assertThisInitialized(self) {
     if (self === void 0) {
       throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
     }
@@ -4246,37 +4260,52 @@
     return self;
   }
 
-  var assertThisInitialized = _assertThisInitialized$1;
+  module.exports = _assertThisInitialized, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
 
-  function _possibleConstructorReturn$1(self, call) {
-    if (call && (_typeof_1(call) === "object" || typeof call === "function")) {
+  unwrapExports(assertThisInitialized);
+
+  var possibleConstructorReturn = createCommonjsModule(function (module) {
+  var _typeof = _typeof_1["default"];
+
+
+
+  function _possibleConstructorReturn(self, call) {
+    if (call && (_typeof(call) === "object" || typeof call === "function")) {
       return call;
+    } else if (call !== void 0) {
+      throw new TypeError("Derived constructors may only return object or undefined");
     }
 
     return assertThisInitialized(self);
   }
 
-  var possibleConstructorReturn = _possibleConstructorReturn$1;
+  module.exports = _possibleConstructorReturn, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
+
+  var _possibleConstructorReturn$1 = unwrapExports(possibleConstructorReturn);
 
   var getPrototypeOf = createCommonjsModule(function (module) {
   function _getPrototypeOf(o) {
     module.exports = _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
       return o.__proto__ || Object.getPrototypeOf(o);
-    };
+    }, module.exports.__esModule = true, module.exports["default"] = module.exports;
     return _getPrototypeOf(o);
   }
 
-  module.exports = _getPrototypeOf;
+  module.exports = _getPrototypeOf, module.exports.__esModule = true, module.exports["default"] = module.exports;
   });
+
+  var _getPrototypeOf$1 = unwrapExports(getPrototypeOf);
 
   var EventEmitter$1 = /*#__PURE__*/function () {
     function EventEmitter() {
-      classCallCheck(this, EventEmitter);
+      _classCallCheck$2(this, EventEmitter);
 
       this.observers = {};
     }
 
-    createClass(EventEmitter, [{
+    _createClass$2(EventEmitter, [{
       key: "on",
       value: function on(events, listener) {
         var _this = this;
@@ -4333,18 +4362,18 @@
     var hasNativeReflectConstruct = _isNativeReflectConstruct$4();
 
     return function _createSuperInternal() {
-      var Super = getPrototypeOf(Derived),
+      var Super = _getPrototypeOf$1(Derived),
           result;
 
       if (hasNativeReflectConstruct) {
-        var NewTarget = getPrototypeOf(this).constructor;
+        var NewTarget = _getPrototypeOf$1(this).constructor;
 
         result = Reflect.construct(Super, arguments, NewTarget);
       } else {
         result = Super.apply(this, arguments);
       }
 
-      return possibleConstructorReturn(this, result);
+      return _possibleConstructorReturn$1(this, result);
     };
   }
 
@@ -4362,7 +4391,7 @@
   }
 
   var Observer = /*#__PURE__*/function (_EventEmitter) {
-    inherits(Observer, _EventEmitter);
+    _inherits$1(Observer, _EventEmitter);
 
     var _super = _createSuper$4(Observer);
 
@@ -4371,7 +4400,7 @@
 
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-      classCallCheck(this, Observer);
+      _classCallCheck$2(this, Observer);
 
       _this = _super.call(this);
       _this.ele = ele;
@@ -4381,7 +4410,7 @@
       return _this;
     }
 
-    createClass(Observer, [{
+    _createClass$2(Observer, [{
       key: "create",
       value: function create() {
         var _this2 = this;
@@ -6495,10 +6524,10 @@
 
   var Instrument = /*#__PURE__*/function () {
     function Instrument() {
-      classCallCheck(this, Instrument);
+      _classCallCheck$2(this, Instrument);
     }
 
-    createClass(Instrument, [{
+    _createClass$2(Instrument, [{
       key: "start",
       value: function start() {
         this.started = new Date().getTime();
@@ -7785,21 +7814,29 @@
     };
   }
 
-  function _arrayWithHoles$1(arr) {
+  var arrayWithHoles = createCommonjsModule(function (module) {
+  function _arrayWithHoles(arr) {
     if (Array.isArray(arr)) return arr;
   }
 
-  var arrayWithHoles = _arrayWithHoles$1;
+  module.exports = _arrayWithHoles, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
 
+  unwrapExports(arrayWithHoles);
+
+  var iterableToArrayLimit = createCommonjsModule(function (module) {
   function _iterableToArrayLimit(arr, i) {
-    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+    var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
+
+    if (_i == null) return;
     var _arr = [];
     var _n = true;
     var _d = false;
-    var _e = undefined;
+
+    var _s, _e;
 
     try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
         _arr.push(_s.value);
 
         if (i && _arr.length === i) break;
@@ -7818,9 +7855,13 @@
     return _arr;
   }
 
-  var iterableToArrayLimit = _iterableToArrayLimit;
+  module.exports = _iterableToArrayLimit, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
 
-  function _arrayLikeToArray$1(arr, len) {
+  unwrapExports(iterableToArrayLimit);
+
+  var arrayLikeToArray = createCommonjsModule(function (module) {
+  function _arrayLikeToArray(arr, len) {
     if (len == null || len > arr.length) len = arr.length;
 
     for (var i = 0, arr2 = new Array(len); i < len; i++) {
@@ -7830,9 +7871,13 @@
     return arr2;
   }
 
-  var arrayLikeToArray = _arrayLikeToArray$1;
+  module.exports = _arrayLikeToArray, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
 
-  function _unsupportedIterableToArray$1(o, minLen) {
+  unwrapExports(arrayLikeToArray);
+
+  var unsupportedIterableToArray = createCommonjsModule(function (module) {
+  function _unsupportedIterableToArray(o, minLen) {
     if (!o) return;
     if (typeof o === "string") return arrayLikeToArray(o, minLen);
     var n = Object.prototype.toString.call(o).slice(8, -1);
@@ -7841,19 +7886,30 @@
     if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return arrayLikeToArray(o, minLen);
   }
 
-  var unsupportedIterableToArray = _unsupportedIterableToArray$1;
+  module.exports = _unsupportedIterableToArray, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
 
-  function _nonIterableRest$1() {
+  unwrapExports(unsupportedIterableToArray);
+
+  var nonIterableRest = createCommonjsModule(function (module) {
+  function _nonIterableRest() {
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
-  var nonIterableRest = _nonIterableRest$1;
+  module.exports = _nonIterableRest, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
 
+  unwrapExports(nonIterableRest);
+
+  var slicedToArray = createCommonjsModule(function (module) {
   function _slicedToArray(arr, i) {
     return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || unsupportedIterableToArray(arr, i) || nonIterableRest();
   }
 
-  var slicedToArray = _slicedToArray;
+  module.exports = _slicedToArray, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  });
+
+  var _slicedToArray = unwrapExports(slicedToArray);
 
   function debounce(func, wait, immediate) {
     var timeout;
@@ -7975,7 +8031,7 @@
 
       if (attr.indexOf('#') > -1) {
         var _attr$split = attr.split('#'),
-            _attr$split2 = slicedToArray(_attr$split, 2),
+            _attr$split2 = _slicedToArray(_attr$split, 2),
             a = _attr$split2[0],
             c = _attr$split2[1];
 
@@ -7983,7 +8039,7 @@
 
         if (c.indexOf('.') > -1) {
           var _c$split = c.split('.'),
-              _c$split2 = slicedToArray(_c$split, 2),
+              _c$split2 = _slicedToArray(_c$split, 2),
               e = _c$split2[0],
               b = _c$split2[1];
 
@@ -8019,7 +8075,7 @@
     for (var i = 1; i < arguments.length; i++) {
       var source = null != arguments[i] ? arguments[i] : {};
       i % 2 ? ownKeys$7(Object(source), !0).forEach(function (key) {
-        defineProperty(target, key, source[key]);
+        _defineProperty$1(target, key, source[key]);
       }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$7(Object(source)).forEach(function (key) {
         Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
       });
@@ -8389,7 +8445,7 @@
     for (var i = 1; i < arguments.length; i++) {
       var source = null != arguments[i] ? arguments[i] : {};
       i % 2 ? ownKeys$8(Object(source), !0).forEach(function (key) {
-        defineProperty(target, key, source[key]);
+        _defineProperty$1(target, key, source[key]);
       }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$8(Object(source)).forEach(function (key) {
         Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
       });
@@ -8724,13 +8780,20 @@
   if (typeof fetchApi$3 !== 'function') fetchApi$3 = undefined;
 
   var requestWithFetch$1 = function requestWithFetch(options, url, payload, callback) {
+    var headers = {};
+
+    if (options.authorize && options.apiKey) {
+      headers.Authorization = options.apiKey;
+    }
+
+    if (payload || options.setContentTypeJSON) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     fetchApi$3(url, {
       method: payload ? 'POST' : 'GET',
       body: payload ? JSON.stringify(payload) : undefined,
-      headers: {
-        Authorization: options.authorize && options.apiKey ? options.apiKey : undefined,
-        'Content-Type': 'application/json'
-      }
+      headers: headers
     }).then(function (response) {
       var resourceNotExisting = response.headers && response.headers.get('x-cache') === 'Error from cloudfront';
       if (!response.ok) return callback(response.statusText || 'Error', {
@@ -8803,13 +8866,13 @@
     }
   };
 
-  function _classCallCheck$4(instance, Constructor) {
+  function _classCallCheck$3(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
     }
   }
 
-  function _defineProperties$4(target, props) {
+  function _defineProperties$2(target, props) {
     for (var i = 0; i < props.length; i++) {
       var descriptor = props[i];
       descriptor.enumerable = descriptor.enumerable || false;
@@ -8819,9 +8882,9 @@
     }
   }
 
-  function _createClass$4(Constructor, protoProps, staticProps) {
-    if (protoProps) _defineProperties$4(Constructor.prototype, protoProps);
-    if (staticProps) _defineProperties$4(Constructor, staticProps);
+  function _createClass$3(Constructor, protoProps, staticProps) {
+    if (protoProps) _defineProperties$2(Constructor.prototype, protoProps);
+    if (staticProps) _defineProperties$2(Constructor, staticProps);
     Object.defineProperty(Constructor, "prototype", {
       writable: false
     });
@@ -8930,7 +8993,7 @@
       var allOptions = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
       var callback = arguments.length > 3 ? arguments[3] : undefined;
 
-      _classCallCheck$4(this, I18NextLocizeBackend);
+      _classCallCheck$3(this, I18NextLocizeBackend);
 
       this.services = services;
       this.options = options;
@@ -8944,7 +9007,7 @@
       }
     }
 
-    _createClass$4(I18NextLocizeBackend, [{
+    _createClass$3(I18NextLocizeBackend, [{
       key: "init",
       value: function init(services) {
         var _this = this;
@@ -8986,10 +9049,10 @@
         }
 
         if (typeof callback === 'function') {
-          this.getOptions(function (err, opts) {
+          this.getOptions(function (err, opts, languages) {
             if (err) return callback(err);
             _this.options.referenceLng = options.referenceLng || opts.referenceLng || _this.options.referenceLng;
-            callback(null, opts);
+            callback(null, opts, languages);
           });
         }
 
@@ -9109,7 +9172,7 @@
             supportedLngs: lngs,
             whitelist: lngs,
             load: hasRegion ? 'all' : 'languageOnly'
-          });
+          }, data);
         });
       }
     }, {
