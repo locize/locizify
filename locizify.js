@@ -1162,7 +1162,7 @@
             if (this.options.saveMissing) {
               if (this.options.saveMissingPlurals && needsPluralHandling) {
                 lngs.forEach(function (language) {
-                  _this2.pluralResolver.getSuffixes(language).forEach(function (suffix) {
+                  _this2.pluralResolver.getSuffixes(language, options).forEach(function (suffix) {
                     send([language], key + suffix, options["defaultValue".concat(suffix)] || defaultValue);
                   });
                 });
@@ -2963,7 +2963,10 @@
             });
           }
 
-          this.services.backendConnector.load(toLoad, this.options.ns, usedCallback);
+          this.services.backendConnector.load(toLoad, this.options.ns, function (e) {
+            if (!e && !_this3.resolvedLanguage && _this3.language) _this3.setResolvedLanguage(_this3.language);
+            usedCallback(e);
+          });
         } else {
           usedCallback(null);
         }
@@ -3018,6 +3021,22 @@
         return this;
       }
     }, {
+      key: "setResolvedLanguage",
+      value: function setResolvedLanguage(l) {
+        if (!l || !this.languages) return;
+        if (['cimode', 'dev'].indexOf(l) > -1) return;
+
+        for (var li = 0; li < this.languages.length; li++) {
+          var lngInLngs = this.languages[li];
+          if (['cimode', 'dev'].indexOf(lngInLngs) > -1) continue;
+
+          if (this.store.hasLanguageSomeTranslations(lngInLngs)) {
+            this.resolvedLanguage = lngInLngs;
+            break;
+          }
+        }
+      }
+    }, {
       key: "changeLanguage",
       value: function changeLanguage(lng, callback) {
         var _this4 = this;
@@ -3030,17 +3049,8 @@
           _this4.language = l;
           _this4.languages = _this4.services.languageUtils.toResolveHierarchy(l);
           _this4.resolvedLanguage = undefined;
-          if (['cimode', 'dev'].indexOf(l) > -1) return;
 
-          for (var li = 0; li < _this4.languages.length; li++) {
-            var lngInLngs = _this4.languages[li];
-            if (['cimode', 'dev'].indexOf(lngInLngs) > -1) continue;
-
-            if (_this4.store.hasLanguageSomeTranslations(lngInLngs)) {
-              _this4.resolvedLanguage = lngInLngs;
-              break;
-            }
-          }
+          _this4.setResolvedLanguage(l);
         };
 
         var done = function done(err, l) {
@@ -9115,17 +9125,29 @@
         }
 
         if (this.isProjectNotExisting) return callback(new Error("locize project ".concat(this.options.projectId, " does not exist!")));
+        this.getLanguagesCalls = this.getLanguagesCalls || [];
+        this.getLanguagesCalls.push(callback);
+        if (this.getLanguagesCalls.length > 1) return;
         this.loadUrl({}, url, function (err, ret, info) {
           if (!_this3.somethingLoaded && info && info.resourceNotExisting) {
             _this3.isProjectNotExisting = true;
 
             _this3.storage.setProjectNotExisting(_this3.options.projectId);
 
-            return callback(new Error("locize project ".concat(_this3.options.projectId, " does not exist!")));
+            var e = new Error("locize project ".concat(_this3.options.projectId, " does not exist!"));
+            var _clbs = _this3.getLanguagesCalls;
+            _this3.getLanguagesCalls = [];
+            return _clbs.forEach(function (clb) {
+              return clb(e);
+            });
           }
 
           _this3.somethingLoaded = true;
-          callback(err, ret);
+          var clbs = _this3.getLanguagesCalls;
+          _this3.getLanguagesCalls = [];
+          clbs.forEach(function (clb) {
+            return clb(err, ret);
+          });
         });
       }
     }, {
