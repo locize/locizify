@@ -415,7 +415,8 @@ Per default the virtualdom implementation will use the extracted content as keys
 }
 ```
 
-In some situations you like to define an explicit key for that segment:
+In some situations you like to define an explicit key for that segment.
+The default key attribute is `i18next-key`, so just add that attribute to the html element to be used as own translation key and the html element value will be used as default value:
 
 ```js
 // <div i18next-key="myKey">This is my text.</div>
@@ -426,6 +427,9 @@ In some situations you like to define an explicit key for that segment:
   "myLink.title": "My Link Title"
 }
 ```
+
+*Do not replace your html content with a custom key, this will technically work, but your servcer side representation will be negatively influenced (SEO), because there will not be any nice content fallback. Search engines like google search will then show your custom i18n keys instead of your website content. So better use the `i18next-key` attribute!*
+
 
 There are two init options to configure this further:
 
