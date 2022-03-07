@@ -428,7 +428,7 @@ The default key attribute is `i18next-key`, so just add that attribute to the ht
 }
 ```
 
-*Do not replace your html content with a custom key, this will technically work, but your servcer side representation will be negatively influenced (SEO), because there will not be any nice content fallback. Search engines like google search will then show your custom i18n keys instead of your website content. So better use the `i18next-key` attribute!*
+*Do NOT replace your html content with a custom key. This will technically work, but your server side representation will be negatively influenced (SEO), because there will not be any nice content fallback. Search engines like google search will then show your custom i18n keys instead of your website content. **So better use the `i18next-key` attribute to achieve this!***
 
 
 There are two init options to configure this further:
