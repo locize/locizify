@@ -36,7 +36,6 @@ Did you wait 5-10 seconds before refreshing the locize UI? It may take a couple 
 
 Per default only `localhost` is allowed to send missing keys ([or update missing keys](https://www.i18next.com/overview/configuration-options#missing-keys)) (to avoid using this feature accidentally [in production](https://docs.locize.com/guides-tips-and-tricks/going-production)). If you're not using `localhost` during development you will have to set the `allowedAddOrUpdateHosts: ['your.domain.tld']`.
 
-
 ## Find more information
 
 locizify wraps some other modules from locize and i18next so there are additional valuable resources to read to get details on all the provided options:
@@ -214,10 +213,10 @@ locizify.getLanguages(function(err, lngs) {
 
 ```js
 const translation = locizify.init({
-  autorun: false
+  autorun: false,
 });
 
-setTimeout(function() {
+setTimeout(function () {
   translation.start();
 }, 1000);
 ```
@@ -298,7 +297,7 @@ Just add needed items to the specific array:
 locizify.init({
   ignoreTags: ['SCRIPT'], // need to be uppercased
   ignoreIds: ['ignoreMeId'],
-  ignoreClasses: ['ignoreMeClass']
+  ignoreClasses: ['ignoreMeClass'],
 });
 ```
 
@@ -345,7 +344,7 @@ Default would be translation.
 
 ```js
 locizify.init({
-  namespace: 'myNamespace'
+  namespace: 'myNamespace',
 });
 ```
 
@@ -353,7 +352,7 @@ locizify.init({
 
 ```js
 locizify.init({
-  namespaceFromPath: true
+  namespaceFromPath: true,
 });
 ```
 
@@ -428,8 +427,7 @@ The default key attribute is `i18next-key`, so just add that attribute to the ht
 }
 ```
 
-*Do NOT replace your html content with a custom key. This will technically work, but your server side representation will be negatively influenced (SEO), because there will not be any nice content fallback. Search engines like google search will then show your custom i18n keys instead of your website content. **So better use the `i18next-key` attribute to achieve this!***
-
+\*Do NOT replace your html content with a custom key. This will technically work, but your server side representation will be negatively influenced (SEO), because there will not be any nice content fallback. Search engines like google search will then show your custom i18n keys instead of your website content. **So better use the `i18next-key` attribute to achieve this!\***
 
 There are two init options to configure this further:
 
@@ -438,7 +436,7 @@ locizify.init({
   // ...
 
   keyAttr: 'i18next-key', // node attribute to use as key
-  ignoreWithoutKey: false // set to true to only extract/translate nodes having a key
+  ignoreWithoutKey: false, // set to true to only extract/translate nodes having a key
 
   // ...
 });
@@ -470,4 +468,15 @@ You will have to enforce flat JSON in your locize project (settings -> publish f
 
 ```js
 locizify.forceRerender();
+```
+
+## access to locize script (locize InContext editor)
+
+https://github.com/locize/locize
+
+```js
+let isOff;
+
+isOff = locizify.editor.turnOff(); // -> true
+isOff = locizify.editor.turnOn(); // -> false
 ```

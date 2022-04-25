@@ -4,6 +4,32 @@
   (global = global || self, global.locizify = factory());
 }(this, (function () { 'use strict';
 
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      enumerableOnly && (symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      })), keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = null != arguments[i] ? arguments[i] : {};
+      i % 2 ? ownKeys(Object(source), !0).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+
+    return target;
+  }
+
   function _defineProperty(obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -17,40 +43,6 @@
     }
 
     return obj;
-  }
-
-  function ownKeys(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      if (enumerableOnly) symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      });
-      keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-
-      if (i % 2) {
-        ownKeys(Object(source), true).forEach(function (key) {
-          _defineProperty(target, key, source[key]);
-        });
-      } else if (Object.getOwnPropertyDescriptors) {
-        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-      } else {
-        ownKeys(Object(source)).forEach(function (key) {
-          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-        });
-      }
-    }
-
-    return target;
   }
 
   var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -3363,6 +3355,7 @@
   }
 
   var fetchApi;
+
   if (typeof fetch === 'function') {
     if (typeof global !== 'undefined' && global.fetch) {
       fetchApi = global.fetch;
@@ -3373,6 +3366,7 @@
 
   if (typeof require !== 'undefined' && (typeof window === 'undefined' || typeof window.document === 'undefined')) {
     var f = fetchApi || require('cross-fetch');
+
     if (f.default) f = f.default;
     exports.default = f;
     module.exports = exports.default;
@@ -5267,8 +5261,8 @@
                 });
               } // items are matching, so skip ahead
               else {
-                  simulateIndex++;
-                }
+                simulateIndex++;
+              }
             } else {
               inserts.push({
                 key: wantedItem.key,
@@ -5285,8 +5279,8 @@
           k++;
         } // a key in simulate has no matching wanted key, remove it
         else if (simulateItem && simulateItem.key) {
-            removes.push(remove$1(simulate, simulateIndex, simulateItem.key));
-          }
+          removes.push(remove$1(simulate, simulateIndex, simulateItem.key));
+        }
       } else {
         simulateIndex++;
         k++;
@@ -8728,6 +8722,7 @@
   }
 
   var fetchApi$2;
+
   if (typeof fetch === 'function') {
     if (typeof global !== 'undefined' && global.fetch) {
       fetchApi$2 = global.fetch;
@@ -8738,6 +8733,7 @@
 
   if (typeof require !== 'undefined' && (typeof window === 'undefined' || typeof window.document === 'undefined')) {
     var f$1 = fetchApi$2 || require('cross-fetch');
+
     if (f$1.default) f$1 = f$1.default;
     exports.default = f$1;
     module.exports = exports.default;
@@ -9659,6 +9655,13 @@
     return el && el.getAttribute && el.getAttribute(name);
   }
 
+  function getElementI18nKey(el) {
+    var key = getAttribute$1(el, 'data-i18n');
+    if (key) return key;
+    if (el.nodeType === window.Node.TEXT_NODE && el.parentElement) return getElementI18nKey(el.parentElement);
+    return undefined;
+  }
+
   function getElementNamespace(el) {
     var found;
 
@@ -9700,6 +9703,7 @@
       e.preventDefault();
       e.stopPropagation();
       var text = getElementText(el);
+      var key = getElementI18nKey(el);
       var rectEl = el.getBoundingClientRect ? el : el.parentElement;
 
       var _rectEl$getBoundingCl = rectEl.getBoundingClientRect(),
@@ -9717,6 +9721,7 @@
       cb({
         tagName: rectEl.tagName,
         text: text,
+        key: key,
         ns: getElementNamespace(el),
         box: {
           top: top,
@@ -9742,7 +9747,8 @@
   var origin;
   var handler;
   var clickInterceptionEnabled;
-  var handleLocizeSaved; // let i18next;
+  var handleLocizeSaved;
+  var scriptTurnedOff; // used to flag turnOff by developers using the exported functions -> disable the editor function by code
 
   function addLocizeSavedHandler(hnd) {
     handleLocizeSaved = hnd;
@@ -9790,48 +9796,80 @@
       }
     }
   };
-  window.addEventListener('message', function (e) {
-    if (e.data.message === 'isLocizeEnabled') {
-      // console.warn("result: ", ev.data);
-      // parent => ev.source;
-      if (!source) {
-        source = e.source;
-        origin = e.origin;
-        handler = createClickHandler(function (payload) {
-          source.postMessage({
-            message: 'clickedElement',
-            payload: payload
-          }, origin);
-        }); // document.body.addEventListener('click', handler, true);
-        // clickInterceptionEnabled = true;
-      }
 
-      source.postMessage({
-        message: 'locizeIsEnabled',
-        enabled: true
-      }, e.origin);
-      pendingMsgs.forEach(function (m) {
-        source.postMessage(m, e.origin);
-      });
-      pendingMsgs = [];
-    } else if (e.data.message === 'turnOn') {
-      if (!clickInterceptionEnabled) window.document.body.addEventListener('click', handler, true);
-      clickInterceptionEnabled = true;
-      source.postMessage({
-        message: 'turnedOn'
-      }, origin);
-    } else if (e.data.message === 'turnOff') {
-      if (clickInterceptionEnabled) window.document.body.removeEventListener('click', handler, true);
-      clickInterceptionEnabled = false;
-      source.postMessage({
-        message: 'turnedOff'
-      }, origin);
-    } else if (e.data.message === 'committed') {
-      var data = e.data.payload;
-      if (window.locizeSavedHandler) window.locizeSavedHandler(data);
-      if (handleLocizeSaved) handleLocizeSaved(data);
-    }
-  });
+  if (typeof window !== 'undefined') {
+    window.addEventListener('message', function (e) {
+      if (e.data.message === 'isLocizeEnabled') {
+        // console.warn("result: ", ev.data);
+        // parent => ev.source;
+        if (!source) {
+          source = e.source;
+          origin = e.origin;
+          handler = createClickHandler(function (payload) {
+            source.postMessage({
+              message: 'clickedElement',
+              payload: payload
+            }, origin);
+          }); // document.body.addEventListener('click', handler, true);
+          // clickInterceptionEnabled = true;
+        }
+
+        source.postMessage({
+          message: 'locizeIsEnabled',
+          enabled: true
+        }, e.origin);
+        pendingMsgs.forEach(function (m) {
+          source.postMessage(m, e.origin);
+        });
+        pendingMsgs = [];
+      } else if (e.data.message === 'turnOn') {
+        if (scriptTurnedOff) return source.postMessage({
+          message: 'forcedOff'
+        }, origin);
+        if (!clickInterceptionEnabled) window.document.body.addEventListener('click', handler, true);
+        clickInterceptionEnabled = true;
+        source.postMessage({
+          message: 'turnedOn'
+        }, origin);
+      } else if (e.data.message === 'turnOff') {
+        if (scriptTurnedOff) return source.postMessage({
+          message: 'forcedOff'
+        }, origin);
+        if (clickInterceptionEnabled) window.document.body.removeEventListener('click', handler, true);
+        clickInterceptionEnabled = false;
+        source.postMessage({
+          message: 'turnedOff'
+        }, origin);
+      } else if (e.data.message === 'committed') {
+        var data = e.data.payload;
+        if (window.locizeSavedHandler) window.locizeSavedHandler(data);
+        if (handleLocizeSaved) handleLocizeSaved(data);
+      }
+    });
+  }
+
+  var turnOn = function turnOn() {
+    scriptTurnedOff = false;
+    if (!clickInterceptionEnabled) window.document.body.addEventListener('click', handler, true);
+    clickInterceptionEnabled = true;
+    if (source) source.postMessage({
+      message: 'turnedOn'
+    }, origin);
+    return scriptTurnedOff;
+  };
+
+  var turnOff = function turnOff() {
+    scriptTurnedOff = true;
+    if (clickInterceptionEnabled) window.document.body.removeEventListener('click', handler, true);
+    clickInterceptionEnabled = false;
+    if (source) source.postMessage({
+      message: 'turnedOff'
+    }, origin);
+    if (source) source.postMessage({
+      message: 'forcedOff'
+    }, origin);
+    return scriptTurnedOff;
+  };
 
   var {
     i18next
@@ -9925,6 +9963,12 @@
 
       i18next.on('initialized', ready);
     }
+  }; // add editor functions
+
+
+  i18nextify.editor = {
+    turnOn: turnOn,
+    turnOff: turnOff
   };
 
   return i18nextify;

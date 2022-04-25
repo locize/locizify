@@ -1,3 +1,7 @@
+### v5.1.0
+
+- update locize dependecy and expose editor functions turnOn/Off
+
 ### v5.0.6
 
 - update locize dependencies
@@ -123,7 +127,6 @@
 
 - update deps using `locize.app` instead of `locize.io`
 - remove bower
-
 
 ### v2.15.1
 

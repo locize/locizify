@@ -1,24 +1,24 @@
 import i18nextify from 'i18nextify';
 import LocizeBackend from 'i18next-locize-backend';
-import { locizePlugin } from 'locize';
+import { locizePlugin, turnOn, turnOff } from 'locize';
 
 const { i18next } = i18nextify;
 
 const enforce = {
-  saveMissingTo: 'all'
+  saveMissingTo: 'all',
 };
 
 const defaults = {
   reloadOnSave: true,
-  bindSavedMissing: true
+  bindSavedMissing: true,
 };
 
 const reloadEditorOptions = {
-  onEditorSaved: function(lng, ns) {
+  onEditorSaved: function (lng, ns) {
     i18next.reloadResources(lng, ns, () => {
       i18next.emit('editorSaved');
     });
-  }
+  },
 };
 
 i18next.use(LocizeBackend).use(locizePlugin);
@@ -46,7 +46,7 @@ i18next.init = (options = {}, callback) => {
       'cleanWhitespace',
       'namespace',
       'namespaceFromPath',
-      'load'
+      'load',
     ];
     const toReadAsArray = [
       'ignoreTags',
@@ -57,24 +57,30 @@ i18next.init = (options = {}, callback) => {
       'inlineTags',
       'ignoreInlineOn',
       'ignoreCleanIndentFor',
-      'ns'
+      'ns',
     ];
-    const toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version', 'allowedAddOrUpdateHost'];
+    const toReadBackend = [
+      'projectId',
+      'apiKey',
+      'referenceLng',
+      'version',
+      'allowedAddOrUpdateHost',
+    ];
 
-    toRead.forEach(attr => {
+    toRead.forEach((attr) => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
       if (value !== undefined && value !== null) config[attr] = value;
     });
 
-    toReadAsArray.forEach(attr => {
+    toReadAsArray.forEach((attr) => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
       if (value !== undefined && value !== null)
-        config[attr] = value.split(',').map(item => item.trim());
+        config[attr] = value.split(',').map((item) => item.trim());
     });
 
-    toReadBackend.forEach(attr => {
+    toReadBackend.forEach((attr) => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
@@ -120,7 +126,7 @@ i18next.init = (options = {}, callback) => {
   });
 };
 
-i18nextify.getLanguages = function(callback) {
+i18nextify.getLanguages = function (callback) {
   if (i18next.services.backendConnector) {
     i18next.services.backendConnector.backend.getLanguages(callback);
   } else {
@@ -132,7 +138,7 @@ i18nextify.getLanguages = function(callback) {
   }
 };
 
-i18nextify.getOptions = function(callback) {
+i18nextify.getOptions = function (callback) {
   if (i18next.services.backendConnector) {
     i18next.services.backendConnector.backend.getOptions(callback);
   } else {
@@ -143,5 +149,8 @@ i18nextify.getOptions = function(callback) {
     i18next.on('initialized', ready);
   }
 };
+
+// add editor functions
+i18nextify.editor = { turnOn: turnOn, turnOff: turnOff };
 
 export default i18nextify;
