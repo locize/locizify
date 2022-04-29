@@ -18,14 +18,15 @@
           apiKey: '9b65a701-efef-40df-b073-4fb393eaa2cd',
           projectId: '3a3b18b9-d459-4c50-be29-d59f03d969e5',
           // version: 'staging',
-          getLanguagesPath: 'https://api-dev.locize.app/languages/{{projectId}}',
+          getLanguagesPath:
+            'https://api-dev.locize.app/languages/{{projectId}}',
           loadPath:
             'https://api-dev.locize.app/{{projectId}}/latest/{{lng}}/{{ns}}',
           addPath:
             'https://api-dev.locize.app/missing/{{projectId}}/latest/{{lng}}/{{ns}}',
-          autoPilot: true,
-          translatedPercentageThreshold: 0.2
-        }
+          // autoPilot: true,
+          // translatedPercentageThreshold: 0.2
+        },
       });
       // setTimeout(function () {
       //   translation.start();
@@ -133,7 +134,7 @@
     <script>
       // window.virtualDomI18next.run(document.getElementById('react-mount'));
 
-      setTimeout(function() {
+      setTimeout(function () {
         var ele = document.body;
 
         var btn = document.createElement('BUTTON');
@@ -144,7 +145,7 @@
         ele.appendChild(btn);
       }, 5000);
 
-      setTimeout(function() {
+      setTimeout(function () {
         var ele = document.getElementById('appendToInner');
 
         var btn = document.createElement('BUTTON');
@@ -155,7 +156,7 @@
         ele.appendChild(btn);
       }, 5000);
 
-      setTimeout(function() {
+      setTimeout(function () {
         var ele = document.getElementById('appendToInner');
 
         var btn = document.createElement('BUTTON');
