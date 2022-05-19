@@ -1,3 +1,7 @@
+### v5.2.0
+
+- update i18next dependencies
+
 ### v5.1.0
 
 - update locize dependecy and expose editor functions turnOn/Off
