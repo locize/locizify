@@ -1,3 +1,7 @@
+### v5.2.2
+
+- update i18next dependencies
+
 ### v5.2.1
 
 - update i18next dependencies

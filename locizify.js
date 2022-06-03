@@ -9230,6 +9230,18 @@
             });
           }
 
+          if (ret) {
+            var referenceLng = Object.keys(ret).reduce(function (mem, k) {
+              var item = ret[k];
+              if (item.isReferenceLanguage) mem = k;
+              return mem;
+            }, '');
+
+            if (referenceLng && _this3.options.referenceLng !== referenceLng) {
+              _this3.options.referenceLng = referenceLng;
+            }
+          }
+
           _this3.somethingLoaded = true;
           var clbs = _this3.getLanguagesCalls;
           _this3.getLanguagesCalls = [];
@@ -9263,11 +9275,6 @@
             return callback(new Error('was unable to load languages via API'));
           }
 
-          var referenceLng = keys.reduce(function (mem, k) {
-            var item = data[k];
-            if (item.isReferenceLanguage) mem = k;
-            return mem;
-          }, '');
           var lngs = keys.reduce(function (mem, k) {
             var item = data[k];
 
@@ -9282,8 +9289,8 @@
             return mem;
           }, false);
           callback(null, {
-            fallbackLng: referenceLng,
-            referenceLng: referenceLng,
+            fallbackLng: _this4.options.referenceLng,
+            referenceLng: _this4.options.referenceLng,
             supportedLngs: lngs,
             load: hasRegion ? 'all' : 'languageOnly'
           }, data);
