@@ -9657,20 +9657,55 @@
 
   I18NextLocizeBackend.type = 'backend';
 
+  function ownKeys$9(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      enumerableOnly && (symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      })), keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2$1(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = null != arguments[i] ? arguments[i] : {};
+      i % 2 ? ownKeys$9(Object(source), !0).forEach(function (key) {
+        _defineProperty$4(target, key, source[key]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$9(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+
+    return target;
+  }
+
   function _typeof$4(obj) {
     "@babel/helpers - typeof";
 
-    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof$4 = function _typeof(obj) {
-        return typeof obj;
-      };
+    return _typeof$4 = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, _typeof$4(obj);
+  }
+
+  function _defineProperty$4(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
     } else {
-      _typeof$4 = function _typeof(obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
+      obj[key] = value;
     }
 
-    return _typeof$4(obj);
+    return obj;
   }
 
   function isWindow(obj) {
@@ -9853,6 +9888,48 @@
     return handler;
   }
 
+  var baseBtn = 'font-family: "Helvetica", "Arial", sans-serif; font-size: 14px; color: #fff; border: none; font-weight: 300; height: 30px; line-height: 30px; padding: 0 15px; text-align: center; min-width: 90px; text-decoration: none; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; outline: none; cursor: pointer; border-radius: 15px;'; // eslint-disable-next-line import/prefer-default-export
+
+  function initUI(options) {
+    var cont = window.document.createElement('div');
+    var style = 'font-family: "Helvetica", "Arial", sans-serif; bottom: 20px; right: 20px; padding: 10px; background-color: #fff; border: solid 1px #1976d2; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.5); border-radius: 3px;';
+    style += ' z-index: 2147483647; position: fixed;';
+    cont.setAttribute('style', style);
+    cont.setAttribute('ignorelocizeeditor', '');
+    cont.setAttribute('translated', ''); //   if(options.locizeEditorToggle.containerClasses) {
+    //     const classes = options.locizeEditorToggle.containerClasses.length > 1 ? options.locizeEditorToggle.containerClasses.split(' ') : options.locizeEditorToggle.containerClasses;
+    //     classes.forEach(function(cssClass) {
+    //       cont.classList.add(cssClass);
+    //     });
+    //   }
+
+    var title = window.document.createElement('h4');
+    title.id = 'locize-title';
+    title.innerHTML = 'Translate InContext:';
+    title.setAttribute('style', 'font-family: "Helvetica", "Arial", sans-serif; font-size: 14px; margin: 0 0 5px 0; color: #1976d2; font-weight: 300;');
+    title.setAttribute('ignorelocizeeditor', '');
+    cont.appendChild(title);
+    var turnOn = window.document.createElement('button');
+    turnOn.innerHTML = 'Open in locize';
+    turnOn.setAttribute('style', "".concat(baseBtn, "  background-color: #1976d2;"));
+
+    turnOn.onclick = function () {
+      var i18next = options.getI18next();
+      var backendOptions = i18next && i18next.options && i18next.options.backend;
+
+      var _backendOptions$optio = _objectSpread2$1(_objectSpread2$1({}, backendOptions), options),
+          projectId = _backendOptions$optio.projectId,
+          version = _backendOptions$optio.version;
+
+      var editorUrl = options.editorUrl || backendOptions && backendOptions.loadPath && backendOptions.loadPath.indexOf('https://api-dev.locize.app') === 0 && 'https://dev.locize.app' || 'https://www.locize.app';
+      window.location = "".concat(editorUrl, "/cat/").concat(projectId, "/v/").concat(version, "/incontext?sourceurl=").concat(encodeURI(window.location.href));
+    };
+
+    turnOn.setAttribute('ignorelocizeeditor', '');
+    cont.appendChild(turnOn);
+    window.document.body.appendChild(cont);
+  }
+
   var isInIframe = true;
 
   try {
@@ -9889,10 +9966,11 @@
     }
   }
 
+  var i18next;
   var locizePlugin = {
     type: '3rdParty',
     init: function init(i18n) {
-      // i18next = i18n;
+      i18next = i18n;
       addLocizeSavedHandler(function (res) {
         res.updated.forEach(function (item) {
           var lng = item.lng,
@@ -9914,7 +9992,19 @@
     }
   };
 
+  function getI18next() {
+    return i18next;
+  }
+
+  function showLocizeLink() {
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    if (!isInIframe) initUI(_objectSpread2$1(_objectSpread2$1({}, options), {}, {
+      getI18next: getI18next
+    }));
+  }
+
   if (typeof window !== 'undefined') {
+    // eslint-disable-next-line consistent-return
     window.addEventListener('message', function (e) {
       if (e.data.message === 'isLocizeEnabled') {
         // console.warn("result: ", ev.data);
@@ -9965,7 +10055,7 @@
     });
   }
 
-  var turnOn = function turnOn() {
+  function turnOn() {
     scriptTurnedOff = false;
     if (!clickInterceptionEnabled) window.document.body.addEventListener('click', handler, true);
     clickInterceptionEnabled = true;
@@ -9973,9 +10063,9 @@
       message: 'turnedOn'
     }, origin);
     return scriptTurnedOff;
-  };
+  }
 
-  var turnOff = function turnOff() {
+  function turnOff() {
     scriptTurnedOff = true;
     if (clickInterceptionEnabled) window.document.body.removeEventListener('click', handler, true);
     clickInterceptionEnabled = false;
@@ -9986,10 +10076,10 @@
       message: 'forcedOff'
     }, origin);
     return scriptTurnedOff;
-  };
+  }
 
   var {
-    i18next
+    i18next: i18next$1
   } = i18nextify;
   var enforce = {
     saveMissingTo: 'all'
@@ -9998,13 +10088,13 @@
     reloadOnSave: true,
     bindSavedMissing: true
   };
-  i18next.use(I18NextLocizeBackend).use(locizePlugin);
-  i18next.on('editorSaved', () => {
+  i18next$1.use(I18NextLocizeBackend).use(locizePlugin);
+  i18next$1.on('editorSaved', () => {
     i18nextify.forceRerender();
   });
-  var originalInit = i18next.init;
+  var originalInit = i18next$1.init;
 
-  i18next.init = function () {
+  i18next$1.init = function () {
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     var callback = arguments.length > 1 ? arguments[1] : undefined;
     options = _objectSpread2(_objectSpread2({}, defaults$3), options);
@@ -10048,44 +10138,45 @@
       callback(err, t);
     }
 
-    if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next, _objectSpread2(_objectSpread2({}, options), enforce), handleI18nextInitialized);
+    if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next$1, _objectSpread2(_objectSpread2({}, options), enforce), handleI18nextInitialized);
     var locizeBackend = new I18NextLocizeBackend(options.backend);
     locizeBackend.getOptions((err, opts) => {
       if (err && typeof console === 'object' && typeof console.error === 'function') console.error(err);
-      originalInit.call(i18next, _objectSpread2(_objectSpread2(_objectSpread2({}, opts), options), enforce), handleI18nextInitialized);
+      originalInit.call(i18next$1, _objectSpread2(_objectSpread2(_objectSpread2({}, opts), options), enforce), handleI18nextInitialized);
     });
   };
 
   i18nextify.getLanguages = function (callback) {
-    if (i18next.services.backendConnector) {
-      i18next.services.backendConnector.backend.getLanguages(callback);
+    if (i18next$1.services.backendConnector) {
+      i18next$1.services.backendConnector.backend.getLanguages(callback);
     } else {
       function ready() {
-        i18next.off('initialized', ready);
-        i18next.services.backendConnector.backend.getLanguages(callback);
+        i18next$1.off('initialized', ready);
+        i18next$1.services.backendConnector.backend.getLanguages(callback);
       }
 
-      i18next.on('initialized', ready);
+      i18next$1.on('initialized', ready);
     }
   };
 
   i18nextify.getOptions = function (callback) {
-    if (i18next.services.backendConnector) {
-      i18next.services.backendConnector.backend.getOptions(callback);
+    if (i18next$1.services.backendConnector) {
+      i18next$1.services.backendConnector.backend.getOptions(callback);
     } else {
       function ready() {
-        i18next.off('initialized', ready);
-        i18next.services.backendConnector.backend.getOptions(callback);
+        i18next$1.off('initialized', ready);
+        i18next$1.services.backendConnector.backend.getOptions(callback);
       }
 
-      i18next.on('initialized', ready);
+      i18next$1.on('initialized', ready);
     }
   }; // add editor functions
 
 
   i18nextify.editor = {
-    turnOn: turnOn,
-    turnOff: turnOff
+    turnOn,
+    turnOff,
+    showLocizeLink
   };
 
   return i18nextify;

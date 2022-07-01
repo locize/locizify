@@ -1,6 +1,6 @@
 import i18nextify from 'i18nextify';
 import LocizeBackend from 'i18next-locize-backend';
-import { locizePlugin, turnOn, turnOff } from 'locize';
+import { locizePlugin, turnOn, turnOff, showLocizeLink } from 'locize';
 
 const { i18next } = i18nextify;
 
@@ -151,6 +151,6 @@ i18nextify.getOptions = function (callback) {
 };
 
 // add editor functions
-i18nextify.editor = { turnOn: turnOn, turnOff: turnOff };
+i18nextify.editor = { turnOn, turnOff, showLocizeLink };
 
 export default i18nextify;

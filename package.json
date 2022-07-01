@@ -22,7 +22,7 @@
   "dependencies": {
     "i18next-locize-backend": "5.1.2",
     "i18nextify": "3.1.2",
-    "locize": "2.3.0"
+    "locize": "2.3.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.2.3",
@@ -36,11 +36,11 @@
     "@babel/preset-react": "^7.0.0",
     "@babel/register": "^7.0.0",
     "aws-sdk": "2.22.0",
-    "eslint": "6.7.2",
-    "eslint-config-airbnb": "18.0.1",
-    "eslint-plugin-import": "2.18.2",
-    "eslint-plugin-jsx-a11y": "6.2.3",
-    "eslint-plugin-react": "7.17.0",
+    "eslint": "7.13.0",
+    "eslint-config-airbnb": "18.2.1",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-react": "^7.21.5",
     "html-to-vdom": "^0.7.0",
     "jest": "^24.9.0",
     "jest-cli": "^24.9.0",

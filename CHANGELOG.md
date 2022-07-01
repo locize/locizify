@@ -1,3 +1,7 @@
+### v5.2.4
+
+- update locize dependency
+
 ### v5.2.3
 
 - update i18next dependencies
