@@ -1,6 +1,6 @@
 {
   "name": "locizify",
-  "version": "5.2.6",
+  "version": "5.2.7",
   "description": "main script for using locize service in frontend",
   "main": "dist/commonjs/index.js",
   "jsnext:main": "dist/es/index.js",
