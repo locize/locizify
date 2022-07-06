@@ -10148,6 +10148,9 @@
   i18next$1.on('editorSaved', () => {
     i18nextify.forceRerender();
   });
+  i18next$1.on('languageChanged', lng => {
+    window.document.documentElement.lang = lng;
+  });
   var originalInit = i18next$1.init;
 
   i18next$1.init = function () {

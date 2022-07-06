@@ -27,6 +27,10 @@ i18next.on('editorSaved', () => {
   i18nextify.forceRerender();
 });
 
+i18next.on('languageChanged', (lng) => {
+  window.document.documentElement.lang = lng;
+});
+
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {
   options = { ...defaults, ...options, isLocizify: true };
