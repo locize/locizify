@@ -1,3 +1,7 @@
+### v5.2.8
+
+- update locize dependency
+
 ### v5.2.7
 
 - on languageChanged, update document language

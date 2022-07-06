@@ -9657,20 +9657,40 @@
 
   I18NextLocizeBackend.type = 'backend';
 
+  function ownKeys$9(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      enumerableOnly && (symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      })), keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2$1(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = null != arguments[i] ? arguments[i] : {};
+      i % 2 ? ownKeys$9(Object(source), !0).forEach(function (key) {
+        _defineProperty$4(target, key, source[key]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$9(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+
+    return target;
+  }
+
   function _typeof$4(obj) {
     "@babel/helpers - typeof";
 
-    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof$4 = function _typeof(obj) {
-        return typeof obj;
-      };
-    } else {
-      _typeof$4 = function _typeof(obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof$4(obj);
+    return _typeof$4 = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, _typeof$4(obj);
   }
 
   function _defineProperty$4(obj, key, value) {
@@ -9686,40 +9706,6 @@
     }
 
     return obj;
-  }
-
-  function ownKeys$9(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      if (enumerableOnly) symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      });
-      keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2$1(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-
-      if (i % 2) {
-        ownKeys$9(Object(source), true).forEach(function (key) {
-          _defineProperty$4(target, key, source[key]);
-        });
-      } else if (Object.getOwnPropertyDescriptors) {
-        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-      } else {
-        ownKeys$9(Object(source)).forEach(function (key) {
-          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-        });
-      }
-    }
-
-    return target;
   }
 
   function isWindow(obj) {
@@ -9883,7 +9869,7 @@
       var pB = parseFloat(style.getPropertyValue('padding-bottom'));
       var pR = parseFloat(style.getPropertyValue('padding-right'));
       var pL = parseFloat(style.getPropertyValue('padding-left'));
-      var sizing = style.getPropertyValue('box-sizing');
+      var sizing = style.getPropertyValue('box-sizing'); // eslint-disable-next-line consistent-return
 
       function getFallbackNS() {
         var i18next = options.getI18next();
@@ -9964,11 +9950,24 @@
   var handleLocizeSaved;
   var scriptTurnedOff; // used to flag turnOff by developers using the exported functions -> disable the editor function by code
 
+  var pendingMsgs = [];
+
   function addLocizeSavedHandler(hnd) {
     handleLocizeSaved = hnd;
   }
 
-  var pendingMsgs = [];
+  function setEditorLng(lng) {
+    var msg = {
+      message: 'setLng',
+      lng: lng
+    };
+
+    if (source) {
+      source.postMessage(msg, origin);
+    } else {
+      pendingMsgs.push(msg);
+    }
+  }
 
   function onAddedKey(lng, ns, key, value) {
     var msg = {
@@ -10104,22 +10103,14 @@
     return scriptTurnedOff;
   }
 
-  function setEditorLng(lng) {
-    // console.warn('setLng', lng);
-    if (source) source.postMessage({
-      message: 'setLng',
-      lng: lng
-    }, origin);
-  }
-
-  var oldHref = document.location.href;
+  var oldHref = window.document.location.href;
   window.addEventListener('load', function () {
-    var bodyList = document.querySelector('body');
-    var observer = new MutationObserver(function (mutations) {
+    var bodyList = window.document.querySelector('body');
+    var observer = new window.MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
-        if (oldHref != document.location.href) {
+        if (oldHref !== window.document.location.href) {
           // console.warn('url changed', oldHref, document.location.href);
-          oldHref = document.location.href;
+          oldHref = window.document.location.href;
           if (source) source.postMessage({
             message: 'hrefChanged',
             href: oldHref
