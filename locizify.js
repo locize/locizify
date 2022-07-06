@@ -9969,6 +9969,19 @@
     }
   }
 
+  function sendHrefChanged(href) {
+    var msg = {
+      message: 'hrefChanged',
+      href: href
+    };
+
+    if (source) {
+      source.postMessage(msg, origin);
+    } else {
+      pendingMsgs.push(msg);
+    }
+  }
+
   function onAddedKey(lng, ns, key, value) {
     var msg = {
       message: 'added',
@@ -10105,16 +10118,14 @@
 
   var oldHref = window.document.location.href;
   window.addEventListener('load', function () {
+    sendHrefChanged(window.document.location.href);
     var bodyList = window.document.querySelector('body');
     var observer = new window.MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
         if (oldHref !== window.document.location.href) {
           // console.warn('url changed', oldHref, document.location.href);
           oldHref = window.document.location.href;
-          if (source) source.postMessage({
-            message: 'hrefChanged',
-            href: oldHref
-          }, origin);
+          sendHrefChanged(oldHref);
         }
       });
     });
