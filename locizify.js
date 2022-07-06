@@ -10234,7 +10234,8 @@
   i18nextify.editor = {
     turnOn,
     turnOff,
-    showLocizeLink
+    showLocizeLink,
+    setEditorLng
   };
 
   return i18nextify;

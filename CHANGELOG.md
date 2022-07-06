@@ -1,3 +1,8 @@
+### v5.2.6
+
+- export setEditorLng
+- update locize dependency
+
 ### v5.2.5
 
 - update locize dependency

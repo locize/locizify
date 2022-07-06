@@ -481,4 +481,6 @@ isOff = locizify.editor.turnOff(); // -> true
 isOff = locizify.editor.turnOn(); // -> false
 
 locizify.editor.showLocizeLink(); // -> shows link to open directly in locize InContext editor
+
+locizify.editor.setEditorLng('en'); // -> sets the appropriate language in the InContext editor
 ```
