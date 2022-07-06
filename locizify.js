@@ -9657,40 +9657,20 @@
 
   I18NextLocizeBackend.type = 'backend';
 
-  function ownKeys$9(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      enumerableOnly && (symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      })), keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2$1(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = null != arguments[i] ? arguments[i] : {};
-      i % 2 ? ownKeys$9(Object(source), !0).forEach(function (key) {
-        _defineProperty$4(target, key, source[key]);
-      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$9(Object(source)).forEach(function (key) {
-        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-      });
-    }
-
-    return target;
-  }
-
   function _typeof$4(obj) {
     "@babel/helpers - typeof";
 
-    return _typeof$4 = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
-      return typeof obj;
-    } : function (obj) {
-      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    }, _typeof$4(obj);
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof$4 = function _typeof(obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof$4 = function _typeof(obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof$4(obj);
   }
 
   function _defineProperty$4(obj, key, value) {
@@ -9706,6 +9686,40 @@
     }
 
     return obj;
+  }
+
+  function ownKeys$9(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2$1(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys$9(Object(source), true).forEach(function (key) {
+          _defineProperty$4(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys$9(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
   }
 
   function isWindow(obj) {
@@ -9847,7 +9861,7 @@
   /* eslint-disable import/prefer-default-export */
 
 
-  function createClickHandler(cb) {
+  function createClickHandler(cb, options) {
     // eslint-disable-next-line consistent-return
     var handler = function handler(e) {
       var el = getClickedElement(e);
@@ -9870,11 +9884,17 @@
       var pR = parseFloat(style.getPropertyValue('padding-right'));
       var pL = parseFloat(style.getPropertyValue('padding-left'));
       var sizing = style.getPropertyValue('box-sizing');
+
+      function getFallbackNS() {
+        var i18next = options.getI18next();
+        if (i18next && i18next.options && i18next.options.isLocizify) return i18next.options.defaultNS;
+      }
+
       cb({
         tagName: rectEl.tagName,
         text: text,
         key: key,
-        ns: getElementNamespace(el),
+        ns: getElementNamespace(el) || getFallbackNS(),
         box: {
           top: top,
           left: left,
@@ -9989,6 +10009,10 @@
           if (!isUpdate) onAddedKey(lng, ns, k, val);
         };
       }
+
+      i18next.on('languageChanged', function (lng) {
+        setEditorLng(lng);
+      });
     }
   };
 
@@ -10017,6 +10041,8 @@
               message: 'clickedElement',
               payload: payload
             }, origin);
+          }, {
+            getI18next: getI18next
           }); // document.body.addEventListener('click', handler, true);
           // clickInterceptionEnabled = true;
         }
@@ -10078,6 +10104,36 @@
     return scriptTurnedOff;
   }
 
+  function setEditorLng(lng) {
+    // console.warn('setLng', lng);
+    if (source) source.postMessage({
+      message: 'setLng',
+      lng: lng
+    }, origin);
+  }
+
+  var oldHref = document.location.href;
+  window.addEventListener('load', function () {
+    var bodyList = document.querySelector('body');
+    var observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        if (oldHref != document.location.href) {
+          // console.warn('url changed', oldHref, document.location.href);
+          oldHref = document.location.href;
+          if (source) source.postMessage({
+            message: 'hrefChanged',
+            href: oldHref
+          }, origin);
+        }
+      });
+    });
+    var config = {
+      childList: true,
+      subtree: true
+    };
+    observer.observe(bodyList, config);
+  });
+
   var {
     i18next: i18next$1
   } = i18nextify;
@@ -10097,7 +10153,9 @@
   i18next$1.init = function () {
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     var callback = arguments.length > 1 ? arguments[1] : undefined;
-    options = _objectSpread2(_objectSpread2({}, defaults$3), options);
+    options = _objectSpread2(_objectSpread2(_objectSpread2({}, defaults$3), options), {}, {
+      isLocizify: true
+    });
     var scriptEle = document.getElementById('locizify');
 
     if (scriptEle) {

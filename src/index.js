@@ -29,7 +29,7 @@ i18next.on('editorSaved', () => {
 
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {
-  options = { ...defaults, ...options };
+  options = { ...defaults, ...options, isLocizify: true };
   const scriptEle = document.getElementById('locizify');
 
   if (scriptEle) {
