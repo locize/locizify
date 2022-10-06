@@ -13,22 +13,10 @@ const defaults = {
   bindSavedMissing: true,
 };
 
-const reloadEditorOptions = {
-  onEditorSaved: function (lng, ns) {
-    i18next.reloadResources(lng, ns, () => {
-      i18next.emit('editorSaved');
-    });
-  },
-};
-
 i18next.use(LocizeBackend).use(locizePlugin);
 
 i18next.on('editorSaved', () => {
   i18nextify.forceRerender();
-});
-
-i18next.on('languageChanged', (lng) => {
-  window.document.documentElement.lang = lng;
 });
 
 const originalInit = i18next.init;

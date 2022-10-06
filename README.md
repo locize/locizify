@@ -1,7 +1,6 @@
 [![Travis](https://img.shields.io/travis/locize/locizify/master.svg?style=flat-square)](https://travis-ci.org/locize/locizify)
 [![Coveralls](https://img.shields.io/coveralls/locize/locizify/master.svg?style=flat-square)](https://coveralls.io/github/locize/locizify)
 [![npm version](https://img.shields.io/npm/v/locizify.svg?style=flat-square)](https://www.npmjs.com/package/locizify)
-[![David](https://img.shields.io/david/locize/locizify.svg?style=flat-square)](https://david-dm.org/locize/locizify)
 
 # locizify
 

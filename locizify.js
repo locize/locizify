@@ -4,6 +4,32 @@
   (global = global || self, global.locizify = factory());
 }(this, (function () { 'use strict';
 
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      enumerableOnly && (symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      })), keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = null != arguments[i] ? arguments[i] : {};
+      i % 2 ? ownKeys(Object(source), !0).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+
+    return target;
+  }
+
   function _defineProperty(obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -17,40 +43,6 @@
     }
 
     return obj;
-  }
-
-  function ownKeys(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      if (enumerableOnly) symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      });
-      keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-
-      if (i % 2) {
-        ownKeys(Object(source), true).forEach(function (key) {
-          _defineProperty(target, key, source[key]);
-        });
-      } else if (Object.getOwnPropertyDescriptors) {
-        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-      } else {
-        ownKeys(Object(source)).forEach(function (key) {
-          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-        });
-      }
-    }
-
-    return target;
   }
 
   var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -128,11 +120,10 @@
   }
 
   function _setPrototypeOf(o, p) {
-    _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
+    _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function _setPrototypeOf(o, p) {
       o.__proto__ = p;
       return o;
     };
-
     return _setPrototypeOf(o, p);
   }
 
@@ -165,7 +156,7 @@
   }
 
   function _getPrototypeOf(o) {
-    _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
+    _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf.bind() : function _getPrototypeOf(o) {
       return o.__proto__ || Object.getPrototypeOf(o);
     };
     return _getPrototypeOf(o);
@@ -347,6 +338,13 @@
         return new Logger(this.logger, _objectSpread(_objectSpread({}, {
           prefix: "".concat(this.prefix, ":").concat(moduleName, ":")
         }), this.options));
+      }
+    }, {
+      key: "clone",
+      value: function clone(options) {
+        options = options || this.options;
+        options.prefix = options.prefix || this.prefix;
+        return new Logger(this.logger, options);
       }
     }]);
 
@@ -668,6 +666,7 @@
         }
 
         if (mix === undefined) return undefined;
+        if (mix === null) return null;
 
         if (path.endsWith(p)) {
           if (typeof mix === 'string') return mix;
@@ -1315,7 +1314,7 @@
               } else {
                 var pluralSuffix;
                 if (needsPluralHandling) pluralSuffix = _this4.pluralResolver.getSuffix(code, options.count, options);
-                var zeroSuffix = '_zero';
+                var zeroSuffix = "".concat(_this4.options.pluralSeparator, "zero");
 
                 if (needsPluralHandling) {
                   finalKeys.push(key + pluralSuffix);
@@ -2065,7 +2064,12 @@
           var optionsString = "{".concat(c[1]);
           key = c[0];
           optionsString = this.interpolate(optionsString, clonedOptions);
-          optionsString = optionsString.replace(/'/g, '"');
+          var matchedSingleQuotes = optionsString.match(/'/g);
+          var matchedDoubleQuotes = optionsString.match(/"/g);
+
+          if (matchedSingleQuotes && matchedSingleQuotes.length % 2 === 0 && !matchedDoubleQuotes || matchedDoubleQuotes.length % 2 !== 0) {
+            optionsString = optionsString.replace(/'/g, '"');
+          }
 
           try {
             clonedOptions = JSON.parse(optionsString);
@@ -2196,6 +2200,21 @@
     };
   }
 
+  function createCachedFormatter(fn) {
+    var cache = {};
+    return function invokeFormatter(val, lng, options) {
+      var key = lng + JSON.stringify(options);
+      var formatter = cache[key];
+
+      if (!formatter) {
+        formatter = fn(lng, options);
+        cache[key] = formatter;
+      }
+
+      return formatter(val);
+    };
+  }
+
   var Formatter = function () {
     function Formatter() {
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -2205,23 +2224,38 @@
       this.logger = baseLogger.create('formatter');
       this.options = options;
       this.formats = {
-        number: function number(val, lng, options) {
-          return new Intl.NumberFormat(lng, options).format(val);
-        },
-        currency: function currency(val, lng, options) {
-          return new Intl.NumberFormat(lng, _objectSpread$4(_objectSpread$4({}, options), {}, {
+        number: createCachedFormatter(function (lng, options) {
+          var formatter = new Intl.NumberFormat(lng, options);
+          return function (val) {
+            return formatter.format(val);
+          };
+        }),
+        currency: createCachedFormatter(function (lng, options) {
+          var formatter = new Intl.NumberFormat(lng, _objectSpread$4(_objectSpread$4({}, options), {}, {
             style: 'currency'
-          })).format(val);
-        },
-        datetime: function datetime(val, lng, options) {
-          return new Intl.DateTimeFormat(lng, _objectSpread$4({}, options)).format(val);
-        },
-        relativetime: function relativetime(val, lng, options) {
-          return new Intl.RelativeTimeFormat(lng, _objectSpread$4({}, options)).format(val, options.range || 'day');
-        },
-        list: function list(val, lng, options) {
-          return new Intl.ListFormat(lng, _objectSpread$4({}, options)).format(val);
-        }
+          }));
+          return function (val) {
+            return formatter.format(val);
+          };
+        }),
+        datetime: createCachedFormatter(function (lng, options) {
+          var formatter = new Intl.DateTimeFormat(lng, _objectSpread$4({}, options));
+          return function (val) {
+            return formatter.format(val);
+          };
+        }),
+        relativetime: createCachedFormatter(function (lng, options) {
+          var formatter = new Intl.RelativeTimeFormat(lng, _objectSpread$4({}, options));
+          return function (val) {
+            return formatter.format(val, options.range || 'day');
+          };
+        }),
+        list: createCachedFormatter(function (lng, options) {
+          var formatter = new Intl.ListFormat(lng, _objectSpread$4({}, options));
+          return function (val) {
+            return formatter.format(val);
+          };
+        })
       };
       this.init(options);
     }
@@ -2239,6 +2273,11 @@
       key: "add",
       value: function add(name, fc) {
         this.formats[name.toLowerCase().trim()] = fc;
+      }
+    }, {
+      key: "addCached",
+      value: function addCached(name, fc) {
+        this.formats[name.toLowerCase().trim()] = createCachedFormatter(fc);
       }
     }, {
       key: "format",
@@ -2381,6 +2420,8 @@
       _this.waitingReads = [];
       _this.maxParallelReads = options.maxParallelReads || 10;
       _this.readingCalls = 0;
+      _this.maxRetries = options.maxRetries >= 0 ? options.maxRetries : 5;
+      _this.retryTimeout = options.retryTimeout >= 1 ? options.retryTimeout : 350;
       _this.state = {};
       _this.queue = [];
 
@@ -2487,7 +2528,7 @@
         var _this3 = this;
 
         var tried = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-        var wait = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 350;
+        var wait = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : this.retryTimeout;
         var callback = arguments.length > 5 ? arguments[5] : undefined;
         if (!lng.length) return callback(null, {});
 
@@ -2505,19 +2546,19 @@
 
         this.readingCalls++;
         return this.backend[fcName](lng, ns, function (err, data) {
-          if (err && data && tried < 5) {
-            setTimeout(function () {
-              _this3.read.call(_this3, lng, ns, fcName, tried + 1, wait * 2, callback);
-            }, wait);
-            return;
-          }
-
           _this3.readingCalls--;
 
           if (_this3.waitingReads.length > 0) {
             var next = _this3.waitingReads.shift();
 
             _this3.read(next.lng, next.ns, next.fcName, next.tried, next.wait, next.callback);
+          }
+
+          if (err && data && tried < _this3.maxRetries) {
+            setTimeout(function () {
+              _this3.read.call(_this3, lng, ns, fcName, tried + 1, wait * 2, callback);
+            }, wait);
+            return;
           }
 
           callback(err, data);
@@ -2818,7 +2859,7 @@
           options = {};
         }
 
-        if (!options.defaultNS && options.ns) {
+        if (!options.defaultNS && options.defaultNS !== false && options.ns) {
           if (typeof options.ns === 'string') {
             options.defaultNS = options.ns;
           } else if (options.ns.indexOf('translation') < 0) {
@@ -3174,8 +3215,9 @@
           options.lng = options.lng || fixedT.lng;
           options.lngs = options.lngs || fixedT.lngs;
           options.ns = options.ns || fixedT.ns;
+          options.keyPrefix = options.keyPrefix || keyPrefix || fixedT.keyPrefix;
           var keySeparator = _this5.options.keySeparator || '.';
-          var resultKey = keyPrefix ? "".concat(keyPrefix).concat(keySeparator).concat(key) : key;
+          var resultKey = options.keyPrefix ? "".concat(options.keyPrefix).concat(keySeparator).concat(key) : key;
           return _this5.t(resultKey, options);
         };
 
@@ -3311,6 +3353,11 @@
         });
 
         var clone = new I18n(mergedOptions);
+
+        if (options.debug !== undefined || options.prefix !== undefined) {
+          clone.logger = clone.logger.clone(options);
+        }
+
         var membersToCopy = ['store', 'services', 'language'];
         membersToCopy.forEach(function (m) {
           clone[m] = _this8[m];
@@ -3412,16 +3459,20 @@
   }
 
   var fetchApi;
+
   if (typeof fetch === 'function') {
     if (typeof global !== 'undefined' && global.fetch) {
       fetchApi = global.fetch;
     } else if (typeof window !== 'undefined' && window.fetch) {
       fetchApi = window.fetch;
+    } else {
+      fetchApi = fetch;
     }
   }
 
   if (typeof require !== 'undefined' && (typeof window === 'undefined' || typeof window.document === 'undefined')) {
     var f = fetchApi || require('cross-fetch');
+
     if (f.default) f = f.default;
     exports.default = f;
     module.exports = exports.default;
@@ -3447,6 +3498,8 @@
       fetchApi$1 = global.fetch;
     } else if (typeof window !== 'undefined' && window.fetch) {
       fetchApi$1 = window.fetch;
+    } else {
+      fetchApi$1 = fetch;
     }
   }
 
@@ -3488,18 +3541,8 @@
     return url;
   };
 
-  var requestWithFetch = function requestWithFetch(options, url, payload, callback) {
-    if (options.queryStringParams) {
-      url = addQueryString(url, options.queryStringParams);
-    }
-
-    var headers = defaults({}, typeof options.customHeaders === 'function' ? options.customHeaders() : options.customHeaders);
-    if (payload) headers['Content-Type'] = 'application/json';
-    fetchApi$1(url, defaults({
-      method: payload ? 'POST' : 'GET',
-      body: payload ? options.stringify(payload) : undefined,
-      headers: headers
-    }, typeof options.requestOptions === 'function' ? options.requestOptions(payload) : options.requestOptions)).then(function (response) {
+  var fetchIt = function fetchIt(url, fetchOptions, callback) {
+    fetchApi$1(url, fetchOptions).then(function (response) {
       if (!response.ok) return callback(response.statusText || 'Error', {
         status: response.status
       });
@@ -3510,6 +3553,41 @@
         });
       }).catch(callback);
     }).catch(callback);
+  };
+
+  var omitFetchOptions = false;
+
+  var requestWithFetch = function requestWithFetch(options, url, payload, callback) {
+    if (options.queryStringParams) {
+      url = addQueryString(url, options.queryStringParams);
+    }
+
+    var headers = defaults({}, typeof options.customHeaders === 'function' ? options.customHeaders() : options.customHeaders);
+    if (payload) headers['Content-Type'] = 'application/json';
+    var reqOptions = typeof options.requestOptions === 'function' ? options.requestOptions(payload) : options.requestOptions;
+    var fetchOptions = defaults({
+      method: payload ? 'POST' : 'GET',
+      body: payload ? options.stringify(payload) : undefined,
+      headers: headers
+    }, omitFetchOptions ? {} : reqOptions);
+
+    try {
+      fetchIt(url, fetchOptions, callback);
+    } catch (e) {
+      if (!reqOptions || Object.keys(reqOptions).length === 0 || !e.message || e.message.indexOf('not implemented') < 0) {
+        return callback(e);
+      }
+
+      try {
+        Object.keys(reqOptions).forEach(function (opt) {
+          delete fetchOptions[opt];
+        });
+        fetchIt(url, fetchOptions, callback);
+        omitFetchOptions = true;
+      } catch (err) {
+        callback(err);
+      }
+    }
   };
 
   var requestWithXmlHttpRequest = function requestWithXmlHttpRequest(options, url, payload, callback) {
@@ -3583,6 +3661,8 @@
     if (hasXMLHttpRequest() || typeof ActiveXObject === 'function') {
       return requestWithXmlHttpRequest(options, url, payload, callback);
     }
+
+    callback(new Error('No fetch and no xhr implementation found!'));
   };
 
   function _classCallCheck$1(instance, Constructor) {
@@ -3839,12 +3919,12 @@
     var opt = options || {};
     opt.path = opt.path || '/';
     var value = encodeURIComponent(val);
-    var str = name + '=' + value;
+    var str = "".concat(name, "=").concat(value);
 
     if (opt.maxAge > 0) {
       var maxAge = opt.maxAge - 0;
-      if (isNaN(maxAge)) throw new Error('maxAge should be a Number');
-      str += '; Max-Age=' + Math.floor(maxAge);
+      if (Number.isNaN(maxAge)) throw new Error('maxAge should be a Number');
+      str += "; Max-Age=".concat(Math.floor(maxAge));
     }
 
     if (opt.domain) {
@@ -3852,7 +3932,7 @@
         throw new TypeError('option domain is invalid');
       }
 
-      str += '; Domain=' + opt.domain;
+      str += "; Domain=".concat(opt.domain);
     }
 
     if (opt.path) {
@@ -3860,7 +3940,7 @@
         throw new TypeError('option path is invalid');
       }
 
-      str += '; Path=' + opt.path;
+      str += "; Path=".concat(opt.path);
     }
 
     if (opt.expires) {
@@ -3868,7 +3948,7 @@
         throw new TypeError('option expires is invalid');
       }
 
-      str += '; Expires=' + opt.expires.toUTCString();
+      str += "; Expires=".concat(opt.expires.toUTCString());
     }
 
     if (opt.httpOnly) str += '; HttpOnly';
@@ -3918,7 +3998,7 @@
       document.cookie = serializeCookie(name, encodeURIComponent(value), cookieOptions);
     },
     read: function read(name) {
-      var nameEQ = name + '=';
+      var nameEQ = "".concat(name, "=");
       var ca = document.cookie.split(';');
 
       for (var i = 0; i < ca.length; i++) {
@@ -4121,21 +4201,16 @@
   var subdomain = {
     name: 'subdomain',
     lookup: function lookup(options) {
-      var found;
+      // If given get the subdomain index else 1
+      var lookupFromSubdomainIndex = typeof options.lookupFromSubdomainIndex === 'number' ? options.lookupFromSubdomainIndex + 1 : 1; // get all matches if window.location. is existing
+      // first item of match is the match itself and the second is the first group macht which sould be the first subdomain match
+      // is the hostname no public domain get the or option of localhost
 
-      if (typeof window !== 'undefined') {
-        var language = window.location.href.match(/(?:http[s]*\:\/\/)*(.*?)\.(?=[^\/]*\..{2,5})/gi);
+      var language = typeof window !== 'undefined' && window.location && window.location.hostname && window.location.hostname.match(/^(\w{2,5})\.(([a-z0-9-]{1,63}\.[a-z]{2,6})|localhost)/i); // if there is no match (null) return undefined
 
-        if (language instanceof Array) {
-          if (typeof options.lookupFromSubdomainIndex === 'number') {
-            found = language[options.lookupFromSubdomainIndex].replace('http://', '').replace('https://', '').replace('.', '');
-          } else {
-            found = language[0].replace('http://', '').replace('https://', '').replace('.', '');
-          }
-        }
-      }
+      if (!language) return undefined; // return the given group match
 
-      return found;
+      return language[lookupFromSubdomainIndex];
     }
   };
 
@@ -4148,8 +4223,8 @@
       lookupSessionStorage: 'i18nextLng',
       // cache user language
       caches: ['localStorage'],
-      excludeCacheFor: ['cimode'] //cookieMinutes: 10,
-      //cookieDomain: 'myDomain'
+      excludeCacheFor: ['cimode'] // cookieMinutes: 10,
+      // cookieDomain: 'myDomain'
 
     };
   }
@@ -4266,7 +4341,7 @@
 
   var setPrototypeOf = createCommonjsModule(function (module) {
   function _setPrototypeOf(o, p) {
-    module.exports = _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
+    module.exports = _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function _setPrototypeOf(o, p) {
       o.__proto__ = p;
       return o;
     }, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -4354,7 +4429,7 @@
 
   var getPrototypeOf = createCommonjsModule(function (module) {
   function _getPrototypeOf(o) {
-    module.exports = _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
+    module.exports = _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf.bind() : function _getPrototypeOf(o) {
       return o.__proto__ || Object.getPrototypeOf(o);
     }, module.exports.__esModule = true, module.exports["default"] = module.exports;
     return _getPrototypeOf(o);
@@ -5324,8 +5399,8 @@
                 });
               } // items are matching, so skip ahead
               else {
-                  simulateIndex++;
-                }
+                simulateIndex++;
+              }
             } else {
               inserts.push({
                 key: wantedItem.key,
@@ -5342,8 +5417,8 @@
           k++;
         } // a key in simulate has no matching wanted key, remove it
         else if (simulateItem && simulateItem.key) {
-            removes.push(remove(simulate, simulateIndex, simulateItem.key));
-          }
+          removes.push(remove(simulate, simulateIndex, simulateItem.key));
+        }
       } else {
         simulateIndex++;
         k++;
@@ -8531,6 +8606,7 @@
   }
 
   function getDefaults$2() {
+    var scriptEle = document.getElementById('i18nextify');
     return {
       autorun: true,
       ele: document.body,
@@ -8554,7 +8630,8 @@
       namespaceFromPath: false,
       missingKeyHandler: missingHandler,
       ns: [],
-      onInitialTranslate: function onInitialTranslate() {}
+      onInitialTranslate: function onInitialTranslate() {},
+      fallbackLng: scriptEle && (scriptEle.getAttribute('fallbacklng') || scriptEle.getAttribute('fallbackLng')) || undefined
     };
   } // auto initialize on dom ready
 
@@ -8649,11 +8726,24 @@
             options.ele.style.display = 'block';
           }
 
+          if (window.document.title) {
+            var keyTitle = window.document.getElementsByTagName('title').length > 0 && window.document.getElementsByTagName('title')[0].getAttribute('i18next-key');
+            window.document.title = instance.t(keyTitle || window.document.title);
+          }
+
+          if (document.querySelector('meta[name="description"]') && document.querySelector('meta[name="description"]').content) {
+            var keyDescr = document.querySelector('meta[name="description"]').getAttribute(instance.options.keyAttr) || document.querySelector('meta[name="description"]').content;
+            document.querySelector('meta[name="description"]').setAttribute("content", instance.t(keyDescr));
+          }
+
           options.onInitialTranslate();
         });
       }
     }
 
+    instance.on('languageChanged', function (lng) {
+      window.document.documentElement.lang = lng;
+    });
     instance.init(options, done);
 
     if (!domReady) {
@@ -8804,17 +8894,22 @@
     return promise;
   }
 
+  /* eslint-disable no-var, no-undef */
   var fetchApi$2;
+
   if (typeof fetch === 'function') {
     if (typeof global !== 'undefined' && global.fetch) {
       fetchApi$2 = global.fetch;
     } else if (typeof window !== 'undefined' && window.fetch) {
       fetchApi$2 = window.fetch;
+    } else {
+      fetchApi$2 = fetch;
     }
   }
 
   if (typeof require !== 'undefined' && (typeof window === 'undefined' || typeof window.document === 'undefined')) {
     var f$1 = fetchApi$2 || require('cross-fetch');
+
     if (f$1.default) f$1 = f$1.default;
     exports.default = f$1;
     module.exports = exports.default;
@@ -8951,6 +9046,8 @@
     if (typeof XMLHttpRequest === 'function' || (typeof XMLHttpRequest === "undefined" ? "undefined" : _typeof$3(XMLHttpRequest)) === 'object' || typeof ActiveXObject === 'function') {
       return requestWithXmlHttpRequest$1(options, url, payload, callback);
     }
+
+    callback(new Error('No fetch and no xhr implementation found!'));
   };
 
   function _classCallCheck$3(instance, Constructor) {
@@ -9107,7 +9204,15 @@
         }
 
         this.services = services;
-        this.options = defaults$2(options, this.options || {}, getDefaults$3());
+        var defOpt = getDefaults$3();
+        var passedOpt = defaults$2(options, this.options || {});
+
+        if (passedOpt.reloadInterval && passedOpt.reloadInterval < 5 * 60 * 1000) {
+          console.warn('Your configured reloadInterval option is to low.');
+          passedOpt.reloadInterval = defOpt.reloadInterval;
+        }
+
+        this.options = defaults$2(options, this.options || {}, defOpt);
         this.allOptions = allOptions;
         this.somethingLoaded = false;
         this.isProjectNotExisting = false;
@@ -10042,6 +10147,8 @@
   if (typeof window !== 'undefined') {
     // eslint-disable-next-line consistent-return
     window.addEventListener('message', function (e) {
+      if (!e.data || !e.data.message) return;
+
       if (e.data.message === 'isLocizeEnabled') {
         // console.warn("result: ", ev.data);
         // parent => ev.source;
@@ -10116,25 +10223,27 @@
     return scriptTurnedOff;
   }
 
-  var oldHref = window.document.location.href;
-  window.addEventListener('load', function () {
-    sendHrefChanged(window.document.location.href);
-    var bodyList = window.document.querySelector('body');
-    var observer = new window.MutationObserver(function (mutations) {
-      mutations.forEach(function (mutation) {
-        if (oldHref !== window.document.location.href) {
-          // console.warn('url changed', oldHref, document.location.href);
-          oldHref = window.document.location.href;
-          sendHrefChanged(oldHref);
-        }
+  if (typeof window !== 'undefined') {
+    var oldHref = window.document.location.href;
+    window.addEventListener('load', function () {
+      sendHrefChanged(window.document.location.href);
+      var bodyList = window.document.querySelector('body');
+      var observer = new window.MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+          if (oldHref !== window.document.location.href) {
+            // console.warn('url changed', oldHref, document.location.href);
+            oldHref = window.document.location.href;
+            sendHrefChanged(oldHref);
+          }
+        });
       });
+      var config = {
+        childList: true,
+        subtree: true
+      };
+      observer.observe(bodyList, config);
     });
-    var config = {
-      childList: true,
-      subtree: true
-    };
-    observer.observe(bodyList, config);
-  });
+  }
 
   var {
     i18next: i18next$1
@@ -10149,9 +10258,6 @@
   i18next$1.use(I18NextLocizeBackend).use(locizePlugin);
   i18next$1.on('editorSaved', () => {
     i18nextify.forceRerender();
-  });
-  i18next$1.on('languageChanged', lng => {
-    window.document.documentElement.lang = lng;
   });
   var originalInit = i18next$1.init;
 

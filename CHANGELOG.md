@@ -1,3 +1,7 @@
+### v5.2.10
+
+- update dependencies
+
 ### v5.2.9
 
 - update locize dependency
