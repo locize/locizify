@@ -1,3 +1,7 @@
+### v5.3.0
+
+- add possibility to read locize options also from url if option not defined
+
 ### v5.2.11
 
 - update i18nextify dependency

@@ -10259,6 +10259,17 @@
   i18next$1.on('editorSaved', () => {
     i18nextify.forceRerender();
   });
+
+  function getParameterByName(name) {
+    var url = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : window.location.href.toLowerCase();
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+  }
+
   var originalInit = i18next$1.init;
 
   i18next$1.init = function () {
@@ -10290,6 +10301,13 @@
         if (value === 'true') value = true;
         if (value === 'false') value = false;
         if (value !== undefined && value !== null) backend[attr] = value;
+
+        if (!value) {
+          value = getParameterByName(attr.toLowerCase());
+          if (value === 'true') value = true;
+          if (value === 'false') value = false;
+          if (value !== undefined && value !== null) backend[attr] = value;
+        }
       });
 
       if (backend.allowedAddOrUpdateHost) {
