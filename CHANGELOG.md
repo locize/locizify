@@ -1,3 +1,7 @@
+### v5.3.1
+
+- optimize autopilot handling
+
 ### v5.3.0
 
 - add possibility to read locize options also from url if option not defined

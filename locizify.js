@@ -10285,7 +10285,7 @@
       var backend = {};
       var toRead = ['fallbackLng', 'saveMissing', 'debug', 'autorun', 'ele', 'cleanIndent', 'cleanWhitespace', 'namespace', 'namespaceFromPath', 'load'];
       var toReadAsArray = ['ignoreTags', 'ignoreIds', 'ignoreClasses', 'translateAttributes', 'mergeTags', 'inlineTags', 'ignoreInlineOn', 'ignoreCleanIndentFor', 'ns'];
-      var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version', 'allowedAddOrUpdateHost'];
+      var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version', 'allowedAddOrUpdateHost', 'autoPilot'];
       toRead.forEach(attr => {
         var value = scriptEle.getAttribute(attr.toLowerCase());
         if (value === 'true') value = true;
@@ -10300,12 +10300,14 @@
         var value = scriptEle.getAttribute(attr.toLowerCase());
         if (value === 'true') value = true;
         if (value === 'false') value = false;
+        if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
         if (value !== undefined && value !== null) backend[attr] = value;
 
         if (!value) {
           value = getParameterByName(attr.toLowerCase());
           if (value === 'true') value = true;
           if (value === 'false') value = false;
+          if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
           if (value !== undefined && value !== null) backend[attr] = value;
         }
       });

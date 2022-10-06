@@ -66,6 +66,7 @@ i18next.init = (options = {}, callback) => {
       'referenceLng',
       'version',
       'allowedAddOrUpdateHost',
+      'autoPilot',
     ];
 
     toRead.forEach((attr) => {
@@ -85,12 +86,14 @@ i18next.init = (options = {}, callback) => {
       let value = scriptEle.getAttribute(attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
+      if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
       if (value !== undefined && value !== null) backend[attr] = value;
 
       if (!value) {
         value = getParameterByName(attr.toLowerCase())
         if (value === 'true') value = true;
         if (value === 'false') value = false;
+        if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
         if (value !== undefined && value !== null) backend[attr] = value;
       }
     });

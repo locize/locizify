@@ -13,9 +13,8 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  referencelng="[LNG]"
-  fallbacklng="[LNG]"
-  src="https://unpkg.com/locizify@^5.0.5"
+  src="https://unpkg.com/locizify@^5.3.1"
+  autopilot
 ></script>
 ```
 
@@ -57,9 +56,8 @@ Add the script to your page:
       id="locizify"
       projectid="[PROJECT_ID]"
       apikey="[API_KEY]"
-      referencelng="[LNG]"
-      fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^5.0.5"
+      src="https://unpkg.com/locizify@^5.3.1"
+      autopilot
     ></script>
   </head>
   ...
