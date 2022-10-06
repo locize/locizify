@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "i18next-locize-backend": "5.1.4",
-    "i18nextify": "3.2.0",
+    "i18nextify": "3.2.1",
     "locize": "2.4.5"
   },
   "devDependencies": {
