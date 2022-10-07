@@ -18,6 +18,8 @@ Just drop the following line to your header to deliver your content in any langu
 ></script>
 ```
 
+Checkout this [video](https://youtu.be/f0ukRI0LMfo?t=180) to see locizify in action.
+
 locizify uses virtual-dom to update your page with translations based on the current content. MutationObserver is used to trigger translations on dynamically added content. So it should play well with any static or dynamic page not using a own virtual-dom implementation.
 
 locizify comes bundled with [i18next](http://i18next.com/).
