@@ -9,26 +9,25 @@ var app = express();
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
-
-app.get('/', function(req, res) {
+app.get('/', function (req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
-app.get('/receiver', function(req, res) {
+app.get('/receiver', function (req, res) {
   res.sendFile(__dirname + '/receiver.html');
 });
 
-app.get('/locizify.js', function(req, res) {
-  fs.readFile(__dirname + '/../locizify.js', 'utf-8', function(err, doc) {
+app.get('/locizify.js', function (req, res) {
+  fs.readFile(__dirname + '/../../locizify.js', 'utf-8', function (err, doc) {
     res.send(doc);
   });
 });
 
-app.get('/a.png', function(req, res) {
+app.get('/a.png', function (req, res) {
   res.sendFile(__dirname + '/assets/a.png');
 });
 
-app.get('/b.jpeg', function(req, res) {
+app.get('/b.jpeg', function (req, res) {
   res.sendFile(__dirname + '/assets/b.jpeg');
 });
 

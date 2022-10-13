@@ -1,3 +1,7 @@
+### v5.3.3
+
+- ignoreTags support for SVG
+
 ### v5.3.2
 
 - get apikey from query param as fallback
