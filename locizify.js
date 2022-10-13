@@ -10327,6 +10327,10 @@
       callback(err, t);
     }
 
+    if (!options.backend.apiKey && getParameterByName('apikey')) {
+      options.backend.apiKey = getParameterByName('apikey');
+    }
+
     if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next$1, _objectSpread2(_objectSpread2({}, options), enforce), handleI18nextInitialized);
     var locizeBackend = new I18NextLocizeBackend(options.backend);
     locizeBackend.getOptions((err, opts) => {

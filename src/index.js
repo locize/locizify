@@ -114,6 +114,10 @@ i18next.init = (options = {}, callback) => {
     callback(err, t);
   }
 
+  if (!options.backend.apiKey && getParameterByName('apikey')) {
+    options.backend.apiKey = getParameterByName('apikey');
+  }
+
   if (!options.backend.autoPilot || options.backend.autoPilot === 'false')
     return originalInit.call(
       i18next,

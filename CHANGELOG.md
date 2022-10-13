@@ -1,3 +1,7 @@
+### v5.3.2
+
+- get apikey from query param as fallback
+
 ### v5.3.1
 
 - optimize autopilot handling
