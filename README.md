@@ -93,7 +93,13 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^5.0.5"
+      src="https://unpkg.com/locizify@^5.4.0"
+
+      // all custom attributes can also be prefixed with data-
+      // data-projectid="[PROJECT_ID]"
+      // data-apikey="[API_KEY]"
+      // data-referencelng="[LNG]"
+      // data-fallbacklng="[LNG]"
 
       // optional
       version="[VERSION]"
@@ -117,7 +123,7 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://unpkg.com/locizify@^5.0.5"></script>
+    <script src="https://unpkg.com/locizify@^5.4.0"></script>
     <script>
       locizify.init({
         // required

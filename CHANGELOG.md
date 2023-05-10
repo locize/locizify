@@ -1,3 +1,7 @@
+### v5.4.0
+
+- optional data-* attributes for script tag usage
+
 ### v5.3.3
 
 - ignoreTags support for SVG

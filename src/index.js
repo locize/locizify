@@ -70,20 +70,20 @@ i18next.init = (options = {}, callback) => {
     ];
 
     toRead.forEach((attr) => {
-      let value = scriptEle.getAttribute(attr.toLowerCase());
+      let value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
       if (value !== undefined && value !== null) config[attr] = value;
     });
 
     toReadAsArray.forEach((attr) => {
-      let value = scriptEle.getAttribute(attr.toLowerCase());
+      let value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
       if (value !== undefined && value !== null)
         config[attr] = value.split(',').map((item) => item.trim());
     });
 
     toReadBackend.forEach((attr) => {
-      let value = scriptEle.getAttribute(attr.toLowerCase());
+      let value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
       if (value === 'true') value = true;
       if (value === 'false') value = false;
       if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
