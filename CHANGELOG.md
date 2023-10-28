@@ -1,3 +1,7 @@
+### 5.5.1
+
+- update deps
+
 ### 5.5.0
 
 - update deps
