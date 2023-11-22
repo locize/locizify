@@ -12599,7 +12599,7 @@
     var iframe = document.createElement('iframe');
     iframe.setAttribute('id', 'i18next-editor-iframe');
     iframe.setAttribute('data-i18next-editor-element', 'true');
-    iframe.style = "\n    z-index: 100;\n    width: 100%;\n    height: calc(100% - 32px);\n    border: none;\n    background: #fff;\n  ";
+    iframe.style = "\n    z-index: 100;\n    width: 100%;\n    height: calc(100% - 28px);\n    border: none;\n    background: #fff;\n  ";
     iframe.setAttribute('src', url);
     iframe.addEventListener('load', cb);
     popup.appendChild(iframe);
