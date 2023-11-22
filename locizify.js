@@ -12888,7 +12888,14 @@
           return 'dev';
         },
         getLocizeDetails: function getLocizeDetails() {
-          var backendName = i18n.services.backendConnector.backend ? i18n.services.backendConnector.backend.constructor.name : 'options.resources';
+          var backendName;
+
+          if (i18n.services.backendConnector.backend && i18n.services.backendConnector.backend.options && i18n.services.backendConnector.backend.options.loadPath && i18n.services.backendConnector.backend.options.loadPath.indexOf('.locize.') > 0) {
+            backendName = 'I18NextLocizeBackend';
+          } else {
+            backendName = i18n.services.backendConnector.backend ? i18n.services.backendConnector.backend.constructor.name : 'options.resources';
+          }
+
           var opts = {
             backendName: backendName,
             sourceLng: impl.getSourceLng(),
