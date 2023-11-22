@@ -12953,10 +12953,6 @@
     reloadOnSave: true,
     bindSavedMissing: true
   };
-  i18next$1.use(I18NextLocizeBackend).use(locizePlugin);
-  i18next$1.on('editorSaved', () => {
-    i18nextify.forceRerender();
-  });
 
   function getParameterByName(name) {
     var url = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : window.location.href.toLowerCase();
@@ -12968,6 +12964,24 @@
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
   }
 
+  var isInIframe$1 = typeof window !== 'undefined';
+
+  try {
+    // eslint-disable-next-line no-undef, no-restricted-globals
+    isInIframe$1 = self !== top; // eslint-disable-next-line no-empty
+  } catch (e) {}
+
+  i18next$1.use(I18NextLocizeBackend);
+
+  if (isInIframe$1) {
+    i18next$1.use(locizePlugin);
+  } else if (getParameterByName('incontext') === 'true') {
+    i18next$1.use(locizePlugin);
+  }
+
+  i18next$1.on('editorSaved', () => {
+    i18nextify.forceRerender();
+  });
   var originalInit = i18next$1.init;
 
   i18next$1.init = function () {

@@ -13,12 +13,6 @@ const defaults = {
   bindSavedMissing: true,
 };
 
-i18next.use(LocizeBackend).use(locizePlugin);
-
-i18next.on('editorSaved', () => {
-  i18nextify.forceRerender();
-});
-
 function getParameterByName(name, url = window.location.href.toLowerCase()) {
   name = name.replace(/[\[\]]/g, '\\$&');
   var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
@@ -27,6 +21,24 @@ function getParameterByName(name, url = window.location.href.toLowerCase()) {
   if (!results[2]) return '';
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
+
+let isInIframe = typeof window !== 'undefined'
+try {
+  // eslint-disable-next-line no-undef, no-restricted-globals
+  isInIframe = self !== top
+  // eslint-disable-next-line no-empty
+} catch (e) {}
+
+i18next.use(LocizeBackend);
+if (isInIframe) {
+  i18next.use(locizePlugin);
+} else if (getParameterByName('incontext') === 'true') {
+  i18next.use(locizePlugin);
+}
+
+i18next.on('editorSaved', () => {
+  i18nextify.forceRerender();
+});
 
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {

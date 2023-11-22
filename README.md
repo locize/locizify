@@ -479,6 +479,9 @@ locizify.forceRerender();
 
 ## access to locize script (locize InContext editor)
 
+Pass `?incontext=true` in your url to show the locize InContext editor.
+
+
 https://github.com/locize/locize
 
 ```js
