@@ -1,3 +1,8 @@
+### 6.0.0
+
+- major update of locize plugin
+- showLocizeLink has been removed, since conflicting with new incontext editor
+
 ### 5.5.1
 
 - update deps

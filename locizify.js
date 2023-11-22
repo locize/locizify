@@ -30,6 +30,42 @@
     return target;
   }
 
+  function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+    try {
+      var info = gen[key](arg);
+      var value = info.value;
+    } catch (error) {
+      reject(error);
+      return;
+    }
+
+    if (info.done) {
+      resolve(value);
+    } else {
+      Promise.resolve(value).then(_next, _throw);
+    }
+  }
+
+  function _asyncToGenerator(fn) {
+    return function () {
+      var self = this,
+          args = arguments;
+      return new Promise(function (resolve, reject) {
+        var gen = fn.apply(self, args);
+
+        function _next(value) {
+          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+        }
+
+        function _throw(err) {
+          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+        }
+
+        _next(undefined);
+      });
+    };
+  }
+
   function _defineProperty(obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -43,6 +79,42 @@
     }
 
     return obj;
+  }
+
+  function _objectWithoutPropertiesLoose(source, excluded) {
+    if (source == null) return {};
+    var target = {};
+    var sourceKeys = Object.keys(source);
+    var key, i;
+
+    for (i = 0; i < sourceKeys.length; i++) {
+      key = sourceKeys[i];
+      if (excluded.indexOf(key) >= 0) continue;
+      target[key] = source[key];
+    }
+
+    return target;
+  }
+
+  function _objectWithoutProperties(source, excluded) {
+    if (source == null) return {};
+
+    var target = _objectWithoutPropertiesLoose(source, excluded);
+
+    var key, i;
+
+    if (Object.getOwnPropertySymbols) {
+      var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+
+      for (i = 0; i < sourceSymbolKeys.length; i++) {
+        key = sourceSymbolKeys[i];
+        if (excluded.indexOf(key) >= 0) continue;
+        if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
+        target[key] = source[key];
+      }
+    }
+
+    return target;
   }
 
   var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -5467,11 +5539,11 @@
 
   Event.prototype.preventDefault = function _Event_preventDefault() {};
 
-  var document$1 = Document;
+  var document$1 = Document$1;
 
-  function Document() {
-    if (!(this instanceof Document)) {
-      return new Document();
+  function Document$1() {
+    if (!(this instanceof Document$1)) {
+      return new Document$1();
     }
 
     this.head = this.createElement("head");
@@ -5483,7 +5555,7 @@
     this.nodeType = 9;
   }
 
-  var proto = Document.prototype;
+  var proto = Document$1.prototype;
 
   proto.createTextNode = function createTextNode(value) {
     return new domText(value, this);
@@ -9326,44 +9398,8 @@
 
   I18NextLocizeBackend.type = 'backend';
 
-  function ownKeys$3(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      enumerableOnly && (symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      })), keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2$1(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = null != arguments[i] ? arguments[i] : {};
-      i % 2 ? ownKeys$3(Object(source), !0).forEach(function (key) {
-        _defineProperty$3(target, key, source[key]);
-      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$3(Object(source)).forEach(function (key) {
-        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-      });
-    }
-
-    return target;
-  }
-
-  function _typeof$6(obj) {
-    "@babel/helpers - typeof";
-
-    return _typeof$6 = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
-      return typeof obj;
-    } : function (obj) {
-      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    }, _typeof$6(obj);
-  }
-
   function _defineProperty$3(obj, key, value) {
-    key = _toPropertyKey$3(key);
+    key = _toPropertyKey$1(key);
 
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -9379,34 +9415,2728 @@
     return obj;
   }
 
-  function _toPrimitive$3(input, hint) {
-    if (typeof input !== "object" || input === null) return input;
-    var prim = input[Symbol.toPrimitive];
+  var INVISIBLE_CHARACTERS = ["\u200B", "\u200C"];
+  var INVISIBLE_REGEX = RegExp("([".concat(INVISIBLE_CHARACTERS.join(''), "]{9})+"), 'gu');
+  var TEMPLATE_MINIMUM_LENGTH = '{"k":"a"}'.length;
+  var invisibleStartMarker = 'subliminal:start';
 
-    if (prim !== undefined) {
-      var res = prim.call(input, hint || "default");
-      if (typeof res !== "object") return res;
-      throw new TypeError("@@toPrimitive must return a primitive value.");
+  var toBytes = function toBytes(text) {
+    return Array.from(new TextEncoder().encode(text));
+  };
+
+  var fromBytes = function fromBytes(bytes) {
+    return new TextDecoder().decode(new Uint8Array(bytes));
+  };
+
+  var padToWholeBytes = function padToWholeBytes(binary) {
+    var needsToAdd = 8 - binary.length;
+    return '0'.repeat(needsToAdd) + binary;
+  };
+
+  var encodeMessage = function encodeMessage(text) {
+    var bytes = toBytes(text).map(Number);
+    var binary = bytes.map(function (byte) {
+      return padToWholeBytes(byte.toString(2)) + '0';
+    }).join('');
+    var result = Array.from(binary).map(function (b) {
+      return INVISIBLE_CHARACTERS[Number(b)];
+    }).join('');
+    return result;
+  };
+
+  var encodedInvisibleStartMarker = encodeMessage(invisibleStartMarker);
+
+  var decodeMessage = function decodeMessage(message) {
+    var binary = Array.from(message).map(function (character) {
+      return INVISIBLE_CHARACTERS.indexOf(character);
+    }).map(String).join('');
+    var textBytes = binary.match(/(.{9})/g);
+    var codes = Uint8Array.from((textBytes === null || textBytes === void 0 ? void 0 : textBytes.map(function (byte) {
+      return parseInt(byte.slice(0, 8), 2);
+    })) || []);
+    return fromBytes(codes);
+  };
+
+  var decodeFromText = function decodeFromText(text) {
+    var _text$match;
+
+    var invisibleMessages = (_text$match = text.match(INVISIBLE_REGEX)) === null || _text$match === void 0 ? void 0 : _text$match.filter(function (m) {
+      return m.length > TEMPLATE_MINIMUM_LENGTH - 1;
+    });
+    if (!invisibleMessages || invisibleMessages.length === 0) return;
+    return decodeMessage(invisibleMessages[invisibleMessages.length - 1]);
+  };
+
+  var removeInvisibles = function removeInvisibles(text) {
+    return text.replace(INVISIBLE_REGEX, '');
+  };
+
+  var encodeValue = function encodeValue(data) {
+    if (Object.keys(data).length === 0) return data;
+    var value = {
+      k: data.key,
+      n: data.ns,
+      l: data.lng,
+      s: data.source
+    };
+    return JSON.stringify(value);
+  };
+
+  var decodeValue = function decodeValue(value) {
+    if (!value || typeof value !== 'string' || value.indexOf('{') !== 0) return;
+
+    try {
+      var parsed = JSON.parse(value || '{}');
+      return {
+        key: parsed.k,
+        ns: parsed.n,
+        lng: parsed.l,
+        source: parsed.s
+      };
+    } catch (e) {
+      return undefined;
     }
+  };
 
-    return (hint === "string" ? String : Number)(input);
+  function wrap(text) {
+    var invisibleMeta = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var encodedValue = encodeValue(invisibleMeta);
+    var invisibleMark = encodeMessage(encodedValue);
+    return typeof text === 'string' && text ? encodedInvisibleStartMarker + text + invisibleMark : text;
   }
 
-  function _toPropertyKey$3(arg) {
-    var key = _toPrimitive$3(arg, "string");
+  function unwrap(text) {
+    var encodedValue = decodeFromText(text);
+    var decodedVal = decodeValue(encodedValue);
+    var result = removeInvisibles(text);
+    return {
+      text: result,
+      invisibleMeta: decodedVal
+    };
+  }
 
-    return typeof key === "symbol" ? key : String(key);
+  function containsHiddenMeta(text) {
+    if (!text || text.length < 27) return false;
+    if (!INVISIBLE_REGEX.test(text)) return false;
+    var lastByte = text.substring(text.length - 9);
+    var lastChar = decodeMessage(lastByte);
+    return lastChar === '}';
+  }
+
+  function containsHiddenStartMarker(text) {
+    return text.startsWith(encodedInvisibleStartMarker);
+  }
+
+  function ownKeys$3(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$2(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$3(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$3(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  var postProcessorName = 'subliminal';
+  var SubliminalPostProcessor = {
+    name: postProcessorName,
+    type: 'postProcessor',
+    options: {},
+    setOptions: function setOptions(options) {
+      this.options = _objectSpread$2(_objectSpread$2({}, options), this.options);
+    },
+    process: function process(value, keyIn, options, translator) {
+      var opt = this.options = _objectSpread$2(_objectSpread$2({}, options), this.options);
+
+      var key, ns, lng, source;
+
+      if (options.i18nResolved) {
+        key = options.i18nResolved.exactUsedKey;
+        ns = options.i18nResolved.usedNS;
+        lng = options.i18nResolved.usedLng;
+
+        if (options.i18nResolved.res === undefined) {
+          if (key !== value) {
+            source = 'default';
+          } else {
+            source = 'key';
+          }
+        } else {
+          source = 'translation';
+        }
+      } else {
+        var _ref, _opt$keySeparator, _translator$options, _ref2, _namespaces$, _translator$options2;
+
+        var keySeparator = (_ref = (_opt$keySeparator = opt.keySeparator) !== null && _opt$keySeparator !== void 0 ? _opt$keySeparator : translator === null || translator === void 0 || (_translator$options = translator.options) === null || _translator$options === void 0 ? void 0 : _translator$options.keySeparator) !== null && _ref !== void 0 ? _ref : '.';
+
+        var _translator$extractFr = translator.extractFromKey(keyIn.join(keySeparator), options),
+            extractedKey = _translator$extractFr.key,
+            namespaces = _translator$extractFr.namespaces;
+
+        key = extractedKey;
+        ns = (_ref2 = (_namespaces$ = namespaces === null || namespaces === void 0 ? void 0 : namespaces[0]) !== null && _namespaces$ !== void 0 ? _namespaces$ : opt.ns) !== null && _ref2 !== void 0 ? _ref2 : translator === null || translator === void 0 || (_translator$options2 = translator.options) === null || _translator$options2 === void 0 ? void 0 : _translator$options2.defaultNS;
+        lng = options.lng || this.language;
+
+        if (key === value) {
+          source = 'key';
+        } else {
+          source = 'translation';
+        }
+      }
+
+      return wrap(value, {
+        key: key,
+        ns: ns,
+        lng: lng,
+        source: source
+      });
+    },
+    overloadTranslationOptionHandler: function overloadTranslationOptionHandler() {
+      return {
+        postProcess: postProcessorName,
+        postProcessPassResolved: true
+      };
+    }
+  };
+
+  var validAttributes = ['placeholder', 'title', 'alt'];
+  var colors = {
+    highlight: '#26a69a',
+    warning: '#e67a00'
+  };
+
+  var getIframeUrl = function getIframeUrl() {
+    var _prc$env;
+
+    var p;
+    if (typeof process !== 'undefined') p = process;
+    if (!p && typeof window !== 'undefined') p = window.process;
+    var prc = p || {};
+    var env = ((_prc$env = prc.env) === null || _prc$env === void 0 ? void 0 : _prc$env.locizeIncontext) || 'production';
+    return env === 'development' ? 'http://localhost:3003/' : env === 'staging' ? 'https://incontext-dev.locize.app' : 'https://incontext.locize.app';
+  };
+
+  var sheet = function () {
+    if (typeof document === 'undefined') return;
+    var style = document.createElement('style');
+    document.head.appendChild(style);
+    return style.sheet;
+  }();
+
+  function ownKeys$4(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$3(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$4(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$4(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  function turnOn() {
+    api.scriptTurnedOff = false;
+    api.turnOn();
+    return api.scriptTurnedOff;
+  }
+
+  function turnOff() {
+    api.turnOff();
+    api.scriptTurnedOff = true;
+    return api.scriptTurnedOff;
+  }
+
+  function setEditorLng(lng) {
+    api.sendCurrentTargetLanguage(lng);
+  }
+
+  var pendingMsgs = [];
+
+  function sendMessage(action, payload) {
+    if (!api.source) {
+      var _document$getElementB;
+
+      api.source = (_document$getElementB = document.getElementById('i18next-editor-iframe')) === null || _document$getElementB === void 0 ? void 0 : _document$getElementB.contentWindow;
+    }
+
+    if (!api.origin) api.origin = getIframeUrl();
+
+    if (!api.source || !api.source.postMessage) {
+      pendingMsgs.push({
+        action: action,
+        payload: payload
+      });
+      return;
+    }
+
+    if (api.legacy) {
+      api.source.postMessage(_objectSpread$3({
+        message: action
+      }, payload), api.origin);
+    } else {
+      api.source.postMessage({
+        sender: 'i18next-editor',
+        senderAPIVersion: 'v1',
+        action: action,
+        message: action,
+        payload: payload
+      }, api.origin);
+    }
+
+    var todo = pendingMsgs;
+    pendingMsgs = [];
+    todo.forEach(function (_ref) {
+      var action = _ref.action,
+          payload = _ref.payload;
+      sendMessage(action, payload);
+    });
+  }
+
+  var handlers = {};
+  var repeat = 5;
+  var api = {
+    init: function init(implementation, clickHandler) {
+      api.i18n = implementation;
+      api.clickHandler = clickHandler;
+    },
+    requestInitialize: function requestInitialize(payload) {
+      sendMessage('requestInitialize', payload);
+      api.initInterval = setInterval(function () {
+        repeat = repeat - 1;
+        api.requestInitialize(payload);
+        if (repeat < 0 && api.initInterval) clearInterval(api.initInterval);
+      }, 1000);
+    },
+    selectKey: function selectKey(meta) {
+      sendMessage('selectKey', meta);
+    },
+    confirmResourceBundle: function confirmResourceBundle(payload) {
+      sendMessage('confirmResourceBundle', payload);
+    },
+    sendCurrentParsedContent: function sendCurrentParsedContent() {
+      sendMessage('sendCurrentParsedContent', {
+        content: Object.values(store.data).map(function (item) {
+          return {
+            id: item.id,
+            keys: item.keys
+          };
+        })
+      });
+    },
+    sendCurrentTargetLanguage: function sendCurrentTargetLanguage(lng) {
+      sendMessage('sendCurrentTargetLanguage', {
+        targetLng: lng || api.i18n.getLng()
+      });
+    },
+    addHandler: function addHandler(action, fc) {
+      if (!handlers[action]) handlers[action] = [];
+      handlers[action].push(fc);
+    },
+    sendLocizeIsEnabled: function sendLocizeIsEnabled() {
+      sendMessage('locizeIsEnabled', {
+        enabled: true
+      });
+    },
+    turnOn: function turnOn() {
+      if (api.scriptTurnedOff) return sendMessage('forcedOff');
+
+      if (!api.clickInterceptionEnabled) {
+        window.document.body.addEventListener('click', api.clickHandler, true);
+      }
+
+      api.clickInterceptionEnabled = true;
+      sendMessage('turnedOn');
+    },
+    turnOff: function turnOff() {
+      if (api.scriptTurnedOff) return sendMessage('forcedOff');
+
+      if (api.clickInterceptionEnabled) {
+        window.document.body.removeEventListener('click', api.clickHandler, true);
+      }
+
+      api.clickInterceptionEnabled = false;
+      sendMessage('turnedOff');
+    },
+    onAddedKey: function onAddedKey(lng, ns, key, value) {
+      var msg = {
+        lng: lng,
+        ns: ns,
+        key: key,
+        value: value
+      };
+      sendMessage('added', msg);
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('message', function (e) {
+      var _e$data = e.data,
+          sender = _e$data.sender,
+          action = _e$data.action,
+          message = _e$data.message,
+          payload = _e$data.payload;
+
+      if (message && handlers[message]) {
+        handlers[message].forEach(function (fc) {
+          fc(payload, e);
+        });
+      } else if (sender === 'i18next-editor-frame' && handlers[action]) {
+        handlers[action].forEach(function (fc) {
+          fc(payload);
+        });
+      }
+    });
+  }
+
+  function setValueOnNode(meta, value) {
+    var item = store.get(meta.eleUniqueID);
+    if (!item || !item.keys[meta.textType]) return;
+    var txtWithHiddenMeta = wrap(value, item.subliminal);
+
+    if (meta.textType === 'text') {
+      item.node.textContent = txtWithHiddenMeta;
+    } else if (meta.textType.indexOf('attr:') === 0) {
+      var attr = meta.textType.replace('attr:', '');
+      item.node.setAttribute(attr, txtWithHiddenMeta);
+    } else if (meta.textType === 'html') {
+      var id = "".concat(meta.textType, "-").concat(meta.children);
+
+      if (!item.originalChildNodes) {
+        var clones = [];
+        item.node.childNodes.forEach(function (c) {
+          clones.push(c);
+        });
+        item.originalChildNodes = clones;
+      }
+
+      if (item.children[id].length === item.node.childNodes.length) {
+        item.node.innerHTML = txtWithHiddenMeta;
+      } else {
+        var children = item.children[id];
+        var first = children[0].child;
+        var dummy = document.createElement('div');
+        dummy.innerHTML = txtWithHiddenMeta;
+        var nodes = [];
+        dummy.childNodes.forEach(function (c) {
+          nodes.push(c);
+        });
+        nodes.forEach(function (c) {
+          try {
+            item.node.insertBefore(c, first);
+          } catch (error) {
+            item.node.appendChild(c);
+          }
+        });
+        children.forEach(function (replaceable) {
+          if (item.node.contains(replaceable.child)) item.node.removeChild(replaceable.child);
+        });
+      }
+    }
+  }
+
+  function handler(payload) {
+    var meta = payload.meta,
+        value = payload.value;
+
+    if (meta && value !== undefined) {
+      setValueOnNode(meta, value);
+    }
+  }
+
+  api.addHandler('editKey', handler);
+
+  function handler$1(payload) {
+    var meta = payload.meta,
+        value = payload.value,
+        lng = payload.lng;
+
+    if (meta && value !== undefined) {
+      setValueOnNode(meta, value);
+      var usedLng = lng || api.i18n.getLng();
+      api.i18n.setResource(usedLng, meta.ns, meta.key, value);
+      api.i18n.triggerRerender();
+    }
+  }
+
+  api.addHandler('commitKey', handler$1);
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) {
+      arr2[i] = arr[i];
+    }
+
+    return arr2;
+  }
+
+  function _arrayWithoutHoles(arr) {
+    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
+  }
+
+  function _iterableToArray(iter) {
+    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
+  }
+
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _nonIterableSpread() {
+    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+
+  function _toConsumableArray(arr) {
+    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
+  }
+
+  function handler$2(payload) {
+    var updated = payload.updated;
+    updated.forEach(function (item) {
+      var lng = item.lng,
+          ns = item.ns,
+          key = item.key,
+          data = item.data,
+          metas = item.metas,
+          meta = item.meta;
+      if (meta && data.value) setValueOnNode(meta, data.value);
+
+      if (metas) {
+        Object.values(metas).forEach(function (metaItem) {
+          setValueOnNode(metaItem, data.value);
+        });
+      }
+
+      api.i18n.setResource(lng, ns, key, data.value);
+    });
+    Object.values(store.data).forEach(function (item) {
+      if (item.originalChildNodes) {
+        var _item$node;
+
+        (_item$node = item.node).replaceChildren.apply(_item$node, _toConsumableArray(item.originalChildNodes));
+      }
+    });
+    api.i18n.triggerRerender();
+    if (api.locizeSavedHandler) api.locizeSavedHandler(payload);
+    if (window.locizeSavedHandler) window.locizeSavedHandler(payload);
+  }
+
+  api.addHandler('commitKeys', handler$2);
+
+  function handler$3(payload) {
+    api.initialized = true;
+    clearInterval(api.initInterval);
+    api.sendCurrentParsedContent();
+    api.sendCurrentTargetLanguage();
+  }
+
+  api.addHandler('confirmInitialized', handler$3);
+
+  function handler$4(payload) {
+    var containerStyle = payload.containerStyle;
+
+    if (containerStyle) {
+      var popup = document.getElementById('i18next-editor-popup');
+
+      if (containerStyle.height) {
+        var diff = "calc(".concat(containerStyle.height, " - ").concat(popup.style.height, ")");
+        popup.style.setProperty('top', "calc(".concat(popup.style.top, " - ").concat(diff, ")"));
+        popup.style.setProperty('height', containerStyle.height);
+      }
+
+      if (containerStyle.width) {
+        var _diff = "calc(".concat(containerStyle.width, " - ").concat(popup.style.width, ")");
+
+        popup.style.setProperty('left', "calc(".concat(popup.style.left, " - ").concat(_diff, ")"));
+        popup.style.setProperty('width', containerStyle.width);
+      }
+    }
+  }
+
+  api.addHandler('requestPopupChanges', handler$4);
+
+  function _objectWithoutPropertiesLoose$1(source, excluded) {
+    if (source == null) return {};
+    var target = {};
+    var sourceKeys = Object.keys(source);
+    var key, i;
+
+    for (i = 0; i < sourceKeys.length; i++) {
+      key = sourceKeys[i];
+      if (excluded.indexOf(key) >= 0) continue;
+      target[key] = source[key];
+    }
+
+    return target;
+  }
+
+  function _objectWithoutProperties$1(source, excluded) {
+    if (source == null) return {};
+    var target = _objectWithoutPropertiesLoose$1(source, excluded);
+    var key, i;
+
+    if (Object.getOwnPropertySymbols) {
+      var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+
+      for (i = 0; i < sourceSymbolKeys.length; i++) {
+        key = sourceSymbolKeys[i];
+        if (excluded.indexOf(key) >= 0) continue;
+        if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
+        target[key] = source[key];
+      }
+    }
+
+    return target;
+  }
+
+  var _excluded = ["lng", "ns"];
+
+  function ownKeys$5(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$4(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$5(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$5(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  function handler$5(payload) {
+    var lng = payload.lng,
+        ns = payload.ns,
+        rest = _objectWithoutProperties$1(payload, _excluded);
+
+    api.i18n.getResourceBundle(lng, ns, function (resources) {
+      api.confirmResourceBundle(_objectSpread$4({
+        resources: resources,
+        lng: lng,
+        ns: ns
+      }, rest));
+    });
+  }
+
+  api.addHandler('requestResourceBundle', handler$5);
+
+  var previousMatches = [];
+
+  function handler$6(payload) {
+    var keys = payload.keys;
+    var matchingItems = [];
+    Object.values(store.data).forEach(function (item) {
+      var matches = Object.values(item.keys).filter(function (k) {
+        return keys.includes(k.qualifiedKey);
+      });
+
+      if (matches.length) {
+        matchingItems.push(item);
+      }
+    });
+    previousMatches.forEach(function (item) {
+      resetHighlight(item, item.node, item.keys, false);
+    });
+    matchingItems.forEach(function (item) {
+      selectedHighlight(item, item.node, item.keys);
+    });
+    previousMatches = matchingItems;
+  }
+
+  api.addHandler('selectedKeys', handler$6);
+
+  function handler$7(payload, e) {
+    api.source = e.source;
+    api.origin = e.origin;
+    api.legacy = true;
+    api.sendLocizeIsEnabled();
+  }
+
+  api.addHandler('isLocizeEnabled', handler$7);
+
+  function handler$8(payload, e) {
+    api.turnOn();
+  }
+
+  api.addHandler('turnOn', handler$8);
+
+  function handler$9(payload, e) {
+    api.turnOff();
+  }
+
+  api.addHandler('turnOff', handler$9);
+
+  var iconEdit = '<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24" fill="#FFFFFF"><g></g><g><g><g><path d="M3,21l3.75,0L17.81,9.94l-3.75-3.75L3,17.25L3,21z M5,18.08l9.06-9.06l0.92,0.92L5.92,19L5,19L5,18.08z"/></g><g><path d="M18.37,3.29c-0.39-0.39-1.02-0.39-1.41,0l-1.83,1.83l3.75,3.75l1.83-1.83c0.39-0.39,0.39-1.02,0-1.41L18.37,3.29z"/></g></g></g></svg>';
+  var i18nextIcon = "\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 210 304\" stroke=\"#000\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"#fff\" fill-rule=\"evenodd\">\n  <g stroke=\"none\" class=\"B\">\n    <path d=\"M 142 31.5 v 57.2 l 64.3 165.1 s 19.6 40.3 -36.5 50.1 h -128 s -52.3 -5.5 -39.8 -46.9 L 69.5 88.7 V 31.5 z\" fill=\"#009688\"/>\n    <path d=\"M 143.3 24.8 H 66.2 c -6.2 0 -11.3 -5.6 -11.3 -12.4 S 60 0 66.2 0 h 77.1 c 6.3 0 11.3 5.6 11.3 12.4 s -5.1 12.4 -11.3 12.4 z\" class=\"C\" fill=\"#004d40\"/>\n    <path d=\"M 123 124.9 c 8.3 0 15 8.1 15 18.1 c 0 10 -6.8 18.1 -15 18.1 c -8.3 0 -15 -8.1 -15 -18.1 c 0 -10 6.7 -18.1 15 -18.1 z m -58.8 31.7 c 0 -8.5 5.6 -15.3 12.7 -15.3 s 12.7 6.8 12.7 15.3 s -5.6 15.3 -12.7 15.3 s -12.7 -6.8 -12.7 -15.3 z\" fill=\"white\"/>\n    <path d=\"M 147.7 84.9 V 57.7 s 34.5 -7.6 51.7 32.5 c 0 0 -26.9 19.6 -51.7 -5.3 z m -84.5 0 V 57.7 s -34.5 -7.6 -51.7 32.5 c 0 0 26.8 19.6 51.7 -5.3 z\" class=\"C\" fill=\"#004d40\"/>\n    <path d=\"M 168.4 197.5 c -56.1 -17.4 -103.3 -8.1 -126.3 -1 l -23.2 56 c -10.5 33.4 33.2 37.8 33.2 37.8 h 106.9 c 46.9 -7.9 30.5 -40.4 30.5 -40.4 z\" fill=\"white\"/>\n    <path d=\"M 87.6 218.3 c 0 6 -8.1 10.9 -18.1 10.9 s -18.1 -4.9 -18.1 -10.9 c 0 -6.1 8.1 -10.9 18.1 -10.9 s 18.1 4.9 18.1 10.9 z m 64.4 0 c 0 6 -8.1 10.9 -18.1 10.9 c -10 0 -18.1 -4.9 -18.1 -10.9 c 0 -6.1 8.1 -10.9 18.1 -10.9 c 10 0 18.1 4.9 18.1 10.9 z\" class=\"C\" fill=\"#004d40\"/>\n  </g>\n</svg>\n";
+  var locizeIcon = "\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 194.667 196\" height=\"196\" width=\"194.667\" xml:space=\"preserve\">\n  <defs>\n    <clipPath id=\"a\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M5.5 74.048C5.5 36.98 35.551 6.93 72.619 6.93c37.069 0 67.119 30.05 67.119 67.118 0 37.07-30.05 67.12-67.119 67.12-37.068 0-67.119-30.05-67.119-67.12\"/>\n    </clipPath>\n    <clipPath id=\"b\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M0 147h146V0H0Z\"/>\n    </clipPath>\n    <clipPath id=\"c\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M88.756 55.055h50.982l4.512 88.195-64 1.25z\"/>\n    </clipPath>\n  </defs>\n  <g clip-path=\"url(#a)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.766-5.554 1.148-8.427 0-11.107-1.149-2.681-2.49-7.469-1.341-10.724 1.149-3.255 2.872-10.34 4.404-10.533 1.532-.19-1.148 7.66.383 5.171 1.533-2.49 1.533-6.193 4.214-8.746 2.68-2.553 6.319-2.17 9.192-4.658 2.872-2.49 5.744-6.129 8.425-5.746 0 0-.192-1.914-1.532-5.17-1.34-3.255-1.532-7.084.192-9.383 1.723-2.298 3.446-5.746 4.979-7.469 1.532-1.723 2.681-10.915 2.297-15.51-.382-4.596 1.724-14.937 6.511-17.236 4.787-2.298 0 1.15-.957 4.022-.958 2.872.739 9.575 3.052 10.533 2.309.958 4.416 4.787 6.139 7.469 1.724 2.68 6.128 3.83 7.469 7.084 1.341 3.255.766 7.085 1.532 8.809.766 1.724 2.873 5.554-1.724 7.852-4.595 2.298-6.51 1.148-6.702 3.255-.192 2.107-1.341 4.404-4.595 5.361-3.256.959-6.129 2.816-9.768 3.227-3.638.412-4.404-2.461-6.319-.928-1.914 1.531-3.446 3.064-4.213 4.978-.765 1.915-3.064.766-2.871 1.915.19 1.15 3.254 4.404-.193 3.255-3.446-1.148-6.51-.765-6.319 2.298.193 3.064 4.405 4.214 6.129 4.597 1.722.383 3.063-1.723 5.17-3.065 2.106-1.34.191 1.915 1.34 4.214 1.149 2.298 5.554 2.106 6.128 5.361.575 3.255-.191 5.937 3.256 6.32 3.446.383 7.084-.191 7.468 1.533.382 1.722-4.022-.576-4.213 1.531-.192 2.106 3.829 4.978 4.978 2.872 1.149-2.106 4.022-2.298 4.405-1.531.383.765 0 2.105-1.341 5.361-1.34 3.256-2.681 2.298-3.829 5.936-1.149 3.639-3.064-.191-4.979 1.724s-4.213 5.937-4.597 2.489c-.382-3.446-.382-5.361-2.105-8.042-1.724-2.682-2.489-.575-4.022 1.149-1.532 1.723-4.979 3.447-3.83 4.978C23.362 4.979 24.511 9 26.234 7.85c1.724-1.149 4.405-1.149 4.022.767-.383 1.914 0 2.681.766 3.638.766.958 3.447 2.682 3.447-.766 0-3.447-.384-4.405 2.298-4.788 2.681-.383 5.744-.574 5.554 1.149-.193 1.724.766 1.341 0 4.214-.767 2.873-3.065 3.063-5.554 4.405-2.489 1.34-3.83 3.446-5.936 2.68s-2.299-1.531-2.49-3.638c-.192-2.107-1.341-2.873-2.107-1.915-.765.957.192 4.022-2.68 2.106-2.873-1.914-4.021-5.171-5.553-2.872-1.533 2.297 2.297 6.319-1.724 4.595-4.022-1.723-6.895-3.637-4.788-4.404 2.107-.766 4.214-2.107 2.107-2.873-2.107-.765-6.32.575-7.852-.957C4.212 7.66 0 0 0 0\" transform=\"translate(13.926 109.38)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.766-5.554 1.148-8.427 0-11.107-1.149-2.681-2.49-7.469-1.341-10.724 1.149-3.255 2.872-10.34 4.404-10.533 1.532-.19-1.148 7.66.383 5.171 1.533-2.49 1.533-6.193 4.214-8.746 2.68-2.553 6.319-2.17 9.192-4.658 2.872-2.49 5.744-6.129 8.425-5.746 0 0-.192-1.914-1.532-5.17-1.34-3.255-1.532-7.084.192-9.383 1.723-2.298 3.446-5.746 4.979-7.469 1.532-1.723 2.681-10.915 2.297-15.51-.382-4.596 1.724-14.937 6.511-17.236 4.787-2.298 0 1.15-.957 4.022-.958 2.872.739 9.575 3.052 10.533 2.309.958 4.416 4.787 6.139 7.469 1.724 2.68 6.128 3.83 7.469 7.084 1.341 3.255.766 7.085 1.532 8.809.766 1.724 2.873 5.554-1.724 7.852-4.595 2.298-6.51 1.148-6.702 3.255-.192 2.107-1.341 4.404-4.595 5.361-3.256.959-6.129 2.816-9.768 3.227-3.638.412-4.404-2.461-6.319-.928-1.914 1.531-3.446 3.064-4.213 4.978-.765 1.915-3.064.766-2.871 1.915.19 1.15 3.254 4.404-.193 3.255-3.446-1.148-6.51-.765-6.319 2.298.193 3.064 4.405 4.214 6.129 4.597 1.722.383 3.063-1.723 5.17-3.065 2.106-1.34.191 1.915 1.34 4.214 1.149 2.298 5.554 2.106 6.128 5.361.575 3.255-.191 5.937 3.256 6.32 3.446.383 7.084-.191 7.468 1.533.382 1.722-4.022-.576-4.213 1.531-.192 2.106 3.829 4.978 4.978 2.872 1.149-2.106 4.022-2.298 4.405-1.531.383.765 0 2.105-1.341 5.361-1.34 3.256-2.681 2.298-3.829 5.936-1.149 3.639-3.064-.191-4.979 1.724s-4.213 5.937-4.597 2.489c-.382-3.446-.382-5.361-2.105-8.042-1.724-2.682-2.489-.575-4.022 1.149-1.532 1.723-4.979 3.447-3.83 4.978C23.362 4.979 24.511 9 26.234 7.85c1.724-1.149 4.405-1.149 4.022.767-.383 1.914 0 2.681.766 3.638.766.958 3.447 2.682 3.447-.766 0-3.447-.384-4.405 2.298-4.788 2.681-.383 5.744-.574 5.554 1.149-.193 1.724.766 1.341 0 4.214-.767 2.873-3.065 3.063-5.554 4.405-2.489 1.34-3.83 3.446-5.936 2.68s-2.299-1.531-2.49-3.638c-.192-2.107-1.341-2.873-2.107-1.915-.765.957.192 4.022-2.68 2.106-2.873-1.914-4.021-5.171-5.553-2.872-1.533 2.297 2.297 6.319-1.724 4.595-4.022-1.723-6.895-3.637-4.788-4.404 2.107-.766 4.214-2.107 2.107-2.873-2.107-.765-6.32.575-7.852-.957C4.212 7.66 0 0 0 0Z\" transform=\"translate(13.926 109.38)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.01-2.141.575-3.829 2.49-1.915C4.405 0 5.553 2.298 6.895 1.341c1.34-.958 3.638-.703 4.594-.639.959.064 1.15 2.937 3.831 2.554s1.724.574 4.596 2.107c2.873 1.532 9.001 4.212 2.681 3.446-6.32-.766-6.703.958-11.108-1.914-4.403-2.873-5.36-2.873-6.509-3.639-1.149-.766-2.49 2.298-4.022 0C-.575.958.011 2.182 0 0\" transform=\"translate(36.522 130.061)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.01-2.141.575-3.829 2.49-1.915C4.405 0 5.553 2.298 6.895 1.341c1.34-.958 3.638-.703 4.594-.639.959.064 1.15 2.937 3.831 2.554s1.724.574 4.596 2.107c2.873 1.532 9.001 4.212 2.681 3.446-6.32-.766-6.703.958-11.108-1.914-4.403-2.873-5.36-2.873-6.509-3.639-1.149-.766-2.49 2.298-4.022 0C-.575.958.011 2.182 0 0Z\" transform=\"translate(36.522 130.061)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-2.263-1.956-5.744-4.788-3.064-4.788 2.681 0 3.983 1.404 5.439-.447 1.456-1.85.88-4.723.88-6.063 0-1.341-.766-4.406 1.15-8.235 1.915-3.829 2.106-6.319 4.022-3.829 1.914 2.488 6.51 7.276 8.808 7.658 2.298.384 4.597 1.342 5.746 3.257 1.148 1.915 0 3.773 1.914 5.141 1.914 1.369 1.531 3.093 2.107 5.199C27.575 0 32.747 0 30.448 1.148c-2.297 1.15-6.51 1.916-11.49 1.341C13.979 1.915 4.213 3.638 0 0\" transform=\"translate(59.502 135.998)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-2.263-1.956-5.744-4.788-3.064-4.788 2.681 0 3.983 1.404 5.439-.447 1.456-1.85.88-4.723.88-6.063 0-1.341-.766-4.406 1.15-8.235 1.915-3.829 2.106-6.319 4.022-3.829 1.914 2.488 6.51 7.276 8.808 7.658 2.298.384 4.597 1.342 5.746 3.257 1.148 1.915 0 3.773 1.914 5.141 1.914 1.369 1.531 3.093 2.107 5.199C27.575 0 32.747 0 30.448 1.148c-2.297 1.15-6.51 1.916-11.49 1.341C13.979 1.915 4.213 3.638 0 0Z\" transform=\"translate(59.502 135.998)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.218-1.986-.575-2.107.766-2.49 1.34-.383-.575-2.68.957-2.872 1.532-.193 4.979-1.15 5.936 0 .959 1.148-1.531.7-3.255 1.977C2.682-2.107.865 1.41 0 0\" transform=\"translate(38.438 76.826)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.218-1.986-.575-2.107.766-2.49 1.34-.383-.575-2.68.957-2.872 1.532-.193 4.979-1.15 5.936 0 .959 1.148-1.531.7-3.255 1.977C2.682-2.107.865 1.41 0 0Z\" transform=\"translate(38.438 76.826)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-2.063-1.033-1.148-2.682-3.064-3.831-1.915-1.148-1.149-1.531-1.723-4.213-.575-2.68.191-4.212 1.532-2.106S2.298 1.148 0 0\" transform=\"translate(131.121 45.612)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-2.063-1.033-1.148-2.682-3.064-3.831-1.915-1.148-1.149-1.531-1.723-4.213-.575-2.68.191-4.212 1.532-2.106S2.298 1.148 0 0Z\" transform=\"translate(131.121 45.612)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.575-.575-1.532 2.681-2.106 4.213-.575 1.532-.561 4.195 1.056 5.675C.964 11.734 0 7.469 0 5.17 0 2.873.574.575 0 0m-6.704 5.936c-1.341.766-3.828 0-6.892-.957-3.065-.958-.613 2.131.766 4.213 1.233 1.861.574-.574 3.256-.766 2.68-.192 4.213-3.256 2.87-2.49m-4.402-6.511c-.192-1.531.574-4.021-3.639-3.064-4.213.958-4.213 3.256-5.936 1.533-1.723-1.724-3.83-3.255-6.32-.575C-29.49 0-29.107.766-30.447.958c-.955.135-4.138.846-6.792.074.206.123.426.285.663.5 1.915 1.723 1.532 2.298 3.638 4.213 2.108 1.916 3.639 3.638 5.171 1.916 1.532-1.725 4.788-2.108 3.639-4.023-1.149-1.914-.383-3.063.958-1.914 1.339 1.149 3.255 1.914 1.915 3.446-1.342 1.532-2.682 5.554-.766 2.873 1.915-2.681 2.489-4.022 3.637-5.553C-17.234.958-16.085 0-15.702.958c.383.957-.192 3.063.383 3.446.574.383 0-3.255 1.723-3.446 1.723-.192 2.681 0 2.49-1.533M9.192-8.81c-.574 3.257-4.787 32.747-4.787 32.747s-11.299 7.277-13.213 5.746c-1.916-1.533-5.171-1.302-4.788.21s2.872 1.128-1.341 4.002c-4.212 2.873-4.978 5.362-8.233 1.724-3.257-3.639-4.022-6.703-5.937-7.661-1.915-.957-3.447-4.021-1.34-4.787 2.106-.765 2.298 0 4.02-1.531 1.725-1.533 4.023-1.149 4.406-.193.383.959.766 4.022.957 5.171.192 1.149 2.138 4.979 1.93 1.915-.207-3.064 2.665-3.064.75-5.17-1.914-2.106-.765-3.831-4.595-4.214-3.831-.382-4.022 1.915-6.128.766-2.107-1.148-1.915-1.915-2.681-3.063-.766-1.149-4.788-3.447-4.788-3.447s-3.255 1.149-1.724-.958c1.533-2.106 2.873-4.595 1.533-4.786-1.341-.192-4.98 1.914-4.98-.384s-.573-4.787.959-5.362c1.081-.405 1.783-1.284 2.775-1.161-.769-.332-1.468-.813-2.009-1.52-1.491-1.947-.575-5.362-3.639-6.511-3.063-1.15-3.063-2.489-3.639-4.979-.573-2.489 0-8.808.766-9.383.765-.574 2.107-5.362 5.363-4.978 3.256.383 6.702.53 7.851-.023 1.149-.551 3.063 1.171 3.638-3.233.575-4.404 1.915-4.979 2.681-7.277.766-2.297-.383-7.086 0-9.958s3.064-7.852 3.064-10.341c0-2.489 2.873-3.638 4.405-2.681 1.532.958 4.787 2.873 6.127 5.937 1.342 3.063 1.342 4.595 3.447 8.617 2.106 4.021 1.533 6.894 2.489 9.958.958 3.064 3.262 5.171 6.419 8.617 3.156 3.446 2.588 5.362 0 5.171-2.588-.191-4.314 2.297-5.654 5.361-1.338 3.065-2.87 10.724-1.721 8.235 1.149-2.491 3.446-9.384 5.744-10.533 2.298-1.149 6.512 1.953 7.469 3.083.957 1.131.574 4.385-1.916 5.726C.383-8.617 1.915-7.469 4.405-9c2.489-1.532 5.362-3.064 4.787.19\" transform=\"translate(132.845 86.592)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.575-.575-1.532 2.681-2.106 4.213-.575 1.532-.561 4.195 1.056 5.675C.964 11.734 0 7.469 0 5.17 0 2.873.574.575 0 0Zm-6.704 5.936c-1.341.766-3.828 0-6.892-.957-3.065-.958-.613 2.131.766 4.213 1.233 1.861.574-.574 3.256-.766 2.68-.192 4.213-3.256 2.87-2.49zm-4.402-6.511c-.192-1.531.574-4.021-3.639-3.064-4.213.958-4.213 3.256-5.936 1.533-1.723-1.724-3.83-3.255-6.32-.575C-29.49 0-29.107.766-30.447.958c-.955.135-4.138.846-6.792.074.206.123.426.285.663.5 1.915 1.723 1.532 2.298 3.638 4.213 2.108 1.916 3.639 3.638 5.171 1.916 1.532-1.725 4.788-2.108 3.639-4.023-1.149-1.914-.383-3.063.958-1.914 1.339 1.149 3.255 1.914 1.915 3.446-1.342 1.532-2.682 5.554-.766 2.873 1.915-2.681 2.489-4.022 3.637-5.553C-17.234.958-16.085 0-15.702.958c.383.957-.192 3.063.383 3.446.574.383 0-3.255 1.723-3.446 1.723-.192 2.681 0 2.49-1.533zM9.192-8.81c-.574 3.257-4.787 32.747-4.787 32.747s-11.299 7.277-13.213 5.746c-1.916-1.533-5.171-1.302-4.788.21s2.872 1.128-1.341 4.002c-4.212 2.873-4.978 5.362-8.233 1.724-3.257-3.639-4.022-6.703-5.937-7.661-1.915-.957-3.447-4.021-1.34-4.787 2.106-.765 2.298 0 4.02-1.531 1.725-1.533 4.023-1.149 4.406-.193.383.959.766 4.022.957 5.171.192 1.149 2.138 4.979 1.93 1.915-.207-3.064 2.665-3.064.75-5.17-1.914-2.106-.765-3.831-4.595-4.214-3.831-.382-4.022 1.915-6.128.766-2.107-1.148-1.915-1.915-2.681-3.063-.766-1.149-4.788-3.447-4.788-3.447s-3.255 1.149-1.724-.958c1.533-2.106 2.873-4.595 1.533-4.786-1.341-.192-4.98 1.914-4.98-.384s-.573-4.787.959-5.362c1.081-.405 1.783-1.284 2.775-1.161-.769-.332-1.468-.813-2.009-1.52-1.491-1.947-.575-5.362-3.639-6.511-3.063-1.15-3.063-2.489-3.639-4.979-.573-2.489 0-8.808.766-9.383.765-.574 2.107-5.362 5.363-4.978 3.256.383 6.702.53 7.851-.023 1.149-.551 3.063 1.171 3.638-3.233.575-4.404 1.915-4.979 2.681-7.277.766-2.297-.383-7.086 0-9.958s3.064-7.852 3.064-10.341c0-2.489 2.873-3.638 4.405-2.681 1.532.958 4.787 2.873 6.127 5.937 1.342 3.063 1.342 4.595 3.447 8.617 2.106 4.021 1.533 6.894 2.489 9.958.958 3.064 3.262 5.171 6.419 8.617 3.156 3.446 2.588 5.362 0 5.171-2.588-.191-4.314 2.297-5.654 5.361-1.338 3.065-2.87 10.724-1.721 8.235 1.149-2.491 3.446-9.384 5.744-10.533 2.298-1.149 6.512 1.953 7.469 3.083.957 1.131.574 4.385-1.916 5.726C.383-8.617 1.915-7.469 4.405-9c2.489-1.532 5.362-3.064 4.787.19z\" transform=\"translate(132.845 86.592)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.173-.353-2.106-2.681-1.532-3.831.576-1.148-.574.576-2.106-.382-1.533-.957-3.808-3.639-1.713-3.829 2.096-.193 1.713 1.531 3.628.765 1.915-.765 4.021-.575 4.021 1.34C2.298-4.021 1.915.574 0 0\" transform=\"translate(95.886 109.955)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.173-.353-2.106-2.681-1.532-3.831.576-1.148-.574.576-2.106-.382-1.533-.957-3.808-3.639-1.713-3.829 2.096-.193 1.713 1.531 3.628.765 1.915-.765 4.021-.575 4.021 1.34C2.298-4.021 1.915.574 0 0Z\" transform=\"translate(95.886 109.955)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.154-.165-1.533-3.064.957-3.447 2.49-.383 6.947.575 5.293 2.107C4.596.191 2.682.383 0 0\" transform=\"translate(83.44 118.763)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.154-.165-1.533-3.064.957-3.447 2.49-.383 6.947.575 5.293 2.107C4.596.191 2.682.383 0 0Z\" transform=\"translate(83.44 118.763)\"/>\n  </g>\n  <g clip-path=\"url(#b)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c0-37.068-30.05-67.119-67.119-67.119S-134.238-37.068-134.238 0c0 37.069 30.05 67.119 67.119 67.119S0 37.069 0 0Z\" transform=\"translate(139.738 74.049)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c0-36.731-29.777-66.509-66.509-66.509S-133.019-36.731-133.019 0c0 36.733 29.778 66.51 66.51 66.51C-29.777 66.51 0 36.733 0 0Z\" transform=\"translate(139.438 73.186)\"/>\n  </g>\n  <g clip-path=\"url(#c)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:#fff;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0m12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754\" transform=\"translate(119.64 109.307)\"/>\n    <path style=\"fill:#fff;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0m12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754\" transform=\"translate(119.64 109.307)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0Zm12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754z\" transform=\"translate(119.64 109.307)\"/>\n  </g>\n</svg>\n";
+  var minimizeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="#000000"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19h12v2H6v-2z"/></svg>';
+  var editIconUrl = URL.createObjectURL(new Blob([iconEdit], {
+    type: 'image/svg+xml'
+  }));
+  var i18nextIconUrl = URL.createObjectURL(new Blob([i18nextIcon], {
+    type: 'image/svg+xml'
+  }));
+  var minimizeIconUrl = URL.createObjectURL(new Blob([minimizeIcon], {
+    type: 'image/svg+xml'
+  }));
+  var locizeIconUrl = URL.createObjectURL(new Blob([locizeIcon], {
+    type: 'image/svg+xml'
+  }));
+
+  function EditIcon() {
+    var image = document.createElement('img');
+    image.setAttribute('data-i18next-editor-element', 'true');
+    image.src = editIconUrl;
+    image.style.width = '15px';
+    return image;
+  }
+
+  function RibbonLogo() {
+    var circleSize = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '18px';
+    var logoSize = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '15px';
+    var ribbon = document.createElement('div');
+    ribbon.setAttribute('data-i18next-editor-element', 'true');
+    ribbon.style = "display: inline-flex; align-items: center; justify-content: center; width: ".concat(circleSize, "; height: ").concat(circleSize, "; box-shadow: inset 0 0 5px ").concat(colors.highlight, "; border: 2px solid ").concat(colors.highlight, "; border-radius: 50%");
+    var image = document.createElement('img');
+    image.src = i18nextIconUrl;
+    image.style.width = logoSize;
+    ribbon.appendChild(image);
+    return ribbon;
+  }
+
+  if (sheet) {
+    sheet.insertRule('.i18next-editor-button:hover { background-color: rgba(38, 166, 154, 1) !important; }');
+  }
+
+  function RibbonButton(text, attrTitle, onClick) {
+    var btn = document.createElement('button');
+    btn.style = 'font-family: Arial; position: relative; backdrop-filter: blur(3px); cursor: pointer; padding: 2px 10px 2px 20px; font-size: 15px; font-weight: 300; text-transform: uppercase; color: #fff; background-color: rgba(38, 166, 154, 0.8); border: none; border-radius: 12px';
+    btn.classList.add('i18next-editor-button');
+    btn.setAttribute('data-i18next-editor-element', 'true');
+    btn.setAttribute('title', attrTitle);
+    var icon = EditIcon();
+    icon.style = 'position: absolute; left: 4px; top: 3px;';
+    icon.style.width = '15px';
+    btn.appendChild(icon);
+    var span = document.createElement('span');
+    span.textContent = text;
+    btn.appendChild(span);
+    btn.onclick = onClick;
+    return btn;
+  }
+
+  function RibbonBox() {
+    var keys = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var box = document.createElement('div');
+    box.style = 'position: absolute; top: 0; left: 0; display: flex; align-items: flex-start; justify-content: center; filter: drop-shadow(0px 0px 20px #aaa );';
+    box.setAttribute('data-i18next-editor-element', 'true');
+    var arrow = document.createElement('div');
+    arrow.style = "\n    position: absolute;\n    width: 0;\n    height: 0;\n    border-top-width: 7px;\n    border-bottom-width: 7px;\n    border-left-width: 10px;\n    border-right-width: 10px;\n    border-style: solid;\n    border-color: transparent ".concat(colors.highlight, " transparent\n      transparent;\n    ");
+    box.appendChild(arrow);
+    var logo = RibbonLogo();
+    box.appendChild(logo);
+    var btnbox = document.createElement('div');
+    btnbox.style = 'display: flex; flex-direction: column; align-items: flex-start; margin-left: 2px; margin-top: 1px';
+    Object.keys(keys).forEach(function (k) {
+      var data = keys[k];
+      var btn = RibbonButton(k.replace('attr:', ''), "".concat(data.ns, ":").concat(data.key), function () {
+        api.selectKey(data);
+      });
+      btn.style.marginBottom = '2px';
+      btnbox.appendChild(btn);
+    });
+    box.appendChild(btnbox);
+    return {
+      box: box,
+      arrow: arrow
+    };
+  }
+
+  var min = Math.min;
+  var max = Math.max;
+  var round = Math.round;
+
+  var createCoords = v => ({
+    x: v,
+    y: v
+  });
+
+  var oppositeSideMap = {
+    left: 'right',
+    right: 'left',
+    bottom: 'top',
+    top: 'bottom'
+  };
+  var oppositeAlignmentMap = {
+    start: 'end',
+    end: 'start'
+  };
+
+  function clamp(start, value, end) {
+    return max(start, min(value, end));
+  }
+
+  function evaluate(value, param) {
+    return typeof value === 'function' ? value(param) : value;
+  }
+
+  function getSide(placement) {
+    return placement.split('-')[0];
+  }
+
+  function getAlignment(placement) {
+    return placement.split('-')[1];
+  }
+
+  function getOppositeAxis(axis) {
+    return axis === 'x' ? 'y' : 'x';
+  }
+
+  function getAxisLength(axis) {
+    return axis === 'y' ? 'height' : 'width';
+  }
+
+  function getSideAxis(placement) {
+    return ['top', 'bottom'].includes(getSide(placement)) ? 'y' : 'x';
+  }
+
+  function getAlignmentAxis(placement) {
+    return getOppositeAxis(getSideAxis(placement));
+  }
+
+  function getAlignmentSides(placement, rects, rtl) {
+    if (rtl === void 0) {
+      rtl = false;
+    }
+
+    var alignment = getAlignment(placement);
+    var alignmentAxis = getAlignmentAxis(placement);
+    var length = getAxisLength(alignmentAxis);
+    var mainAlignmentSide = alignmentAxis === 'x' ? alignment === (rtl ? 'end' : 'start') ? 'right' : 'left' : alignment === 'start' ? 'bottom' : 'top';
+
+    if (rects.reference[length] > rects.floating[length]) {
+      mainAlignmentSide = getOppositePlacement(mainAlignmentSide);
+    }
+
+    return [mainAlignmentSide, getOppositePlacement(mainAlignmentSide)];
+  }
+
+  function getExpandedPlacements(placement) {
+    var oppositePlacement = getOppositePlacement(placement);
+    return [getOppositeAlignmentPlacement(placement), oppositePlacement, getOppositeAlignmentPlacement(oppositePlacement)];
+  }
+
+  function getOppositeAlignmentPlacement(placement) {
+    return placement.replace(/start|end/g, alignment => oppositeAlignmentMap[alignment]);
+  }
+
+  function getSideList(side, isStart, rtl) {
+    var lr = ['left', 'right'];
+    var rl = ['right', 'left'];
+    var tb = ['top', 'bottom'];
+    var bt = ['bottom', 'top'];
+
+    switch (side) {
+      case 'top':
+      case 'bottom':
+        if (rtl) return isStart ? rl : lr;
+        return isStart ? lr : rl;
+
+      case 'left':
+      case 'right':
+        return isStart ? tb : bt;
+
+      default:
+        return [];
+    }
+  }
+
+  function getOppositeAxisPlacements(placement, flipAlignment, direction, rtl) {
+    var alignment = getAlignment(placement);
+    var list = getSideList(getSide(placement), direction === 'start', rtl);
+
+    if (alignment) {
+      list = list.map(side => side + "-" + alignment);
+
+      if (flipAlignment) {
+        list = list.concat(list.map(getOppositeAlignmentPlacement));
+      }
+    }
+
+    return list;
+  }
+
+  function getOppositePlacement(placement) {
+    return placement.replace(/left|right|bottom|top/g, side => oppositeSideMap[side]);
+  }
+
+  function expandPaddingObject(padding) {
+    return _objectSpread2({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0
+    }, padding);
+  }
+
+  function getPaddingObject(padding) {
+    return typeof padding !== 'number' ? expandPaddingObject(padding) : {
+      top: padding,
+      right: padding,
+      bottom: padding,
+      left: padding
+    };
+  }
+
+  function rectToClientRect(rect) {
+    return _objectSpread2(_objectSpread2({}, rect), {}, {
+      top: rect.y,
+      left: rect.x,
+      right: rect.x + rect.width,
+      bottom: rect.y + rect.height
+    });
+  }
+
+  var _excluded2 = ["mainAxis", "crossAxis", "fallbackPlacements", "fallbackStrategy", "fallbackAxisSideDirection", "flipAlignment"],
+      _excluded4 = ["mainAxis", "crossAxis", "limiter"];
+
+  function computeCoordsFromPlacement(_ref, placement, rtl) {
+    var {
+      reference,
+      floating
+    } = _ref;
+    var sideAxis = getSideAxis(placement);
+    var alignmentAxis = getAlignmentAxis(placement);
+    var alignLength = getAxisLength(alignmentAxis);
+    var side = getSide(placement);
+    var isVertical = sideAxis === 'y';
+    var commonX = reference.x + reference.width / 2 - floating.width / 2;
+    var commonY = reference.y + reference.height / 2 - floating.height / 2;
+    var commonAlign = reference[alignLength] / 2 - floating[alignLength] / 2;
+    var coords;
+
+    switch (side) {
+      case 'top':
+        coords = {
+          x: commonX,
+          y: reference.y - floating.height
+        };
+        break;
+
+      case 'bottom':
+        coords = {
+          x: commonX,
+          y: reference.y + reference.height
+        };
+        break;
+
+      case 'right':
+        coords = {
+          x: reference.x + reference.width,
+          y: commonY
+        };
+        break;
+
+      case 'left':
+        coords = {
+          x: reference.x - floating.width,
+          y: commonY
+        };
+        break;
+
+      default:
+        coords = {
+          x: reference.x,
+          y: reference.y
+        };
+    }
+
+    switch (getAlignment(placement)) {
+      case 'start':
+        coords[alignmentAxis] -= commonAlign * (rtl && isVertical ? -1 : 1);
+        break;
+
+      case 'end':
+        coords[alignmentAxis] += commonAlign * (rtl && isVertical ? -1 : 1);
+        break;
+    }
+
+    return coords;
+  }
+  /**
+   * Computes the `x` and `y` coordinates that will place the floating element
+   * next to a reference element when it is given a certain positioning strategy.
+   *
+   * This export does not have any `platform` interface logic. You will need to
+   * write one for the platform you are using Floating UI with.
+   */
+
+
+  var computePosition = /*#__PURE__*/function () {
+    var _ref2 = _asyncToGenerator(function* (reference, floating, config) {
+      var {
+        placement = 'bottom',
+        strategy = 'absolute',
+        middleware = [],
+        platform
+      } = config;
+      var validMiddleware = middleware.filter(Boolean);
+      var rtl = yield platform.isRTL == null ? void 0 : platform.isRTL(floating);
+      var rects = yield platform.getElementRects({
+        reference,
+        floating,
+        strategy
+      });
+      var {
+        x,
+        y
+      } = computeCoordsFromPlacement(rects, placement, rtl);
+      var statefulPlacement = placement;
+      var middlewareData = {};
+      var resetCount = 0;
+
+      for (var i = 0; i < validMiddleware.length; i++) {
+        var {
+          name,
+          fn
+        } = validMiddleware[i];
+        var {
+          x: nextX,
+          y: nextY,
+          data,
+          reset
+        } = yield fn({
+          x,
+          y,
+          initialPlacement: placement,
+          placement: statefulPlacement,
+          strategy,
+          middlewareData,
+          rects,
+          platform,
+          elements: {
+            reference,
+            floating
+          }
+        });
+        x = nextX != null ? nextX : x;
+        y = nextY != null ? nextY : y;
+        middlewareData = _objectSpread2(_objectSpread2({}, middlewareData), {}, {
+          [name]: _objectSpread2(_objectSpread2({}, middlewareData[name]), data)
+        });
+
+        if (reset && resetCount <= 50) {
+          resetCount++;
+
+          if (typeof reset === 'object') {
+            if (reset.placement) {
+              statefulPlacement = reset.placement;
+            }
+
+            if (reset.rects) {
+              rects = reset.rects === true ? yield platform.getElementRects({
+                reference,
+                floating,
+                strategy
+              }) : reset.rects;
+            }
+
+            ({
+              x,
+              y
+            } = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
+          }
+
+          i = -1;
+          continue;
+        }
+      }
+
+      return {
+        x,
+        y,
+        placement: statefulPlacement,
+        strategy,
+        middlewareData
+      };
+    });
+
+    return function computePosition(_x, _x2, _x3) {
+      return _ref2.apply(this, arguments);
+    };
+  }();
+  /**
+   * Resolves with an object of overflow side offsets that determine how much the
+   * element is overflowing a given clipping boundary on each side.
+   * - positive = overflowing the boundary by that number of pixels
+   * - negative = how many pixels left before it will overflow
+   * - 0 = lies flush with the boundary
+   * @see https://floating-ui.com/docs/detectOverflow
+   */
+
+
+  function detectOverflow(_x4, _x5) {
+    return _detectOverflow.apply(this, arguments);
+  }
+  /**
+   * Provides data to position an inner element of the floating element so that it
+   * appears centered to the reference element.
+   * @see https://floating-ui.com/docs/arrow
+   */
+
+
+  function _detectOverflow() {
+    _detectOverflow = _asyncToGenerator(function* (state, options) {
+      var _await$platform$isEle;
+
+      if (options === void 0) {
+        options = {};
+      }
+
+      var {
+        x,
+        y,
+        platform,
+        rects,
+        elements,
+        strategy
+      } = state;
+      var {
+        boundary = 'clippingAncestors',
+        rootBoundary = 'viewport',
+        elementContext = 'floating',
+        altBoundary = false,
+        padding = 0
+      } = evaluate(options, state);
+      var paddingObject = getPaddingObject(padding);
+      var altContext = elementContext === 'floating' ? 'reference' : 'floating';
+      var element = elements[altBoundary ? altContext : elementContext];
+      var clippingClientRect = rectToClientRect(yield platform.getClippingRect({
+        element: ((_await$platform$isEle = yield platform.isElement == null ? void 0 : platform.isElement(element)) != null ? _await$platform$isEle : true) ? element : element.contextElement || (yield platform.getDocumentElement == null ? void 0 : platform.getDocumentElement(elements.floating)),
+        boundary,
+        rootBoundary,
+        strategy
+      }));
+      var rect = elementContext === 'floating' ? _objectSpread2(_objectSpread2({}, rects.floating), {}, {
+        x,
+        y
+      }) : rects.reference;
+      var offsetParent = yield platform.getOffsetParent == null ? void 0 : platform.getOffsetParent(elements.floating);
+      var offsetScale = (yield platform.isElement == null ? void 0 : platform.isElement(offsetParent)) ? (yield platform.getScale == null ? void 0 : platform.getScale(offsetParent)) || {
+        x: 1,
+        y: 1
+      } : {
+        x: 1,
+        y: 1
+      };
+      var elementClientRect = rectToClientRect(platform.convertOffsetParentRelativeRectToViewportRelativeRect ? yield platform.convertOffsetParentRelativeRectToViewportRelativeRect({
+        rect,
+        offsetParent,
+        strategy
+      }) : rect);
+      return {
+        top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
+        bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
+        left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
+        right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
+      };
+    });
+    return _detectOverflow.apply(this, arguments);
+  }
+
+  var arrow = options => ({
+    name: 'arrow',
+    options,
+
+    fn(state) {
+      return _asyncToGenerator(function* () {
+        var {
+          x,
+          y,
+          placement,
+          rects,
+          platform,
+          elements,
+          middlewareData
+        } = state; // Since `element` is required, we don't Partial<> the type.
+
+        var {
+          element,
+          padding = 0
+        } = evaluate(options, state) || {};
+
+        if (element == null) {
+          return {};
+        }
+
+        var paddingObject = getPaddingObject(padding);
+        var coords = {
+          x,
+          y
+        };
+        var axis = getAlignmentAxis(placement);
+        var length = getAxisLength(axis);
+        var arrowDimensions = yield platform.getDimensions(element);
+        var isYAxis = axis === 'y';
+        var minProp = isYAxis ? 'top' : 'left';
+        var maxProp = isYAxis ? 'bottom' : 'right';
+        var clientProp = isYAxis ? 'clientHeight' : 'clientWidth';
+        var endDiff = rects.reference[length] + rects.reference[axis] - coords[axis] - rects.floating[length];
+        var startDiff = coords[axis] - rects.reference[axis];
+        var arrowOffsetParent = yield platform.getOffsetParent == null ? void 0 : platform.getOffsetParent(element);
+        var clientSize = arrowOffsetParent ? arrowOffsetParent[clientProp] : 0; // DOM platform can return `window` as the `offsetParent`.
+
+        if (!clientSize || !(yield platform.isElement == null ? void 0 : platform.isElement(arrowOffsetParent))) {
+          clientSize = elements.floating[clientProp] || rects.floating[length];
+        }
+
+        var centerToReference = endDiff / 2 - startDiff / 2; // If the padding is large enough that it causes the arrow to no longer be
+        // centered, modify the padding so that it is centered.
+
+        var largestPossiblePadding = clientSize / 2 - arrowDimensions[length] / 2 - 1;
+        var minPadding = min(paddingObject[minProp], largestPossiblePadding);
+        var maxPadding = min(paddingObject[maxProp], largestPossiblePadding); // Make sure the arrow doesn't overflow the floating element if the center
+        // point is outside the floating element's bounds.
+
+        var min$1 = minPadding;
+        var max = clientSize - arrowDimensions[length] - maxPadding;
+        var center = clientSize / 2 - arrowDimensions[length] / 2 + centerToReference;
+        var offset = clamp(min$1, center, max); // If the reference is small enough that the arrow's padding causes it to
+        // to point to nothing for an aligned placement, adjust the offset of the
+        // floating element itself. To ensure `shift()` continues to take action,
+        // a single reset is performed when this is true.
+
+        var shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center != offset && rects.reference[length] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length] / 2 < 0;
+        var alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max : 0;
+        return {
+          [axis]: coords[axis] + alignmentOffset,
+          data: _objectSpread2({
+            [axis]: offset,
+            centerOffset: center - offset - alignmentOffset
+          }, shouldAddOffset && {
+            alignmentOffset
+          }),
+          reset: shouldAddOffset
+        };
+      })();
+    }
+
+  });
+  /**
+   * Optimizes the visibility of the floating element by flipping the `placement`
+   * in order to keep it in view when the preferred placement(s) will overflow the
+   * clipping boundary. Alternative to `autoPlacement`.
+   * @see https://floating-ui.com/docs/flip
+   */
+
+
+  var flip = function flip(options) {
+    if (options === void 0) {
+      options = {};
+    }
+
+    return {
+      name: 'flip',
+      options,
+
+      fn(state) {
+        return _asyncToGenerator(function* () {
+          var _middlewareData$arrow, _middlewareData$flip;
+
+          var {
+            placement,
+            middlewareData,
+            rects,
+            initialPlacement,
+            platform,
+            elements
+          } = state;
+
+          var _evaluate2 = evaluate(options, state),
+              {
+            mainAxis: checkMainAxis = true,
+            crossAxis: checkCrossAxis = true,
+            fallbackPlacements: specifiedFallbackPlacements,
+            fallbackStrategy = 'bestFit',
+            fallbackAxisSideDirection = 'none',
+            flipAlignment = true
+          } = _evaluate2,
+              detectOverflowOptions = _objectWithoutProperties(_evaluate2, _excluded2); // If a reset by the arrow was caused due to an alignment offset being
+          // added, we should skip any logic now since `flip()` has already done its
+          // work.
+          // https://github.com/floating-ui/floating-ui/issues/2549#issuecomment-1719601643
+
+
+          if ((_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
+            return {};
+          }
+
+          var side = getSide(placement);
+          var isBasePlacement = getSide(initialPlacement) === initialPlacement;
+          var rtl = yield platform.isRTL == null ? void 0 : platform.isRTL(elements.floating);
+          var fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [getOppositePlacement(initialPlacement)] : getExpandedPlacements(initialPlacement));
+
+          if (!specifiedFallbackPlacements && fallbackAxisSideDirection !== 'none') {
+            fallbackPlacements.push(...getOppositeAxisPlacements(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
+          }
+
+          var placements = [initialPlacement, ...fallbackPlacements];
+          var overflow = yield detectOverflow(state, detectOverflowOptions);
+          var overflows = [];
+          var overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
+
+          if (checkMainAxis) {
+            overflows.push(overflow[side]);
+          }
+
+          if (checkCrossAxis) {
+            var _sides = getAlignmentSides(placement, rects, rtl);
+
+            overflows.push(overflow[_sides[0]], overflow[_sides[1]]);
+          }
+
+          overflowsData = [...overflowsData, {
+            placement,
+            overflows
+          }]; // One or more sides is overflowing.
+
+          if (!overflows.every(side => side <= 0)) {
+            var _middlewareData$flip2, _overflowsData$filter;
+
+            var nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
+            var nextPlacement = placements[nextIndex];
+
+            if (nextPlacement) {
+              // Try next placement and re-run the lifecycle.
+              return {
+                data: {
+                  index: nextIndex,
+                  overflows: overflowsData
+                },
+                reset: {
+                  placement: nextPlacement
+                }
+              };
+            } // First, find the candidates that fit on the mainAxis side of overflow,
+            // then find the placement that fits the best on the main crossAxis side.
+
+
+            var resetPlacement = (_overflowsData$filter = overflowsData.filter(d => d.overflows[0] <= 0).sort((a, b) => a.overflows[1] - b.overflows[1])[0]) == null ? void 0 : _overflowsData$filter.placement; // Otherwise fallback.
+
+            if (!resetPlacement) {
+              switch (fallbackStrategy) {
+                case 'bestFit':
+                  {
+                    var _overflowsData$map$so;
+
+                    var _placement = (_overflowsData$map$so = overflowsData.map(d => [d.placement, d.overflows.filter(overflow => overflow > 0).reduce((acc, overflow) => acc + overflow, 0)]).sort((a, b) => a[1] - b[1])[0]) == null ? void 0 : _overflowsData$map$so[0];
+
+                    if (_placement) {
+                      resetPlacement = _placement;
+                    }
+
+                    break;
+                  }
+
+                case 'initialPlacement':
+                  resetPlacement = initialPlacement;
+                  break;
+              }
+            }
+
+            if (placement !== resetPlacement) {
+              return {
+                reset: {
+                  placement: resetPlacement
+                }
+              };
+            }
+          }
+
+          return {};
+        })();
+      }
+
+    };
+  };
+  // Derivable.
+
+
+  function convertValueToCoords(_x6, _x7) {
+    return _convertValueToCoords.apply(this, arguments);
+  }
+  /**
+   * Modifies the placement by translating the floating element along the
+   * specified axes.
+   * A number (shorthand for `mainAxis` or distance), or an axes configuration
+   * object may be passed.
+   * @see https://floating-ui.com/docs/offset
+   */
+
+
+  function _convertValueToCoords() {
+    _convertValueToCoords = _asyncToGenerator(function* (state, options) {
+      var {
+        placement,
+        platform,
+        elements
+      } = state;
+      var rtl = yield platform.isRTL == null ? void 0 : platform.isRTL(elements.floating);
+      var side = getSide(placement);
+      var alignment = getAlignment(placement);
+      var isVertical = getSideAxis(placement) === 'y';
+      var mainAxisMulti = ['left', 'top'].includes(side) ? -1 : 1;
+      var crossAxisMulti = rtl && isVertical ? -1 : 1;
+      var rawValue = evaluate(options, state); // eslint-disable-next-line prefer-const
+
+      var {
+        mainAxis,
+        crossAxis,
+        alignmentAxis
+      } = typeof rawValue === 'number' ? {
+        mainAxis: rawValue,
+        crossAxis: 0,
+        alignmentAxis: null
+      } : _objectSpread2({
+        mainAxis: 0,
+        crossAxis: 0,
+        alignmentAxis: null
+      }, rawValue);
+
+      if (alignment && typeof alignmentAxis === 'number') {
+        crossAxis = alignment === 'end' ? alignmentAxis * -1 : alignmentAxis;
+      }
+
+      return isVertical ? {
+        x: crossAxis * crossAxisMulti,
+        y: mainAxis * mainAxisMulti
+      } : {
+        x: mainAxis * mainAxisMulti,
+        y: crossAxis * crossAxisMulti
+      };
+    });
+    return _convertValueToCoords.apply(this, arguments);
+  }
+
+  var offset = function offset(options) {
+    if (options === void 0) {
+      options = 0;
+    }
+
+    return {
+      name: 'offset',
+      options,
+
+      fn(state) {
+        return _asyncToGenerator(function* () {
+          var {
+            x,
+            y
+          } = state;
+          var diffCoords = yield convertValueToCoords(state, options);
+          return {
+            x: x + diffCoords.x,
+            y: y + diffCoords.y,
+            data: diffCoords
+          };
+        })();
+      }
+
+    };
+  };
+  /**
+   * Optimizes the visibility of the floating element by shifting it in order to
+   * keep it in view when it will overflow the clipping boundary.
+   * @see https://floating-ui.com/docs/shift
+   */
+
+
+  var shift = function shift(options) {
+    if (options === void 0) {
+      options = {};
+    }
+
+    return {
+      name: 'shift',
+      options,
+
+      fn(state) {
+        return _asyncToGenerator(function* () {
+          var {
+            x,
+            y,
+            placement
+          } = state;
+
+          var _evaluate4 = evaluate(options, state),
+              {
+            mainAxis: checkMainAxis = true,
+            crossAxis: checkCrossAxis = false,
+            limiter = {
+              fn: _ref => {
+                var {
+                  x,
+                  y
+                } = _ref;
+                return {
+                  x,
+                  y
+                };
+              }
+            }
+          } = _evaluate4,
+              detectOverflowOptions = _objectWithoutProperties(_evaluate4, _excluded4);
+
+          var coords = {
+            x,
+            y
+          };
+          var overflow = yield detectOverflow(state, detectOverflowOptions);
+          var crossAxis = getSideAxis(getSide(placement));
+          var mainAxis = getOppositeAxis(crossAxis);
+          var mainAxisCoord = coords[mainAxis];
+          var crossAxisCoord = coords[crossAxis];
+
+          if (checkMainAxis) {
+            var minSide = mainAxis === 'y' ? 'top' : 'left';
+            var maxSide = mainAxis === 'y' ? 'bottom' : 'right';
+
+            var _min = mainAxisCoord + overflow[minSide];
+
+            var _max = mainAxisCoord - overflow[maxSide];
+
+            mainAxisCoord = clamp(_min, mainAxisCoord, _max);
+          }
+
+          if (checkCrossAxis) {
+            var _minSide = crossAxis === 'y' ? 'top' : 'left';
+
+            var _maxSide = crossAxis === 'y' ? 'bottom' : 'right';
+
+            var _min2 = crossAxisCoord + overflow[_minSide];
+
+            var _max2 = crossAxisCoord - overflow[_maxSide];
+
+            crossAxisCoord = clamp(_min2, crossAxisCoord, _max2);
+          }
+
+          var limitedCoords = limiter.fn(_objectSpread2(_objectSpread2({}, state), {}, {
+            [mainAxis]: mainAxisCoord,
+            [crossAxis]: crossAxisCoord
+          }));
+          return _objectSpread2(_objectSpread2({}, limitedCoords), {}, {
+            data: {
+              x: limitedCoords.x - x,
+              y: limitedCoords.y - y
+            }
+          });
+        })();
+      }
+
+    };
+  };
+
+  function getNodeName(node) {
+    if (isNode(node)) {
+      return (node.nodeName || '').toLowerCase();
+    } // Mocked nodes in testing environments may not be instances of Node. By
+    // returning `#document` an infinite loop won't occur.
+    // https://github.com/floating-ui/floating-ui/issues/2317
+
+
+    return '#document';
+  }
+
+  function getWindow(node) {
+    var _node$ownerDocument;
+
+    return (node == null ? void 0 : (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
+  }
+
+  function getDocumentElement(node) {
+    var _ref;
+
+    return (_ref = (isNode(node) ? node.ownerDocument : node.document) || window.document) == null ? void 0 : _ref.documentElement;
+  }
+
+  function isNode(value) {
+    return value instanceof Node || value instanceof getWindow(value).Node;
+  }
+
+  function isElement(value) {
+    return value instanceof Element || value instanceof getWindow(value).Element;
+  }
+
+  function isHTMLElement(value) {
+    return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
+  }
+
+  function isShadowRoot(value) {
+    // Browsers without `ShadowRoot` support.
+    if (typeof ShadowRoot === 'undefined') {
+      return false;
+    }
+
+    return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
+  }
+
+  function isOverflowElement(element) {
+    var {
+      overflow,
+      overflowX,
+      overflowY,
+      display
+    } = getComputedStyle(element);
+    return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && !['inline', 'contents'].includes(display);
+  }
+
+  function isTableElement(element) {
+    return ['table', 'td', 'th'].includes(getNodeName(element));
+  }
+
+  function isContainingBlock(element) {
+    var webkit = isWebKit();
+    var css = getComputedStyle(element); // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
+
+    return css.transform !== 'none' || css.perspective !== 'none' || (css.containerType ? css.containerType !== 'normal' : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== 'none' : false) || !webkit && (css.filter ? css.filter !== 'none' : false) || ['transform', 'perspective', 'filter'].some(value => (css.willChange || '').includes(value)) || ['paint', 'layout', 'strict', 'content'].some(value => (css.contain || '').includes(value));
+  }
+
+  function getContainingBlock(element) {
+    var currentNode = getParentNode(element);
+
+    while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
+      if (isContainingBlock(currentNode)) {
+        return currentNode;
+      } else {
+        currentNode = getParentNode(currentNode);
+      }
+    }
+
+    return null;
+  }
+
+  function isWebKit() {
+    if (typeof CSS === 'undefined' || !CSS.supports) return false;
+    return CSS.supports('-webkit-backdrop-filter', 'none');
+  }
+
+  function isLastTraversableNode(node) {
+    return ['html', 'body', '#document'].includes(getNodeName(node));
+  }
+
+  function getComputedStyle(element) {
+    return getWindow(element).getComputedStyle(element);
+  }
+
+  function getNodeScroll(element) {
+    if (isElement(element)) {
+      return {
+        scrollLeft: element.scrollLeft,
+        scrollTop: element.scrollTop
+      };
+    }
+
+    return {
+      scrollLeft: element.pageXOffset,
+      scrollTop: element.pageYOffset
+    };
+  }
+
+  function getParentNode(node) {
+    if (getNodeName(node) === 'html') {
+      return node;
+    }
+
+    var result = // Step into the shadow DOM of the parent of a slotted node.
+    node.assignedSlot || // DOM Element detected.
+    node.parentNode || // ShadowRoot detected.
+    isShadowRoot(node) && node.host || // Fallback.
+    getDocumentElement(node);
+    return isShadowRoot(result) ? result.host : result;
+  }
+
+  function getNearestOverflowAncestor(node) {
+    var parentNode = getParentNode(node);
+
+    if (isLastTraversableNode(parentNode)) {
+      return node.ownerDocument ? node.ownerDocument.body : node.body;
+    }
+
+    if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) {
+      return parentNode;
+    }
+
+    return getNearestOverflowAncestor(parentNode);
+  }
+
+  function getOverflowAncestors(node, list, traverseIframes) {
+    var _node$ownerDocument2;
+
+    if (list === void 0) {
+      list = [];
+    }
+
+    if (traverseIframes === void 0) {
+      traverseIframes = true;
+    }
+
+    var scrollableAncestor = getNearestOverflowAncestor(node);
+    var isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
+    var win = getWindow(scrollableAncestor);
+
+    if (isBody) {
+      return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], win.frameElement && traverseIframes ? getOverflowAncestors(win.frameElement) : []);
+    }
+
+    return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
+  }
+
+  function getCssDimensions(element) {
+    var css = getComputedStyle(element); // In testing environments, the `width` and `height` properties are empty
+    // strings for SVG elements, returning NaN. Fallback to `0` in this case.
+
+    var width = parseFloat(css.width) || 0;
+    var height = parseFloat(css.height) || 0;
+    var hasOffset = isHTMLElement(element);
+    var offsetWidth = hasOffset ? element.offsetWidth : width;
+    var offsetHeight = hasOffset ? element.offsetHeight : height;
+    var shouldFallback = round(width) !== offsetWidth || round(height) !== offsetHeight;
+
+    if (shouldFallback) {
+      width = offsetWidth;
+      height = offsetHeight;
+    }
+
+    return {
+      width,
+      height,
+      $: shouldFallback
+    };
+  }
+
+  function unwrapElement(element) {
+    return !isElement(element) ? element.contextElement : element;
+  }
+
+  function getScale(element) {
+    var domElement = unwrapElement(element);
+
+    if (!isHTMLElement(domElement)) {
+      return createCoords(1);
+    }
+
+    var rect = domElement.getBoundingClientRect();
+    var {
+      width,
+      height,
+      $
+    } = getCssDimensions(domElement);
+    var x = ($ ? round(rect.width) : rect.width) / width;
+    var y = ($ ? round(rect.height) : rect.height) / height; // 0, NaN, or Infinity should always fallback to 1.
+
+    if (!x || !Number.isFinite(x)) {
+      x = 1;
+    }
+
+    if (!y || !Number.isFinite(y)) {
+      y = 1;
+    }
+
+    return {
+      x,
+      y
+    };
+  }
+
+  var noOffsets = /*#__PURE__*/createCoords(0);
+
+  function getVisualOffsets(element) {
+    var win = getWindow(element);
+
+    if (!isWebKit() || !win.visualViewport) {
+      return noOffsets;
+    }
+
+    return {
+      x: win.visualViewport.offsetLeft,
+      y: win.visualViewport.offsetTop
+    };
+  }
+
+  function shouldAddVisualOffsets(element, isFixed, floatingOffsetParent) {
+    if (isFixed === void 0) {
+      isFixed = false;
+    }
+
+    if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element)) {
+      return false;
+    }
+
+    return isFixed;
+  }
+
+  function getBoundingClientRect(element, includeScale, isFixedStrategy, offsetParent) {
+    if (includeScale === void 0) {
+      includeScale = false;
+    }
+
+    if (isFixedStrategy === void 0) {
+      isFixedStrategy = false;
+    }
+
+    var clientRect = element.getBoundingClientRect();
+    var domElement = unwrapElement(element);
+    var scale = createCoords(1);
+
+    if (includeScale) {
+      if (offsetParent) {
+        if (isElement(offsetParent)) {
+          scale = getScale(offsetParent);
+        }
+      } else {
+        scale = getScale(element);
+      }
+    }
+
+    var visualOffsets = shouldAddVisualOffsets(domElement, isFixedStrategy, offsetParent) ? getVisualOffsets(domElement) : createCoords(0);
+    var x = (clientRect.left + visualOffsets.x) / scale.x;
+    var y = (clientRect.top + visualOffsets.y) / scale.y;
+    var width = clientRect.width / scale.x;
+    var height = clientRect.height / scale.y;
+
+    if (domElement) {
+      var win = getWindow(domElement);
+      var offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
+      var currentIFrame = win.frameElement;
+
+      while (currentIFrame && offsetParent && offsetWin !== win) {
+        var iframeScale = getScale(currentIFrame);
+        var iframeRect = currentIFrame.getBoundingClientRect();
+        var css = getComputedStyle(currentIFrame);
+        var left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
+        var top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
+        x *= iframeScale.x;
+        y *= iframeScale.y;
+        width *= iframeScale.x;
+        height *= iframeScale.y;
+        x += left;
+        y += top;
+        currentIFrame = getWindow(currentIFrame).frameElement;
+      }
+    }
+
+    return rectToClientRect({
+      width,
+      height,
+      x,
+      y
+    });
+  }
+
+  function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
+    var {
+      rect,
+      offsetParent,
+      strategy
+    } = _ref;
+    var isOffsetParentAnElement = isHTMLElement(offsetParent);
+    var documentElement = getDocumentElement(offsetParent);
+
+    if (offsetParent === documentElement) {
+      return rect;
+    }
+
+    var scroll = {
+      scrollLeft: 0,
+      scrollTop: 0
+    };
+    var scale = createCoords(1);
+    var offsets = createCoords(0);
+
+    if (isOffsetParentAnElement || !isOffsetParentAnElement && strategy !== 'fixed') {
+      if (getNodeName(offsetParent) !== 'body' || isOverflowElement(documentElement)) {
+        scroll = getNodeScroll(offsetParent);
+      }
+
+      if (isHTMLElement(offsetParent)) {
+        var offsetRect = getBoundingClientRect(offsetParent);
+        scale = getScale(offsetParent);
+        offsets.x = offsetRect.x + offsetParent.clientLeft;
+        offsets.y = offsetRect.y + offsetParent.clientTop;
+      }
+    }
+
+    return {
+      width: rect.width * scale.x,
+      height: rect.height * scale.y,
+      x: rect.x * scale.x - scroll.scrollLeft * scale.x + offsets.x,
+      y: rect.y * scale.y - scroll.scrollTop * scale.y + offsets.y
+    };
+  }
+
+  function getClientRects(element) {
+    return Array.from(element.getClientRects());
+  }
+
+  function getWindowScrollBarX(element) {
+    // If <html> has a CSS width greater than the viewport, then this will be
+    // incorrect for RTL.
+    return getBoundingClientRect(getDocumentElement(element)).left + getNodeScroll(element).scrollLeft;
+  } // Gets the entire size of the scrollable document area, even extending outside
+  // of the `<html>` and `<body>` rect bounds if horizontally scrollable.
+
+
+  function getDocumentRect(element) {
+    var html = getDocumentElement(element);
+    var scroll = getNodeScroll(element);
+    var body = element.ownerDocument.body;
+    var width = max(html.scrollWidth, html.clientWidth, body.scrollWidth, body.clientWidth);
+    var height = max(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
+    var x = -scroll.scrollLeft + getWindowScrollBarX(element);
+    var y = -scroll.scrollTop;
+
+    if (getComputedStyle(body).direction === 'rtl') {
+      x += max(html.clientWidth, body.clientWidth) - width;
+    }
+
+    return {
+      width,
+      height,
+      x,
+      y
+    };
+  }
+
+  function getViewportRect(element, strategy) {
+    var win = getWindow(element);
+    var html = getDocumentElement(element);
+    var visualViewport = win.visualViewport;
+    var width = html.clientWidth;
+    var height = html.clientHeight;
+    var x = 0;
+    var y = 0;
+
+    if (visualViewport) {
+      width = visualViewport.width;
+      height = visualViewport.height;
+      var visualViewportBased = isWebKit();
+
+      if (!visualViewportBased || visualViewportBased && strategy === 'fixed') {
+        x = visualViewport.offsetLeft;
+        y = visualViewport.offsetTop;
+      }
+    }
+
+    return {
+      width,
+      height,
+      x,
+      y
+    };
+  } // Returns the inner client rect, subtracting scrollbars if present.
+
+
+  function getInnerBoundingClientRect(element, strategy) {
+    var clientRect = getBoundingClientRect(element, true, strategy === 'fixed');
+    var top = clientRect.top + element.clientTop;
+    var left = clientRect.left + element.clientLeft;
+    var scale = isHTMLElement(element) ? getScale(element) : createCoords(1);
+    var width = element.clientWidth * scale.x;
+    var height = element.clientHeight * scale.y;
+    var x = left * scale.x;
+    var y = top * scale.y;
+    return {
+      width,
+      height,
+      x,
+      y
+    };
+  }
+
+  function getClientRectFromClippingAncestor(element, clippingAncestor, strategy) {
+    var rect;
+
+    if (clippingAncestor === 'viewport') {
+      rect = getViewportRect(element, strategy);
+    } else if (clippingAncestor === 'document') {
+      rect = getDocumentRect(getDocumentElement(element));
+    } else if (isElement(clippingAncestor)) {
+      rect = getInnerBoundingClientRect(clippingAncestor, strategy);
+    } else {
+      var visualOffsets = getVisualOffsets(element);
+      rect = _objectSpread2(_objectSpread2({}, clippingAncestor), {}, {
+        x: clippingAncestor.x - visualOffsets.x,
+        y: clippingAncestor.y - visualOffsets.y
+      });
+    }
+
+    return rectToClientRect(rect);
+  }
+
+  function hasFixedPositionAncestor(element, stopNode) {
+    var parentNode = getParentNode(element);
+
+    if (parentNode === stopNode || !isElement(parentNode) || isLastTraversableNode(parentNode)) {
+      return false;
+    }
+
+    return getComputedStyle(parentNode).position === 'fixed' || hasFixedPositionAncestor(parentNode, stopNode);
+  } // A "clipping ancestor" is an `overflow` element with the characteristic of
+  // clipping (or hiding) child elements. This returns all clipping ancestors
+  // of the given element up the tree.
+
+
+  function getClippingElementAncestors(element, cache) {
+    var cachedResult = cache.get(element);
+
+    if (cachedResult) {
+      return cachedResult;
+    }
+
+    var result = getOverflowAncestors(element, [], false).filter(el => isElement(el) && getNodeName(el) !== 'body');
+    var currentContainingBlockComputedStyle = null;
+    var elementIsFixed = getComputedStyle(element).position === 'fixed';
+    var currentNode = elementIsFixed ? getParentNode(element) : element; // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
+
+    while (isElement(currentNode) && !isLastTraversableNode(currentNode)) {
+      var computedStyle = getComputedStyle(currentNode);
+      var currentNodeIsContaining = isContainingBlock(currentNode);
+
+      if (!currentNodeIsContaining && computedStyle.position === 'fixed') {
+        currentContainingBlockComputedStyle = null;
+      }
+
+      var shouldDropCurrentNode = elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === 'static' && !!currentContainingBlockComputedStyle && ['absolute', 'fixed'].includes(currentContainingBlockComputedStyle.position) || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element, currentNode);
+
+      if (shouldDropCurrentNode) {
+        // Drop non-containing blocks.
+        result = result.filter(ancestor => ancestor !== currentNode);
+      } else {
+        // Record last containing block for next iteration.
+        currentContainingBlockComputedStyle = computedStyle;
+      }
+
+      currentNode = getParentNode(currentNode);
+    }
+
+    cache.set(element, result);
+    return result;
+  } // Gets the maximum area that the element is visible in due to any number of
+  // clipping ancestors.
+
+
+  function getClippingRect(_ref) {
+    var {
+      element,
+      boundary,
+      rootBoundary,
+      strategy
+    } = _ref;
+    var elementClippingAncestors = boundary === 'clippingAncestors' ? getClippingElementAncestors(element, this._c) : [].concat(boundary);
+    var clippingAncestors = [...elementClippingAncestors, rootBoundary];
+    var firstClippingAncestor = clippingAncestors[0];
+    var clippingRect = clippingAncestors.reduce((accRect, clippingAncestor) => {
+      var rect = getClientRectFromClippingAncestor(element, clippingAncestor, strategy);
+      accRect.top = max(rect.top, accRect.top);
+      accRect.right = min(rect.right, accRect.right);
+      accRect.bottom = min(rect.bottom, accRect.bottom);
+      accRect.left = max(rect.left, accRect.left);
+      return accRect;
+    }, getClientRectFromClippingAncestor(element, firstClippingAncestor, strategy));
+    return {
+      width: clippingRect.right - clippingRect.left,
+      height: clippingRect.bottom - clippingRect.top,
+      x: clippingRect.left,
+      y: clippingRect.top
+    };
+  }
+
+  function getDimensions(element) {
+    return getCssDimensions(element);
+  }
+
+  function getRectRelativeToOffsetParent(element, offsetParent, strategy) {
+    var isOffsetParentAnElement = isHTMLElement(offsetParent);
+    var documentElement = getDocumentElement(offsetParent);
+    var isFixed = strategy === 'fixed';
+    var rect = getBoundingClientRect(element, true, isFixed, offsetParent);
+    var scroll = {
+      scrollLeft: 0,
+      scrollTop: 0
+    };
+    var offsets = createCoords(0);
+
+    if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+      if (getNodeName(offsetParent) !== 'body' || isOverflowElement(documentElement)) {
+        scroll = getNodeScroll(offsetParent);
+      }
+
+      if (isOffsetParentAnElement) {
+        var offsetRect = getBoundingClientRect(offsetParent, true, isFixed, offsetParent);
+        offsets.x = offsetRect.x + offsetParent.clientLeft;
+        offsets.y = offsetRect.y + offsetParent.clientTop;
+      } else if (documentElement) {
+        offsets.x = getWindowScrollBarX(documentElement);
+      }
+    }
+
+    return {
+      x: rect.left + scroll.scrollLeft - offsets.x,
+      y: rect.top + scroll.scrollTop - offsets.y,
+      width: rect.width,
+      height: rect.height
+    };
+  }
+
+  function getTrueOffsetParent(element, polyfill) {
+    if (!isHTMLElement(element) || getComputedStyle(element).position === 'fixed') {
+      return null;
+    }
+
+    if (polyfill) {
+      return polyfill(element);
+    }
+
+    return element.offsetParent;
+  } // Gets the closest ancestor positioned element. Handles some edge cases,
+  // such as table ancestors and cross browser bugs.
+
+
+  function getOffsetParent(element, polyfill) {
+    var window = getWindow(element);
+
+    if (!isHTMLElement(element)) {
+      return window;
+    }
+
+    var offsetParent = getTrueOffsetParent(element, polyfill);
+
+    while (offsetParent && isTableElement(offsetParent) && getComputedStyle(offsetParent).position === 'static') {
+      offsetParent = getTrueOffsetParent(offsetParent, polyfill);
+    }
+
+    if (offsetParent && (getNodeName(offsetParent) === 'html' || getNodeName(offsetParent) === 'body' && getComputedStyle(offsetParent).position === 'static' && !isContainingBlock(offsetParent))) {
+      return window;
+    }
+
+    return offsetParent || getContainingBlock(element) || window;
+  }
+
+  var getElementRects = /*#__PURE__*/function () {
+    var _ref2 = _asyncToGenerator(function* (_ref) {
+      var {
+        reference,
+        floating,
+        strategy
+      } = _ref;
+      var getOffsetParentFn = this.getOffsetParent || getOffsetParent;
+      var getDimensionsFn = this.getDimensions;
+      return {
+        reference: getRectRelativeToOffsetParent(reference, yield getOffsetParentFn(floating), strategy),
+        floating: _objectSpread2({
+          x: 0,
+          y: 0
+        }, yield getDimensionsFn(floating))
+      };
+    });
+
+    return function getElementRects(_x) {
+      return _ref2.apply(this, arguments);
+    };
+  }();
+
+  function isRTL(element) {
+    return getComputedStyle(element).direction === 'rtl';
+  }
+
+  var platform = {
+    convertOffsetParentRelativeRectToViewportRelativeRect,
+    getDocumentElement,
+    getClippingRect,
+    getOffsetParent,
+    getElementRects,
+    getClientRects,
+    getDimensions,
+    getScale,
+    isElement,
+    isRTL
+  }; // https://samthor.au/2021/observing-dom/
+  /**
+   * Computes the `x` and `y` coordinates that will place the floating element
+   * next to a reference element when it is given a certain CSS positioning
+   * strategy.
+   */
+
+
+  var computePosition$1 = (reference, floating, options) => {
+    // This caches the expensive `getClippingElementAncestors` function so that
+    // multiple lifecycle resets re-use the same result. It only lives for a
+    // single call. If other functions become expensive, we can add them as well.
+    var cache = new Map();
+
+    var mergedOptions = _objectSpread2({
+      platform
+    }, options);
+
+    var platformWithCache = _objectSpread2(_objectSpread2({}, mergedOptions.platform), {}, {
+      _c: cache
+    });
+
+    return computePosition(reference, floating, _objectSpread2(_objectSpread2({}, mergedOptions), {}, {
+      platform: platformWithCache
+    }));
+  };
+
+  var eleToOutline = ['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'OL', 'UL', 'ADDRESS', 'BLOCKQUOTE', 'DL', 'PRE'];
+  var overriddenStyles = ['outline', 'border-radius', 'outline-offset', 'filter'];
+  var originalStyles = {};
+  var selected = {};
+
+  function highlight(item, node, keys) {
+    var id = item.id;
+    if (selected[id]) return;
+
+    if (!originalStyles[id]) {
+      originalStyles[id] = overriddenStyles.reduce(function (mem, s) {
+        mem[s] = node.style[s];
+        return mem;
+      }, {});
+    }
+
+    if (eleToOutline.includes(node.nodeName)) {
+      node.style.outline = "".concat(colors.highlight, " solid 1px");
+      node.style.setProperty('border-radius', '1px');
+      node.style.setProperty('outline-offset', '2px');
+      node.style.filter = 'brightness(110%)';
+    } else {
+      node.style.outline = "".concat(colors.highlight, " solid 1px");
+      node.style.setProperty('border-radius', '1px');
+      node.style.setProperty('outline-offset', '1px');
+      node.style.filter = 'brightness(110%)';
+    }
+
+    if (!item.ribbonBox) {
+      var _RibbonBox = RibbonBox(keys),
+          actions = _RibbonBox.box,
+          arrowEle = _RibbonBox.arrow;
+
+      document.body.appendChild(actions);
+      var refEle = node;
+
+      if (node.childNodes.length === 1) {
+        var childNode = node.childNodes[0];
+
+        if (childNode && childNode.nodeName === '#text') {
+          var range = document.createRange();
+          range.selectNode(childNode);
+          var rect = range.getBoundingClientRect();
+          refEle = {
+            getBoundingClientRect: function getBoundingClientRect() {
+              return rect;
+            }
+          };
+        }
+      }
+
+      computePosition$1(refEle, actions, {
+        placement: 'right',
+        middleware: [flip({
+          fallbackPlacements: ['left', 'bottom']
+        }), shift(), offset(function (_ref) {
+          var placement = _ref.placement,
+              rects = _ref.rects;
+          if (placement === 'bottom') return rects.r;
+          return 35;
+        }), arrow({
+          element: arrowEle
+        })]
+      }).then(function (_ref2) {
+        var x = _ref2.x,
+            y = _ref2.y,
+            middlewareData = _ref2.middlewareData,
+            placement = _ref2.placement;
+        Object.assign(actions.style, {
+          left: "".concat(x, "px"),
+          top: "".concat(y, "px"),
+          display: 'inline-flex'
+        });
+        var side = placement.split('-')[0];
+        var staticSide = {
+          top: 'bottom',
+          right: 'left',
+          bottom: 'top',
+          left: 'right'
+        }[side];
+
+        if (middlewareData.arrow) {
+          var _middlewareData$arrow = middlewareData.arrow,
+              _x = _middlewareData$arrow.x,
+              _y = _middlewareData$arrow.y;
+          Object.assign(arrowEle.style, _defineProperty$3(_defineProperty$3({
+            left: _x != null ? "".concat(_x, "px") : '',
+            top: _y != null ? "".concat(_y, "px") : '',
+            right: '',
+            bottom: ''
+          }, staticSide, "".concat(side === 'bottom' ? -18 : -25, "px")), "transform", side === 'bottom' ? 'rotate(90deg)' : side === 'left' ? 'rotate(180deg)' : ''));
+        }
+      });
+      item.ribbonBox = actions;
+    }
+  }
+
+  function highlightUninstrumented(item, node, keys) {
+    var id = item.id;
+    if (selected[id]) return;
+
+    if (!originalStyles[id]) {
+      originalStyles[id] = overriddenStyles.reduce(function (mem, s) {
+        mem[s] = node.style[s];
+        return mem;
+      }, {});
+    }
+
+    if (eleToOutline.includes(node.nodeName)) {
+      node.style.outline = "".concat(colors.warning, " solid 1px");
+      node.style.setProperty('border-radius', '1px');
+      node.style.setProperty('outline-offset', '2px');
+      node.style.filter = 'brightness(110%)';
+    } else {
+      node.style.outline = "".concat(colors.warning, " solid 1px");
+      node.style.setProperty('border-radius', '1px');
+      node.style.setProperty('outline-offset', '1px');
+      node.style.filter = 'brightness(110%)';
+    }
+  }
+
+  function selectedHighlight(item, node, keys) {
+    var id = item.id;
+
+    if (!originalStyles[id]) {
+      originalStyles[id] = overriddenStyles.reduce(function (mem, s) {
+        mem[s] = node.style[s];
+        return mem;
+      }, {});
+    }
+
+    if (eleToOutline.includes(node.nodeName)) {
+      node.style.outline = "".concat(colors.highlight, " solid 1px");
+      node.style.setProperty('border-radius', '1px');
+      node.style.setProperty('outline-offset', '2px');
+      node.style.filter = "brightness(110%) drop-shadow(0px 0px 2px ".concat(colors.highlight, " )");
+    } else {
+      node.style.outline = "".concat(colors.highlight, " solid 1px");
+      node.style.setProperty('border-radius', '1px');
+      node.style.setProperty('outline-offset', '1px');
+      node.style.filter = "brightness(110%) drop-shadow(0px 0px 2px ".concat(colors.highlight, " )");
+    }
+
+    if (item.ribbonBox) {
+      document.body.removeChild(item.ribbonBox);
+      delete item.ribbonBox;
+    }
+
+    selected[id] = true;
+  }
+
+  function resetHighlight(item, node, keys) {
+    var ignoreSelected = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
+    var id = item.id;
+    if (ignoreSelected && selected[id]) return;
+
+    if (originalStyles[id]) {
+      overriddenStyles.forEach(function (s) {
+        node.style.setProperty(s, originalStyles[id][s]);
+      });
+      delete originalStyles[id];
+    }
+
+    if (item.ribbonBox) {
+      document.body.removeChild(item.ribbonBox);
+      delete item.ribbonBox;
+    }
+
+    delete selected[id];
+  }
+
+  function ownKeys$6(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$5(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$6(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$6(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  var data = {};
+
+  function clean() {
+    Object.values(data).forEach(function (item) {
+      if (!document.body.contains(item.node)) {
+        resetHighlight(item.id, item.node);
+        delete data[item.id];
+      }
+    });
+  }
+
+  function save(id, subliminal, type, meta, node, children) {
+    if (!id || !type || !meta || !node) return;
+
+    if (!data[id]) {
+      data[id] = {
+        id: id,
+        node: node,
+        subliminal: subliminal
+      };
+    }
+
+    data[id].keys = _objectSpread$5(_objectSpread$5({}, data[id].keys), {}, _defineProperty$3({}, "".concat(type), meta));
+
+    if (children) {
+      data[id].children = _objectSpread$5(_objectSpread$5({}, data[id].children), {}, _defineProperty$3({}, "".concat(type, "-").concat(children.map(function (c) {
+        return c.childIndex;
+      }).join(',')), children));
+    }
+  }
+
+  function get$1(id) {
+    return data[id];
+  }
+
+  var store = {
+    save: save,
+    clean: clean,
+    get: get$1,
+    data: data
+  };
+
+  function ownKeys$7(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$6(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$7(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$7(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  var data$1 = {};
+
+  function clean$1() {
+    Object.values(data$1).forEach(function (item) {
+      if (!document.body.contains(item.node)) {
+        resetHighlight(item.id, item.node);
+        delete data$1[item.id];
+      }
+    });
+  }
+
+  function save$1(id, type, node) {
+    if (!id || !type || !node) return;
+
+    if (!data$1[id]) {
+      data$1[id] = {
+        id: id,
+        node: node
+      };
+    }
+
+    data$1[id].keys = _objectSpread$6(_objectSpread$6({}, data$1[id].keys), {}, _defineProperty$3({}, "".concat(type), 'uninstrumented'));
+  }
+
+  function get$2(id) {
+    return data$1[id];
+  }
+
+  var uninstrumentedStore = {
+    save: save$1,
+    clean: clean$1,
+    get: get$2,
+    data: data$1
+  };
+
+  (function () {
+    if (typeof Document === 'undefined') return;
+    var nextID = 1;
+
+    if (Document.prototype.hasOwnProperty('uniqueID')) {
+      return;
+    }
+
+    console.info('"document.uniqueID" not implemented; creating shim');
+    Object.defineProperty(Document.prototype, 'uniqueID', {
+      get: function get() {
+        return nextID++;
+      },
+      enumerable: false,
+      configurable: false
+    });
+    Object.defineProperty(Element.prototype, 'uniqueID', {
+      get: function get() {
+        Object.defineProperty(this, 'uniqueID', {
+          value: document.uniqueID,
+          writable: false,
+          enumerable: false,
+          configurable: false
+        });
+        return this.uniqueID;
+      },
+      enumerable: false,
+      configurable: true
+    });
+  })();
+
+  function ownKeys$8(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$7(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$8(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$8(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  var currentSourceLng;
+  var i18n;
+  var ignoreMergedEleUniqueIds = [];
+
+  function setImplementation(impl) {
+    i18n = impl;
+  }
+
+  function walk$2(node, func) {
+    if (node.dataset && node.dataset.i18nextEditorElement === 'true') return;
+    func(node);
+    var children = node.childNodes;
+
+    for (var i = 0; i < children.length; i++) {
+      walk$2(children[i], func);
+    }
+  }
+
+  function extractMeta(id, type, meta, children) {
+    var _i18n, _i18n2;
+
+    var invisibleMeta = meta.invisibleMeta,
+        text = meta.text;
+    if (!invisibleMeta || !invisibleMeta.key || !invisibleMeta.ns) return;
+    if (!currentSourceLng) currentSourceLng = (_i18n = i18n) === null || _i18n === void 0 ? void 0 : _i18n.getSourceLng();
+    return _objectSpread$7(_objectSpread$7({
+      eleUniqueID: id,
+      textType: type,
+      children: children ? children.map(function (c) {
+        return c.childIndex;
+      }).join(',') : null,
+      qualifiedKey: "".concat(invisibleMeta.ns, ":").concat(invisibleMeta.key)
+    }, invisibleMeta), {}, {
+      extractedText: text,
+      i18nTargetLng: (_i18n2 = i18n) === null || _i18n2 === void 0 ? void 0 : _i18n2.getLng(),
+      i18nSourceLng: currentSourceLng,
+      i18nRawText: _defineProperty$3(_defineProperty$3({}, "".concat(invisibleMeta.lng), invisibleMeta.source === 'translation' && i18n ? i18n.getResource(invisibleMeta.lng, invisibleMeta.ns, invisibleMeta.key) : null), "".concat(currentSourceLng), invisibleMeta.source === 'translation' && i18n ? i18n.getResource(currentSourceLng, invisibleMeta.ns, invisibleMeta.key) : null)
+    });
+  }
+
+  function containsOnlySpaces(str) {
+    return /^\s*$/.test(str);
+  }
+
+  function handleNode(node) {
+    if (node.childNodes && !ignoreMergedEleUniqueIds.includes(node.uniqueID)) {
+      var merge = [];
+      node.childNodes.forEach(function (child, i) {
+        if (merge.length && child.nodeName !== '#text') {
+          ignoreMergedEleUniqueIds.push(child.uniqueID);
+          merge.push({
+            childIndex: i,
+            child: child
+          });
+        }
+
+        if (child.nodeName !== '#text') return;
+        var txt = child.textContent;
+        if (containsOnlySpaces(txt)) return;
+        var hasHiddenMeta = containsHiddenMeta(txt);
+        var hasHiddenStartMarker = containsHiddenStartMarker(txt);
+
+        if (hasHiddenStartMarker && hasHiddenMeta) {
+          var meta = unwrap(txt);
+          store.save(node.uniqueID, meta.invisibleMeta, 'text', extractMeta(node.uniqueID, 'text', meta), node);
+        } else if (hasHiddenStartMarker) {
+          merge.push({
+            childIndex: i,
+            child: child,
+            text: txt
+          });
+        } else if (merge.length && !hasHiddenMeta) {
+          merge.push({
+            childIndex: i,
+            child: child,
+            text: txt
+          });
+        } else if (merge.length && hasHiddenMeta) {
+          merge.push({
+            childIndex: i,
+            child: child,
+            text: txt
+          });
+
+          var _meta = unwrap(merge.reduce(function (mem, item) {
+            return mem + item.text;
+          }, ''));
+
+          store.save(node.uniqueID, _meta.invisibleMeta, 'html', extractMeta(node.uniqueID, 'html', _meta, merge), node, merge);
+          merge = [];
+        } else if (txt) {
+          uninstrumentedStore.save(node.uniqueID, 'text', node);
+        }
+      });
+    }
+
+    if (!node.getAttribute) return;
+    validAttributes.forEach(function (attr) {
+      var txt = node.getAttribute(attr);
+
+      if (containsHiddenMeta(txt)) {
+        var meta = unwrap(txt);
+        store.save(node.uniqueID, meta.invisibleMeta, "attr:".concat(attr), extractMeta(node.uniqueID, "attr:".concat(attr), meta), node);
+      } else if (txt) {
+        uninstrumentedStore.save(node.uniqueID, "attr:".concat(attr), node);
+      }
+    });
+  }
+
+  function parseTree(node) {
+    currentSourceLng = undefined;
+    walk$2(node, handleNode);
+    store.clean();
+    ignoreMergedEleUniqueIds = [];
+    return store.data;
+  }
+
+  function debounce$2(func, wait, immediate) {
+    var timeout;
+    return function () {
+      var context = this;
+      var args = arguments;
+
+      var later = function later() {
+        timeout = null;
+        if (!immediate) func.apply(context, args);
+      };
+
+      var callNow = immediate && !timeout;
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+      if (callNow) func.apply(context, args);
+    };
   }
 
   function isWindow(obj) {
     return obj != null && obj === obj.window;
   }
 
-  function getWindow(elem) {
+  function getWindow$1(elem) {
     return isWindow(elem) ? elem : elem.nodeType === 9 && elem.defaultView;
   }
 
-  function offset(elem) {
+  function offset$1(elem) {
     var box = {
       top: 0,
       left: 0,
@@ -9417,11 +12147,11 @@
     var docElem = doc && doc.documentElement;
     if (!docElem) return box;
 
-    if (_typeof$6(elem.getBoundingClientRect) !== "undefined") {
+    if (_typeof$3(elem.getBoundingClientRect) !== "undefined") {
       box = elem.getBoundingClientRect();
     }
 
-    var win = getWindow(doc);
+    var win = getWindow$1(doc);
     var top = box.top + win.pageYOffset - docElem.clientTop;
     var left = box.left + win.pageXOffset - docElem.clientLeft;
     return {
@@ -9433,9 +12163,11 @@
   }
 
   function getClickedElement(e) {
-    // clicked input
     if (e.srcElement && e.srcElement.nodeType === 1 && (e.srcElement.nodeName === 'BUTTON' || e.srcElement.nodeName === 'INPUT')) {
-      if (e.srcElement.getAttribute && e.srcElement.getAttribute('ignorelocizeeditor') === '') return null;
+      if (e.srcElement.getAttribute && e.srcElement.getAttribute('ignorelocizeeditor') === '') {
+        return null;
+      }
+
       return e.srcElement;
     }
 
@@ -9447,33 +12179,24 @@
       var parent = e.srcElement;
       if (parent.getAttribute && parent.getAttribute('ignorelocizeeditor') === '') return null;
       var left = e.pageX;
-      var top = e.pageY; // let pOffset = offset(parent);
-      // console.warn('click', top, left);
-      // console.warn('parent', parent, pOffset, parent.clientHeight, parent.offsetHeight);
-
+      var top = e.pageY;
       var topStartsAt = 0;
-      var topBreaksAt; // eslint-disable-next-line no-plusplus
+      var topBreaksAt;
 
       for (var i = 0; i < parent.childNodes.length; i++) {
         var n = parent.childNodes[i];
-        var nOffset = offset(n); // console.warn('child', n, nOffset, n.clientHeight, n.offsetHeight)
-        // if a node is with the bottom over the top click set the next child as start index
-
-        if (n.nodeType === 1 && nOffset.bottom < top) topStartsAt = i + 1; // if node is below top click set end index to this node
-
+        var nOffset = offset$1(n);
+        if (n.nodeType === 1 && nOffset.bottom < top) topStartsAt = i + 1;
         if (!topBreaksAt && nOffset.top + (n.clientHeight || 0) > top) topBreaksAt = i;
-      } // check we are inside children lenght
-
+      }
 
       if (topStartsAt + 1 > parent.childNodes.length) topStartsAt = parent.childNodes.length - 1;
-      if (!topBreaksAt) topBreaksAt = parent.childNodes.length; // console.warn('bound', topStartsAt, topBreaksAt)
-      // inside our boundaries check when left is to big and out of clicks left
-      // eslint-disable-next-line no-plusplus
+      if (!topBreaksAt) topBreaksAt = parent.childNodes.length;
 
       for (var y = topStartsAt; y < topBreaksAt; y++) {
         var _n = parent.childNodes[y];
 
-        var _nOffset = offset(_n);
+        var _nOffset = offset$1(_n);
 
         if (_nOffset.left > left) {
           break;
@@ -9488,8 +12211,7 @@
 
   function getElementText(el) {
     var str = el.textContent || el.text && el.text.innerText || el.placeholder;
-    if (typeof str !== 'string') return; // eslint-disable-next-line consistent-return
-
+    if (typeof str !== 'string') return;
     return str.replace(/\n +/g, '').trim();
   }
 
@@ -9500,7 +12222,11 @@
   function getElementI18nKey(el) {
     var key = getAttribute$1(el, 'data-i18n');
     if (key) return key;
-    if (el.nodeType === window.Node.TEXT_NODE && el.parentElement) return getElementI18nKey(el.parentElement);
+
+    if (el.nodeType === window.Node.TEXT_NODE && el.parentElement) {
+      return getElementI18nKey(el.parentElement);
+    }
+
     return undefined;
   }
 
@@ -9518,8 +12244,7 @@
 
         try {
           jsonData = JSON.parse(opts);
-        } catch (e) {// not our problem here in editor
-        }
+        } catch (e) {}
 
         if (jsonData.ns) found = jsonData.ns;
       }
@@ -9534,11 +12259,418 @@
     find(el);
     return found;
   }
-  /* eslint-disable import/prefer-default-export */
 
+  function createObserver(ele, handle) {
+    var internalChange;
+    var lastToggleTimeout;
 
-  function createClickHandler(cb, options) {
-    // eslint-disable-next-line consistent-return
+    var toggleInternal = function toggleInternal() {
+      if (lastToggleTimeout) clearTimeout(lastToggleTimeout);
+      lastToggleTimeout = setTimeout(function () {
+        if (internalChange) internalChange = false;
+      }, 200);
+    };
+
+    var targetEles = [];
+    var debouncedHandler = debounce$2(function h() {
+      handle(targetEles);
+      targetEles = [];
+    }, 100);
+    var observer = new MutationObserver(function (mutations) {
+      if (internalChange) {
+        toggleInternal();
+        return;
+      }
+
+      var triggerMutation = false;
+      mutations.forEach(function (mutation) {
+        if (mutation.type === 'attributes' && !validAttributes.includes(mutation.attributeName)) {
+          return;
+        }
+
+        if (mutation.type === 'childList') {
+          var notOurs = 0;
+          mutation.addedNodes.forEach(function (n) {
+            if (n.dataset && n.dataset.i18nextEditorElement === 'true') return;
+            notOurs = notOurs + 1;
+          }, 0);
+          mutation.removedNodes.forEach(function (n) {
+            if (n.dataset && n.dataset.i18nextEditorElement === 'true') return;
+            notOurs = notOurs + 1;
+          }, 0);
+          if (notOurs === 0) return;
+        }
+
+        triggerMutation = true;
+        var includedAlready = targetEles.reduce(function (mem, element) {
+          if (mem || element.contains(mutation.target) || !mutation.target.parentElement) return true;
+          return false;
+        }, false);
+
+        if (!includedAlready) {
+          targetEles = targetEles.filter(function (element) {
+            return !mutation.target.contains(element);
+          });
+          targetEles.push(mutation.target);
+        }
+      });
+      if (triggerMutation) debouncedHandler();
+    });
+    return {
+      start: function start() {
+        var observerConfig = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
+          attributes: true,
+          childList: true,
+          characterData: true,
+          subtree: true
+        };
+        observer.observe(ele, observerConfig);
+      },
+      skipNext: function skipNext() {
+        internalChange = true;
+      }
+    };
+  }
+
+  function isInViewport(element) {
+    var rect = element.getBoundingClientRect();
+    return rect.top >= 0 && rect.left >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+  }
+
+  function mouseDistanceFromElement(mouseEvent, element) {
+    var $n = element,
+        mX = mouseEvent.pageX,
+        mY = mouseEvent.pageY,
+        from = {
+      x: mX,
+      y: mY
+    },
+        off = $n.getBoundingClientRect(),
+        ny1 = off.top + document.body.scrollTop,
+        ny2 = ny1 + $n.offsetHeight,
+        nx1 = off.left + document.body.scrollLeft,
+        nx2 = nx1 + $n.offsetWidth,
+        maxX1 = Math.max(mX, nx1),
+        minX2 = Math.min(mX, nx2),
+        maxY1 = Math.max(mY, ny1),
+        minY2 = Math.min(mY, ny2),
+        intersectX = minX2 >= maxX1,
+        intersectY = minY2 >= maxY1,
+        to = {
+      x: intersectX ? mX : nx2 < mX ? nx2 : nx1,
+      y: intersectY ? mY : ny2 < mY ? ny2 : ny1
+    },
+        distX = to.x - from.x,
+        distY = to.y - from.y,
+        hypot = Math.pow(Math.pow(distX, 2) + Math.pow(distY, 2), 1 / 2);
+    return Math.floor(hypot);
+  }
+
+  var debouncedUpdateDistance = debounce$2(function (e, observer) {
+    Object.values(store.data).forEach(function (item) {
+      if (!isInViewport(item.node)) return;
+      var distance = mouseDistanceFromElement(e, item.node);
+
+      if (distance < 5) {
+        highlight(item, item.node, item.keys);
+      } else if (distance > 5) {
+        var boxDistance = item.ribbonBox ? mouseDistanceFromElement(e, item.ribbonBox) : 1000;
+        if (boxDistance > 10) resetHighlight(item, item.node, item.keys);
+      }
+    });
+    Object.values(uninstrumentedStore.data).forEach(function (item) {
+      if (!isInViewport(item.node)) return;
+      var distance = mouseDistanceFromElement(e, item.node);
+
+      if (distance < 10) {
+        highlightUninstrumented(item, item.node, item.keys);
+      } else if (distance > 10) {
+        resetHighlight(item, item.node, item.keys);
+      }
+    });
+  }, 50);
+  var currentFC;
+
+  function startMouseTracking(observer) {
+    currentFC = function handle(e) {
+      debouncedUpdateDistance(e, observer);
+    };
+
+    document.addEventListener('mousemove', currentFC);
+  }
+
+  function stopMouseTracking() {
+    document.removeEventListener('mousemove', currentFC);
+  }
+
+  function initDragElement() {
+    var pos1 = 0;
+    var pos2 = 0;
+    var pos3 = 0;
+    var pos4 = 0;
+    var popups = document.getElementsByClassName('i18next-editor-popup');
+    var elmnt = null;
+    var overlay = null;
+    var currentZIndex = 100;
+
+    for (var i = 0; i < popups.length; i++) {
+      var popup = popups[i];
+      var header = getHeader(popup);
+
+      popup.onmousedown = function () {
+        this.style.zIndex = '' + ++currentZIndex;
+      };
+
+      if (header) {
+        header.parentPopup = popup;
+        header.onmousedown = dragMouseDown;
+      }
+    }
+
+    function dragMouseDown(e) {
+      if (!overlay) overlay = document.getElementById('i18next-editor-popup-overlay');
+      if (overlay) overlay.style.display = 'block';
+      stopMouseTracking();
+      elmnt = this.parentPopup;
+      elmnt.style.zIndex = '' + ++currentZIndex;
+      e = e || window.event;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+      if (!elmnt) {
+        return;
+      }
+
+      e = e || window.event;
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      elmnt.style.top = elmnt.offsetTop - pos2 + 'px';
+      elmnt.style.left = elmnt.offsetLeft - pos1 + 'px';
+    }
+
+    function closeDragElement() {
+      startMouseTracking();
+      if (overlay) overlay.style.display = 'none';
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+
+    function getHeader(element) {
+      var headerItems = element.getElementsByClassName('i18next-editor-popup-header');
+
+      if (headerItems.length === 1) {
+        return headerItems[0];
+      }
+
+      return null;
+    }
+  }
+
+  function initResizeElement() {
+    var popups = document.getElementsByClassName('i18next-editor-popup');
+    var element = null;
+    var overlay = null;
+    var startX, startY, startWidth, startHeight;
+
+    for (var i = 0; i < popups.length; i++) {
+      var p = popups[i];
+      var right = document.createElement('div');
+      right.className = 'resizer-right';
+      p.appendChild(right);
+      right.addEventListener('mousedown', initDrag, false);
+      right.parentPopup = p;
+      var bottom = document.createElement('div');
+      bottom.className = 'resizer-bottom';
+      p.appendChild(bottom);
+      bottom.addEventListener('mousedown', initDrag, false);
+      bottom.parentPopup = p;
+      var both = document.createElement('div');
+      both.className = 'resizer-both';
+      p.appendChild(both);
+      both.addEventListener('mousedown', initDrag, false);
+      both.parentPopup = p;
+    }
+
+    function initDrag(e) {
+      stopMouseTracking();
+      if (!overlay) overlay = document.getElementById('i18next-editor-popup-overlay');
+      if (overlay) overlay.style.display = 'block';
+      element = this.parentPopup;
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = parseInt(document.defaultView.getComputedStyle(element).width, 10);
+      startHeight = parseInt(document.defaultView.getComputedStyle(element).height, 10);
+      document.documentElement.addEventListener('mousemove', doDrag, false);
+      document.documentElement.addEventListener('mouseup', stopDrag, false);
+    }
+
+    function doDrag(e) {
+      element.style.width = startWidth + e.clientX - startX + 'px';
+      element.style.height = startHeight + e.clientY - startY + 'px';
+    }
+
+    function stopDrag() {
+      startMouseTracking();
+      if (overlay) overlay.style.display = 'none';
+      document.documentElement.removeEventListener('mousemove', doDrag, false);
+      document.documentElement.removeEventListener('mouseup', stopDrag, false);
+    }
+  }
+
+  if (sheet) {
+    sheet.insertRule("@keyframes i18next-editor-animate-top { \n      from {\n        top: calc(100vh + 600px); \n        left: calc(100vw + 300px);\n        opacity: 0;\n      }\n      to {\n        top: var(--i18next-editor-popup-position-top);\n        left: var(--i18next-editor-popup-position-left);\n        opacity: 1;\n      }\n    }");
+    sheet.insertRule("@keyframes i18next-editor-animate-bottom { \n      from {\n        top: var(--i18next-editor-popup-position-top);\n        left: var(--i18next-editor-popup-position-left);\n        opacity: 1;\n      }\n      to {\n        top: calc(100vh + 600px); \n        left: calc(100vw + 300px);\n        opacity: 0;\n      }\n    }");
+    sheet.insertRule(".i18next-editor-popup * { \n      -webkit-touch-callout: none; /* iOS Safari */\n      -webkit-user-select: none; /* Safari */\n      -khtml-user-select: none; /* Konqueror HTML */\n      -moz-user-select: none; /* Firefox */\n      -ms-user-select: none; /* Internet Explorer/Edge */\n      user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */\n    }");
+    sheet.insertRule(".i18next-editor-popup .resizer-right {\n      width: 15px;\n      height: 100%;\n      background: transparent;\n      position: absolute;\n      right: -15px;\n      bottom: 0;\n      cursor: e-resize;\n    }");
+    sheet.insertRule(".i18next-editor-popup .resizer-both {\n      width: 15px;\n      height: 15px;\n      background: transparent;\n      z-index: 10;\n      position: absolute;\n      right: -15px;\n      bottom: -15px;\n      cursor: se-resize;\n    }");
+    sheet.insertRule(".i18next-editor-popup .resizer-bottom {\n      width: 100%;\n      height: 15px;\n      background: transparent;\n      position: absolute;\n      right: 0;\n      bottom: -15px;\n      cursor: s-resize;\n    }");
+  }
+
+  function Ribbon(popupEle, onMaximize) {
+    var ribbon = document.createElement('div');
+    ribbon.setAttribute('data-i18next-editor-element', 'true');
+    ribbon.style = "\n  cursor: pointer;\n  position: fixed;\n  bottom: 25px;\n  right: 25px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 50px;\n  height: 50px;\n  background-color:  rgba(249, 249, 249, 0.2);\n  backdrop-filter: blur(3px);\n  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);\n  border-radius: 50%\n  ";
+
+    ribbon.onclick = function () {
+      onMaximize();
+    };
+
+    var image = document.createElement('img');
+    image.src = locizeIconUrl;
+    image.style.width = '45px';
+    ribbon.appendChild(image);
+    return ribbon;
+  }
+
+  function Minimize(popupEle, onMinimize) {
+    var image = document.createElement('img');
+    image.setAttribute('data-i18next-editor-element', 'true');
+    image.src = minimizeIconUrl;
+    image.style.width = '24px';
+    image.style.cursor = 'pointer';
+
+    image.onclick = function () {
+      popupEle.style.setProperty('--i18next-editor-popup-position-top', popupEle.style.top);
+      popupEle.style.setProperty('--i18next-editor-popup-position-left', popupEle.style.left);
+      popupEle.style.animation = 'i18next-editor-animate-bottom 2s forwards';
+      onMinimize();
+    };
+
+    return image;
+  }
+
+  function Popup(url, cb) {
+    var popup = document.createElement('div');
+    popup.setAttribute('id', 'i18next-editor-popup');
+    popup.classList.add('i18next-editor-popup');
+    popup.style = "\n  z-index: 9;\n  background-color: transparent;\n  border: 1px solid rgba(200, 200, 200, 0.9);\n  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);\n  border-radius: 3px;\n  --i18next-editor-popup-height: 200px;\n  height: var(--i18next-editor-popup-height);\n  min-height: 150px;\n  min-width: 300px;\n  --i18next-editor-popup-width: 400px;\n  width: var(--i18next-editor-popup-width);\n  max-height: 600px;\n  max-width: 800px;\n\n  position: fixed;\n  --i18next-editor-popup-position-top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  --i18next-editor-popup-position-left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n  left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n\n  overflow: visible;\n  ";
+    popup.setAttribute('data-i18next-editor-element', 'true');
+    var header = document.createElement('div');
+    header.classList.add('i18next-editor-popup-header');
+    header.style = "\n  padding: 2px 10px;\n  cursor: move;\n  z-index: 10;\n  backdrop-filter: blur(3px);\n  background-color: rgba(200, 200, 200, 0.5);\n  background: linear-gradient(0deg, rgba(200, 200, 200, 0.6), rgba(200, 200, 200, 0.5));\n  color: #fff;\n  text-align: right;\n  ";
+    popup.appendChild(header);
+    header.appendChild(Minimize(popup, function () {
+      var ribbon = Ribbon(popup, function () {
+        popup.style.animation = 'i18next-editor-animate-top 1s';
+        startMouseTracking();
+        setTimeout(function () {
+          document.body.removeChild(ribbon);
+        }, 1000);
+      });
+      document.body.appendChild(ribbon);
+      stopMouseTracking();
+    }));
+    var iframe = document.createElement('iframe');
+    iframe.setAttribute('id', 'i18next-editor-iframe');
+    iframe.setAttribute('data-i18next-editor-element', 'true');
+    iframe.style = "\n    z-index: 100;\n    width: 100%;\n    height: calc(100% - 32px);\n    border: none;\n    background: #fff;\n  ";
+    iframe.setAttribute('src', url);
+    iframe.addEventListener('load', cb);
+    popup.appendChild(iframe);
+    var overlay = document.createElement('div');
+    overlay.setAttribute('id', 'i18next-editor-popup-overlay');
+    overlay.setAttribute('data-i18next-editor-element', 'true');
+    overlay.style = "\n  display: none;\n  position: absolute;\n  top: 32px;\n  z-index: 101;\n  width: 100%;\n  height: calc(100% - 32px);\n  background-color: rgba(200, 200, 200, 0.5);\n  background: linear-gradient(0deg, rgba(240, 240, 240, 0.6), rgba(255, 255, 255, 0.5));\n  backdrop-filter: blur(2px);\n";
+    popup.appendChild(overlay);
+    return popup;
+  }
+
+  function ownKeys$9(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$8(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$9(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$9(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  function start() {
+    var implementation = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    if (typeof document === 'undefined') return;
+    var scriptEle = document.getElementById('locize');
+    var config = {};
+    ['projectId', 'version'].forEach(function (attr) {
+      if (!scriptEle) return;
+      var value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+      if (value !== undefined && value !== null) config[attr] = value;
+    });
+    config = _objectSpread$8(_objectSpread$8({}, implementation.getLocizeDetails()), config);
+    api.init(implementation);
+    setImplementation(implementation);
+    implementation === null || implementation === void 0 || implementation.bindLanguageChange(function (lng) {
+      api.sendCurrentTargetLanguage(implementation.getLng());
+    });
+
+    function continueToStart() {
+      var observer = createObserver(document.body, function (eles) {
+        eles.forEach(function (ele) {
+          parseTree(ele);
+        });
+        api.sendCurrentParsedContent();
+      });
+      observer.start();
+      startMouseTracking(observer);
+      document.body.append(Popup(getIframeUrl(), function () {
+        api.requestInitialize(config);
+      }));
+      initDragElement();
+      initResizeElement();
+    }
+
+    if (document.body) return continueToStart();
+    window.addEventListener('load', function () {
+      return continueToStart();
+    });
+  }
+
+  function createClickHandler(cb) {
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
     var handler = function handler(e) {
       var el = getClickedElement(e);
       if (!el) return {};
@@ -9559,11 +12691,10 @@
       var pB = parseFloat(style.getPropertyValue('padding-bottom'));
       var pR = parseFloat(style.getPropertyValue('padding-right'));
       var pL = parseFloat(style.getPropertyValue('padding-left'));
-      var sizing = style.getPropertyValue('box-sizing'); // eslint-disable-next-line consistent-return
+      var sizing = style.getPropertyValue('box-sizing');
 
       function getFallbackNS() {
-        var i18next = options.getI18next();
-        if (i18next && i18next.options && i18next.options.isLocizify) return i18next.options.defaultNS;
+        if (options.isLocizify) return options.defaultNS;
       }
 
       cb({
@@ -9584,253 +12715,233 @@
     return handler;
   }
 
-  var baseBtn = 'font-family: "Helvetica", "Arial", sans-serif; font-size: 14px; color: #fff; border: none; font-weight: 300; height: 30px; line-height: 30px; padding: 0 15px; text-align: center; min-width: 90px; text-decoration: none; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; outline: none; cursor: pointer; border-radius: 15px;'; // eslint-disable-next-line import/prefer-default-export
+  function ownKeys$a(e, r) {
+    var t = Object.keys(e);
 
-  function initUI(options) {
-    var cont = window.document.createElement('div');
-    var style = 'font-family: "Helvetica", "Arial", sans-serif; bottom: 20px; right: 20px; padding: 10px; background-color: #fff; border: solid 1px #1976d2; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.5); border-radius: 3px;';
-    style += ' z-index: 2147483647; position: fixed;';
-    cont.setAttribute('style', style);
-    cont.setAttribute('ignorelocizeeditor', '');
-    cont.setAttribute('translated', ''); //   if(options.locizeEditorToggle.containerClasses) {
-    //     const classes = options.locizeEditorToggle.containerClasses.length > 1 ? options.locizeEditorToggle.containerClasses.split(' ') : options.locizeEditorToggle.containerClasses;
-    //     classes.forEach(function(cssClass) {
-    //       cont.classList.add(cssClass);
-    //     });
-    //   }
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
 
-    var title = window.document.createElement('h4');
-    title.id = 'locize-title';
-    title.innerHTML = 'Translate InContext:';
-    title.setAttribute('style', 'font-family: "Helvetica", "Arial", sans-serif; font-size: 14px; margin: 0 0 5px 0; color: #1976d2; font-weight: 300;');
-    title.setAttribute('ignorelocizeeditor', '');
-    cont.appendChild(title);
-    var turnOn = window.document.createElement('button');
-    turnOn.innerHTML = 'Open in locize';
-    turnOn.setAttribute('style', "".concat(baseBtn, "  background-color: #1976d2;"));
-
-    turnOn.onclick = function () {
-      var i18next = options.getI18next();
-      var backendOptions = i18next && i18next.options && i18next.options.backend;
-
-      var _backendOptions$optio = _objectSpread2$1(_objectSpread2$1({}, backendOptions), options),
-          projectId = _backendOptions$optio.projectId,
-          version = _backendOptions$optio.version;
-
-      var editorUrl = options.editorUrl || backendOptions && backendOptions.loadPath && backendOptions.loadPath.indexOf('https://api-dev.locize.app') === 0 && 'https://dev.locize.app' || 'https://www.locize.app';
-      window.location = "".concat(editorUrl, "/cat/").concat(projectId, "/v/").concat(version, "/incontext?sourceurl=").concat(encodeURI(window.location.href));
-    };
-
-    turnOn.setAttribute('ignorelocizeeditor', '');
-    cont.appendChild(turnOn);
-    window.document.body.appendChild(cont);
+    return t;
   }
 
-  var isInIframe = true;
+  function _objectSpread$9(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$a(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$a(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  function startLegacy() {
+    var implementation = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    if (typeof document === 'undefined') return;
+    var scriptEle = document.getElementById('locize');
+    var config = {};
+    ['projectId', 'version'].forEach(function (attr) {
+      if (!scriptEle) return;
+      var value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+      if (value !== undefined && value !== null) config[attr] = value;
+    });
+    config = _objectSpread$9(_objectSpread$9({}, implementation.getLocizeDetails()), config);
+    api.init(implementation, createClickHandler(function (payload) {
+      sendMessage('clickedElement', {
+        payload: payload
+      });
+    }, implementation.getLocizeDetails()));
+
+    api.sendCurrentTargetLanguage = function (lng) {
+      sendMessage('setLng', {
+        lng: lng || implementation.getLng()
+      });
+    };
+
+    if (typeof window !== 'undefined') {
+      var oldHref = window.document.location.href;
+      window.addEventListener('load', function () {
+        sendMessage('hrefChanged', {
+          href: window.document.location.href
+        });
+        var bodyList = window.document.querySelector('body');
+        var observer = new window.MutationObserver(function (mutations) {
+          mutations.forEach(function (mutation) {
+            if (oldHref !== window.document.location.href) {
+              oldHref = window.document.location.href;
+              sendMessage('hrefChanged', {
+                href: oldHref
+              });
+            }
+          });
+        });
+        var config = {
+          childList: true,
+          subtree: true
+        };
+        observer.observe(bodyList, config);
+      });
+    }
+
+    implementation === null || implementation === void 0 || implementation.bindLanguageChange(function (lng) {
+      api.sendCurrentTargetLanguage(implementation.getLng());
+    });
+    implementation === null || implementation === void 0 || implementation.bindMissingKeyHandler(function (lng, ns, k, val) {
+      api.onAddedKey(lng, ns, k, val);
+    });
+  }
+
+  function ownKeys$b(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$a(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$b(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$b(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  var isInIframe = typeof window !== 'undefined';
 
   try {
-    // eslint-disable-next-line no-undef, no-restricted-globals
-    isInIframe = self !== top; // eslint-disable-next-line no-empty
+    isInIframe = self !== top;
   } catch (e) {}
-
-  var source;
-  var origin;
-  var handler;
-  var clickInterceptionEnabled;
-  var handleLocizeSaved;
-  var scriptTurnedOff; // used to flag turnOff by developers using the exported functions -> disable the editor function by code
-
-  var pendingMsgs = [];
-
-  function addLocizeSavedHandler(hnd) {
-    handleLocizeSaved = hnd;
-  }
-
-  function setEditorLng(lng) {
-    var msg = {
-      message: 'setLng',
-      lng: lng
-    };
-
-    if (source) {
-      source.postMessage(msg, origin);
-    } else {
-      pendingMsgs.push(msg);
-    }
-  }
-
-  function sendHrefChanged(href) {
-    var msg = {
-      message: 'hrefChanged',
-      href: href
-    };
-
-    if (source) {
-      source.postMessage(msg, origin);
-    } else {
-      pendingMsgs.push(msg);
-    }
-  }
-
-  function onAddedKey(lng, ns, key, value) {
-    var msg = {
-      message: 'added',
-      lng: lng,
-      ns: ns,
-      key: key,
-      value: value
-    };
-
-    if (source) {
-      source.postMessage(msg, origin);
-    } else {
-      pendingMsgs.push(msg);
-    }
-  }
 
   var i18next;
   var locizePlugin = {
     type: '3rdParty',
     init: function init(i18n) {
+      var options = i18n.options;
       i18next = i18n;
-      addLocizeSavedHandler(function (res) {
-        res.updated.forEach(function (item) {
-          var lng = item.lng,
-              ns = item.ns,
-              key = item.key,
-              data = item.data;
-          i18n.addResource(lng, ns, key, data.value, {
-            silent: true
-          });
-          i18n.emit('editorSaved');
-        });
-      });
 
-      if (isInIframe) {
-        i18n.options.missingKeyHandler = function (lng, ns, k, val, isUpdate, opts) {
-          if (!isUpdate) onAddedKey(lng, ns, k, val);
-        };
+      if (!isInIframe) {
+        i18next.use(SubliminalPostProcessor);
+
+        if (typeof options.postProcess === 'string') {
+          options.postProcess = [options.postProcess, 'subliminal'];
+        } else if (Array.isArray(options.postProcess)) {
+          options.postProcess.push('subliminal');
+        } else {
+          options.postProcess = 'subliminal';
+        }
+
+        options.postProcessPassResolved = true;
       }
 
-      i18next.on('languageChanged', function (lng) {
-        setEditorLng(lng);
-      });
+      var impl = {
+        getResource: function getResource(lng, ns, key) {
+          return i18n.getResource(lng, ns, key);
+        },
+        setResource: function setResource(lng, ns, key, value) {
+          return i18n.addResource(lng, ns, key, value, {
+            silent: true
+          });
+        },
+        getResourceBundle: function getResourceBundle(lng, ns, cb) {
+          i18n.loadNamespaces(ns, function () {
+            cb(i18n.getResourceBundle(lng, ns));
+          });
+        },
+        getLng: function getLng() {
+          return i18n.languages[0];
+        },
+        getSourceLng: function getSourceLng() {
+          var fallback = i18n.options.fallbackLng;
+          if (typeof fallback === 'string') return fallback;
+          if (Array.isArray(fallback)) return fallback[fallback.length - 1];
+
+          if (fallback && fallback["default"]) {
+            if (typeof fallback["default"] === 'string') return fallback;
+            if (Array.isArray(fallback["default"])) return fallback["default"][fallback["default"].length - 1];
+          }
+
+          if (typeof fallback === 'function') {
+            var res = fallback(i18n.resolvedLanguage);
+            if (typeof res === 'string') return res;
+            if (Array.isArray(res)) return res[res.length - 1];
+          }
+
+          return 'dev';
+        },
+        getLocizeDetails: function getLocizeDetails() {
+          var backendName = i18n.services.backendConnector.backend ? i18n.services.backendConnector.backend.constructor.name : 'options.resources';
+          var opts = {
+            backendName: backendName,
+            sourceLng: impl.getSourceLng(),
+            i18nFormat: i18n.options.compatibilityJSON === 'v3' ? 'i18next_v3' : 'i18next_v4',
+            i18nFramework: 'i18next',
+            isLocizify: i18n.options.isLocizify,
+            defaultNS: i18n.options.defaultNS
+          };
+          if (!i18n.options.backend && !i18n.options.editor) return opts;
+          var pickFrom = i18n.options.backend || i18n.options.editor;
+          return _objectSpread$a(_objectSpread$a({}, opts), {}, {
+            projectId: pickFrom.projectId,
+            version: pickFrom.version
+          });
+        },
+        bindLanguageChange: function bindLanguageChange(cb) {
+          i18n.on('languageChanged', cb);
+        },
+        bindMissingKeyHandler: function bindMissingKeyHandler(cb) {
+          i18n.options.missingKeyHandler = function (lng, ns, k, val, isUpdate, opts) {
+            if (!isUpdate) cb(lng, ns, k, val);
+          };
+        },
+        triggerRerender: function triggerRerender() {
+          i18n.emit('editorSaved');
+        }
+      };
+
+      if (!isInIframe) {
+        start(impl);
+      } else {
+        startLegacy(impl);
+      }
     }
   };
 
-  function getI18next() {
-    return i18next;
-  }
-
-  function showLocizeLink() {
-    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-    if (!isInIframe) initUI(_objectSpread2$1(_objectSpread2$1({}, options), {}, {
-      getI18next: getI18next
-    }));
-  }
-
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line consistent-return
-    window.addEventListener('message', function (e) {
-      if (!e.data || !e.data.message) return;
-
-      if (e.data.message === 'isLocizeEnabled') {
-        // console.warn("result: ", ev.data);
-        // parent => ev.source;
-        if (!source) {
-          source = e.source;
-          origin = e.origin;
-          handler = createClickHandler(function (payload) {
-            source.postMessage({
-              message: 'clickedElement',
-              payload: payload
-            }, origin);
-          }, {
-            getI18next: getI18next
-          }); // document.body.addEventListener('click', handler, true);
-          // clickInterceptionEnabled = true;
-        }
-
-        source.postMessage({
-          message: 'locizeIsEnabled',
-          enabled: true
-        }, e.origin);
-        pendingMsgs.forEach(function (m) {
-          source.postMessage(m, e.origin);
-        });
-        pendingMsgs = [];
-      } else if (e.data.message === 'turnOn') {
-        // eslint-disable-next-line consistent-return
-        if (scriptTurnedOff) return source.postMessage({
-          message: 'forcedOff'
-        }, origin);
-        if (!clickInterceptionEnabled) window.document.body.addEventListener('click', handler, true);
-        clickInterceptionEnabled = true;
-        source.postMessage({
-          message: 'turnedOn'
-        }, origin);
-      } else if (e.data.message === 'turnOff') {
-        // eslint-disable-next-line consistent-return
-        if (scriptTurnedOff) return source.postMessage({
-          message: 'forcedOff'
-        }, origin);
-        if (clickInterceptionEnabled) window.document.body.removeEventListener('click', handler, true);
-        clickInterceptionEnabled = false;
-        source.postMessage({
-          message: 'turnedOff'
-        }, origin);
-      } else if (e.data.message === 'committed') {
-        var data = e.data.payload;
-        if (window.locizeSavedHandler) window.locizeSavedHandler(data);
-        if (handleLocizeSaved) handleLocizeSaved(data);
+  function startStandalone() {
+    startLegacy({
+      getLocizeDetails: function getLocizeDetails() {
+        return {};
+      },
+      getLng: function getLng() {
+        return undefined;
+      },
+      setResource: function setResource() {},
+      triggerRerender: function triggerRerender() {},
+      getResourceBundle: function getResourceBundle() {
+        return {};
       }
     });
   }
 
-  function turnOn() {
-    scriptTurnedOff = false;
-    if (!clickInterceptionEnabled) window.document.body.addEventListener('click', handler, true);
-    clickInterceptionEnabled = true;
-    if (source) source.postMessage({
-      message: 'turnedOn'
-    }, origin);
-    return scriptTurnedOff;
-  }
-
-  function turnOff() {
-    scriptTurnedOff = true;
-    if (clickInterceptionEnabled) window.document.body.removeEventListener('click', handler, true);
-    clickInterceptionEnabled = false;
-    if (source) source.postMessage({
-      message: 'turnedOff'
-    }, origin);
-    if (source) source.postMessage({
-      message: 'forcedOff'
-    }, origin);
-    return scriptTurnedOff;
-  }
-
-  if (typeof window !== 'undefined') {
-    var oldHref = window.document.location.href;
-    window.addEventListener('load', function () {
-      sendHrefChanged(window.document.location.href);
-      var bodyList = window.document.querySelector('body');
-      var observer = new window.MutationObserver(function (mutations) {
-        mutations.forEach(function (mutation) {
-          if (oldHref !== window.document.location.href) {
-            // console.warn('url changed', oldHref, document.location.href);
-            oldHref = window.document.location.href;
-            sendHrefChanged(oldHref);
-          }
-        });
-      });
-      var config = {
-        childList: true,
-        subtree: true
-      };
-      observer.observe(bodyList, config);
-    });
-  }
+  if (typeof window !== 'undefined') window.locizeStartStandalone = startStandalone;
 
   var {
     i18next: i18next$1
@@ -9956,7 +13067,6 @@
   i18nextify.editor = {
     turnOn,
     turnOff,
-    showLocizeLink,
     setEditorLng
   };
 
