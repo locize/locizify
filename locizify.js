@@ -9974,11 +9974,426 @@
 
   api.addHandler('confirmInitialized', handler$3);
 
+  function ownKeys$5(e, r) {
+    var t = Object.keys(e);
+
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+
+    return t;
+  }
+
+  function _objectSpread$4(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys$5(Object(t), !0).forEach(function (r) {
+        _defineProperty$3(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$5(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+
+    return e;
+  }
+
+  var data = {};
+
+  function clean() {
+    Object.values(data).forEach(function (item) {
+      if (!document.body.contains(item.node)) {
+        resetHighlight(item.id, item.node);
+        delete data[item.id];
+      }
+    });
+  }
+
+  function save(id, type, node) {
+    if (!id || !type || !node) return;
+
+    if (!data[id]) {
+      data[id] = {
+        id: id,
+        node: node
+      };
+    }
+
+    data[id].keys = _objectSpread$4(_objectSpread$4({}, data[id].keys), {}, _defineProperty$3({}, "".concat(type), 'uninstrumented'));
+  }
+
+  function get$1(id) {
+    return data[id];
+  }
+
+  var uninstrumentedStore = {
+    save: save,
+    clean: clean,
+    get: get$1,
+    data: data
+  };
+
+  function isInViewport(el) {
+    var rect = el.getBoundingClientRect();
+    var windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    var windowWidth = window.innerWidth || document.documentElement.clientWidth;
+    var vertInView = rect.top <= windowHeight && rect.top + rect.height >= 0;
+    var horInView = rect.left <= windowWidth && rect.left + rect.width >= 0;
+    return vertInView && horInView;
+  }
+
+  function mouseDistanceFromElement(mouseEvent, element) {
+    var $n = element,
+        mX = mouseEvent.pageX,
+        mY = mouseEvent.pageY,
+        from = {
+      x: mX,
+      y: mY
+    },
+        off = $n.getBoundingClientRect(),
+        ny1 = off.top + document.documentElement.scrollTop,
+        ny2 = ny1 + $n.offsetHeight,
+        nx1 = off.left + document.documentElement.scrollLeft,
+        nx2 = nx1 + $n.offsetWidth,
+        maxX1 = Math.max(mX, nx1),
+        minX2 = Math.min(mX, nx2),
+        maxY1 = Math.max(mY, ny1),
+        minY2 = Math.min(mY, ny2),
+        intersectX = minX2 >= maxX1,
+        intersectY = minY2 >= maxY1,
+        to = {
+      x: intersectX ? mX : nx2 < mX ? nx2 : nx1,
+      y: intersectY ? mY : ny2 < mY ? ny2 : ny1
+    },
+        distX = to.x - from.x,
+        distY = to.y - from.y,
+        hypot = Math.pow(Math.pow(distX, 2) + Math.pow(distY, 2), 1 / 2);
+    return Math.floor(hypot);
+  }
+
+  function debounce$2(func, wait, immediate) {
+    var timeout;
+    return function () {
+      var context = this;
+      var args = arguments;
+
+      var later = function later() {
+        timeout = null;
+        if (!immediate) func.apply(context, args);
+      };
+
+      var callNow = immediate && !timeout;
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+      if (callNow) func.apply(context, args);
+    };
+  }
+
+  function isWindow(obj) {
+    return obj != null && obj === obj.window;
+  }
+
+  function getWindow(elem) {
+    return isWindow(elem) ? elem : elem.nodeType === 9 && elem.defaultView;
+  }
+
+  function offset(elem) {
+    var box = {
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0
+    };
+    var doc = elem && elem.ownerDocument;
+    var docElem = doc && doc.documentElement;
+    if (!docElem) return box;
+
+    if (_typeof$3(elem.getBoundingClientRect) !== "undefined") {
+      box = elem.getBoundingClientRect();
+    }
+
+    var win = getWindow(doc);
+    var top = box.top + win.pageYOffset - docElem.clientTop;
+    var left = box.left + win.pageXOffset - docElem.clientLeft;
+    return {
+      top: top,
+      left: left,
+      right: left + (box.right - box.left),
+      bottom: top + (box.bottom - box.top)
+    };
+  }
+
+  function getClickedElement(e) {
+    if (e.srcElement && e.srcElement.nodeType === 1 && (e.srcElement.nodeName === 'BUTTON' || e.srcElement.nodeName === 'INPUT')) {
+      if (e.srcElement.getAttribute && e.srcElement.getAttribute('ignorelocizeeditor') === '') {
+        return null;
+      }
+
+      return e.srcElement;
+    }
+
+    var el;
+
+    if (e.originalEvent && e.originalEvent.explicitOriginalTarget) {
+      el = e.originalEvent.explicitOriginalTarget;
+    } else {
+      var parent = e.srcElement;
+      if (parent.getAttribute && parent.getAttribute('ignorelocizeeditor') === '') return null;
+      var left = e.pageX;
+      var top = e.pageY;
+      var topStartsAt = 0;
+      var topBreaksAt;
+
+      for (var i = 0; i < parent.childNodes.length; i++) {
+        var n = parent.childNodes[i];
+        var nOffset = offset(n);
+        if (n.nodeType === 1 && nOffset.bottom < top) topStartsAt = i + 1;
+        if (!topBreaksAt && nOffset.top + (n.clientHeight || 0) > top) topBreaksAt = i;
+      }
+
+      if (topStartsAt + 1 > parent.childNodes.length) topStartsAt = parent.childNodes.length - 1;
+      if (!topBreaksAt) topBreaksAt = parent.childNodes.length;
+
+      for (var y = topStartsAt; y < topBreaksAt; y++) {
+        var _n = parent.childNodes[y];
+
+        var _nOffset = offset(_n);
+
+        if (_nOffset.left > left) {
+          break;
+        }
+
+        if (_n && _n.nodeType !== 8) el = _n;
+      }
+    }
+
+    return el;
+  }
+
+  function getElementText(el) {
+    var str = el.textContent || el.text && el.text.innerText || el.placeholder;
+    if (typeof str !== 'string') return;
+    return str.replace(/\n +/g, '').trim();
+  }
+
+  function getAttribute$1(el, name) {
+    return el && el.getAttribute && el.getAttribute(name);
+  }
+
+  function getElementI18nKey(el) {
+    var key = getAttribute$1(el, 'data-i18n');
+    if (key) return key;
+
+    if (el.nodeType === window.Node.TEXT_NODE && el.parentElement) {
+      return getElementI18nKey(el.parentElement);
+    }
+
+    return undefined;
+  }
+
+  function getElementNamespace(el) {
+    var found;
+
+    var find = function find(ele) {
+      var opts = getAttribute$1(ele, 'i18next-options');
+      if (!opts) opts = getAttribute$1(ele, 'data-i18next-options');
+      if (!opts) opts = getAttribute$1(ele, 'i18n-options');
+      if (!opts) opts = getAttribute$1(ele, 'data-i18n-options');
+
+      if (opts) {
+        var jsonData = {};
+
+        try {
+          jsonData = JSON.parse(opts);
+        } catch (e) {}
+
+        if (jsonData.ns) found = jsonData.ns;
+      }
+
+      if (!found) found = getAttribute$1(ele, 'i18next-ns');
+      if (!found) found = getAttribute$1(ele, 'data-i18next-ns');
+      if (!found) found = getAttribute$1(ele, 'i18n-ns');
+      if (!found) found = getAttribute$1(ele, 'data-i18n-ns');
+      if (!found && ele.parentElement) find(ele.parentElement);
+    };
+
+    find(el);
+    return found;
+  }
+
+  function getQsParameterByName(name, url) {
+    if (typeof window === 'undefined') return null;
+    if (!url) url = window.location.href.toLowerCase();
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+    var results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+  }
+
+  var debouncedUpdateDistance = debounce$2(function (e, observer) {
+    Object.values(store.data).forEach(function (item) {
+      if (!isInViewport(item.node)) return;
+      var distance = mouseDistanceFromElement(e, item.node);
+
+      if (distance < 5) {
+        highlight(item, item.node, item.keys);
+      } else if (distance > 5) {
+        var boxDistance = item.ribbonBox ? mouseDistanceFromElement(e, item.ribbonBox) : 1000;
+        if (boxDistance > 10) resetHighlight(item, item.node, item.keys);
+      }
+    });
+    Object.values(uninstrumentedStore.data).forEach(function (item) {
+      if (!isInViewport(item.node)) return;
+      var distance = mouseDistanceFromElement(e, item.node);
+
+      if (distance < 10) {
+        highlightUninstrumented(item, item.node, item.keys);
+      } else if (distance > 10) {
+        resetHighlight(item, item.node, item.keys);
+      }
+    });
+  }, 50);
+  var currentFC;
+
+  function startMouseTracking(observer) {
+    currentFC = function handle(e) {
+      debouncedUpdateDistance(e, observer);
+    };
+
+    document.addEventListener('mousemove', currentFC);
+  }
+
+  function stopMouseTracking() {
+    document.removeEventListener('mousemove', currentFC);
+  }
+
+  var iconEdit = '<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24" fill="#FFFFFF"><g></g><g><g><g><path d="M3,21l3.75,0L17.81,9.94l-3.75-3.75L3,17.25L3,21z M5,18.08l9.06-9.06l0.92,0.92L5.92,19L5,19L5,18.08z"/></g><g><path d="M18.37,3.29c-0.39-0.39-1.02-0.39-1.41,0l-1.83,1.83l3.75,3.75l1.83-1.83c0.39-0.39,0.39-1.02,0-1.41L18.37,3.29z"/></g></g></g></svg>';
+  var i18nextIcon = "\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 210 304\" stroke=\"#000\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"#fff\" fill-rule=\"evenodd\">\n  <g stroke=\"none\" class=\"B\">\n    <path d=\"M 142 31.5 v 57.2 l 64.3 165.1 s 19.6 40.3 -36.5 50.1 h -128 s -52.3 -5.5 -39.8 -46.9 L 69.5 88.7 V 31.5 z\" fill=\"#009688\"/>\n    <path d=\"M 143.3 24.8 H 66.2 c -6.2 0 -11.3 -5.6 -11.3 -12.4 S 60 0 66.2 0 h 77.1 c 6.3 0 11.3 5.6 11.3 12.4 s -5.1 12.4 -11.3 12.4 z\" class=\"C\" fill=\"#004d40\"/>\n    <path d=\"M 123 124.9 c 8.3 0 15 8.1 15 18.1 c 0 10 -6.8 18.1 -15 18.1 c -8.3 0 -15 -8.1 -15 -18.1 c 0 -10 6.7 -18.1 15 -18.1 z m -58.8 31.7 c 0 -8.5 5.6 -15.3 12.7 -15.3 s 12.7 6.8 12.7 15.3 s -5.6 15.3 -12.7 15.3 s -12.7 -6.8 -12.7 -15.3 z\" fill=\"white\"/>\n    <path d=\"M 147.7 84.9 V 57.7 s 34.5 -7.6 51.7 32.5 c 0 0 -26.9 19.6 -51.7 -5.3 z m -84.5 0 V 57.7 s -34.5 -7.6 -51.7 32.5 c 0 0 26.8 19.6 51.7 -5.3 z\" class=\"C\" fill=\"#004d40\"/>\n    <path d=\"M 168.4 197.5 c -56.1 -17.4 -103.3 -8.1 -126.3 -1 l -23.2 56 c -10.5 33.4 33.2 37.8 33.2 37.8 h 106.9 c 46.9 -7.9 30.5 -40.4 30.5 -40.4 z\" fill=\"white\"/>\n    <path d=\"M 87.6 218.3 c 0 6 -8.1 10.9 -18.1 10.9 s -18.1 -4.9 -18.1 -10.9 c 0 -6.1 8.1 -10.9 18.1 -10.9 s 18.1 4.9 18.1 10.9 z m 64.4 0 c 0 6 -8.1 10.9 -18.1 10.9 c -10 0 -18.1 -4.9 -18.1 -10.9 c 0 -6.1 8.1 -10.9 18.1 -10.9 c 10 0 18.1 4.9 18.1 10.9 z\" class=\"C\" fill=\"#004d40\"/>\n  </g>\n</svg>\n";
+  var locizeIcon = "\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 194.667 196\" height=\"196\" width=\"194.667\" xml:space=\"preserve\">\n  <defs>\n    <clipPath id=\"a\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M5.5 74.048C5.5 36.98 35.551 6.93 72.619 6.93c37.069 0 67.119 30.05 67.119 67.118 0 37.07-30.05 67.12-67.119 67.12-37.068 0-67.119-30.05-67.119-67.12\"/>\n    </clipPath>\n    <clipPath id=\"b\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M0 147h146V0H0Z\"/>\n    </clipPath>\n    <clipPath id=\"c\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M88.756 55.055h50.982l4.512 88.195-64 1.25z\"/>\n    </clipPath>\n  </defs>\n  <g clip-path=\"url(#a)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.766-5.554 1.148-8.427 0-11.107-1.149-2.681-2.49-7.469-1.341-10.724 1.149-3.255 2.872-10.34 4.404-10.533 1.532-.19-1.148 7.66.383 5.171 1.533-2.49 1.533-6.193 4.214-8.746 2.68-2.553 6.319-2.17 9.192-4.658 2.872-2.49 5.744-6.129 8.425-5.746 0 0-.192-1.914-1.532-5.17-1.34-3.255-1.532-7.084.192-9.383 1.723-2.298 3.446-5.746 4.979-7.469 1.532-1.723 2.681-10.915 2.297-15.51-.382-4.596 1.724-14.937 6.511-17.236 4.787-2.298 0 1.15-.957 4.022-.958 2.872.739 9.575 3.052 10.533 2.309.958 4.416 4.787 6.139 7.469 1.724 2.68 6.128 3.83 7.469 7.084 1.341 3.255.766 7.085 1.532 8.809.766 1.724 2.873 5.554-1.724 7.852-4.595 2.298-6.51 1.148-6.702 3.255-.192 2.107-1.341 4.404-4.595 5.361-3.256.959-6.129 2.816-9.768 3.227-3.638.412-4.404-2.461-6.319-.928-1.914 1.531-3.446 3.064-4.213 4.978-.765 1.915-3.064.766-2.871 1.915.19 1.15 3.254 4.404-.193 3.255-3.446-1.148-6.51-.765-6.319 2.298.193 3.064 4.405 4.214 6.129 4.597 1.722.383 3.063-1.723 5.17-3.065 2.106-1.34.191 1.915 1.34 4.214 1.149 2.298 5.554 2.106 6.128 5.361.575 3.255-.191 5.937 3.256 6.32 3.446.383 7.084-.191 7.468 1.533.382 1.722-4.022-.576-4.213 1.531-.192 2.106 3.829 4.978 4.978 2.872 1.149-2.106 4.022-2.298 4.405-1.531.383.765 0 2.105-1.341 5.361-1.34 3.256-2.681 2.298-3.829 5.936-1.149 3.639-3.064-.191-4.979 1.724s-4.213 5.937-4.597 2.489c-.382-3.446-.382-5.361-2.105-8.042-1.724-2.682-2.489-.575-4.022 1.149-1.532 1.723-4.979 3.447-3.83 4.978C23.362 4.979 24.511 9 26.234 7.85c1.724-1.149 4.405-1.149 4.022.767-.383 1.914 0 2.681.766 3.638.766.958 3.447 2.682 3.447-.766 0-3.447-.384-4.405 2.298-4.788 2.681-.383 5.744-.574 5.554 1.149-.193 1.724.766 1.341 0 4.214-.767 2.873-3.065 3.063-5.554 4.405-2.489 1.34-3.83 3.446-5.936 2.68s-2.299-1.531-2.49-3.638c-.192-2.107-1.341-2.873-2.107-1.915-.765.957.192 4.022-2.68 2.106-2.873-1.914-4.021-5.171-5.553-2.872-1.533 2.297 2.297 6.319-1.724 4.595-4.022-1.723-6.895-3.637-4.788-4.404 2.107-.766 4.214-2.107 2.107-2.873-2.107-.765-6.32.575-7.852-.957C4.212 7.66 0 0 0 0\" transform=\"translate(13.926 109.38)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.766-5.554 1.148-8.427 0-11.107-1.149-2.681-2.49-7.469-1.341-10.724 1.149-3.255 2.872-10.34 4.404-10.533 1.532-.19-1.148 7.66.383 5.171 1.533-2.49 1.533-6.193 4.214-8.746 2.68-2.553 6.319-2.17 9.192-4.658 2.872-2.49 5.744-6.129 8.425-5.746 0 0-.192-1.914-1.532-5.17-1.34-3.255-1.532-7.084.192-9.383 1.723-2.298 3.446-5.746 4.979-7.469 1.532-1.723 2.681-10.915 2.297-15.51-.382-4.596 1.724-14.937 6.511-17.236 4.787-2.298 0 1.15-.957 4.022-.958 2.872.739 9.575 3.052 10.533 2.309.958 4.416 4.787 6.139 7.469 1.724 2.68 6.128 3.83 7.469 7.084 1.341 3.255.766 7.085 1.532 8.809.766 1.724 2.873 5.554-1.724 7.852-4.595 2.298-6.51 1.148-6.702 3.255-.192 2.107-1.341 4.404-4.595 5.361-3.256.959-6.129 2.816-9.768 3.227-3.638.412-4.404-2.461-6.319-.928-1.914 1.531-3.446 3.064-4.213 4.978-.765 1.915-3.064.766-2.871 1.915.19 1.15 3.254 4.404-.193 3.255-3.446-1.148-6.51-.765-6.319 2.298.193 3.064 4.405 4.214 6.129 4.597 1.722.383 3.063-1.723 5.17-3.065 2.106-1.34.191 1.915 1.34 4.214 1.149 2.298 5.554 2.106 6.128 5.361.575 3.255-.191 5.937 3.256 6.32 3.446.383 7.084-.191 7.468 1.533.382 1.722-4.022-.576-4.213 1.531-.192 2.106 3.829 4.978 4.978 2.872 1.149-2.106 4.022-2.298 4.405-1.531.383.765 0 2.105-1.341 5.361-1.34 3.256-2.681 2.298-3.829 5.936-1.149 3.639-3.064-.191-4.979 1.724s-4.213 5.937-4.597 2.489c-.382-3.446-.382-5.361-2.105-8.042-1.724-2.682-2.489-.575-4.022 1.149-1.532 1.723-4.979 3.447-3.83 4.978C23.362 4.979 24.511 9 26.234 7.85c1.724-1.149 4.405-1.149 4.022.767-.383 1.914 0 2.681.766 3.638.766.958 3.447 2.682 3.447-.766 0-3.447-.384-4.405 2.298-4.788 2.681-.383 5.744-.574 5.554 1.149-.193 1.724.766 1.341 0 4.214-.767 2.873-3.065 3.063-5.554 4.405-2.489 1.34-3.83 3.446-5.936 2.68s-2.299-1.531-2.49-3.638c-.192-2.107-1.341-2.873-2.107-1.915-.765.957.192 4.022-2.68 2.106-2.873-1.914-4.021-5.171-5.553-2.872-1.533 2.297 2.297 6.319-1.724 4.595-4.022-1.723-6.895-3.637-4.788-4.404 2.107-.766 4.214-2.107 2.107-2.873-2.107-.765-6.32.575-7.852-.957C4.212 7.66 0 0 0 0Z\" transform=\"translate(13.926 109.38)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.01-2.141.575-3.829 2.49-1.915C4.405 0 5.553 2.298 6.895 1.341c1.34-.958 3.638-.703 4.594-.639.959.064 1.15 2.937 3.831 2.554s1.724.574 4.596 2.107c2.873 1.532 9.001 4.212 2.681 3.446-6.32-.766-6.703.958-11.108-1.914-4.403-2.873-5.36-2.873-6.509-3.639-1.149-.766-2.49 2.298-4.022 0C-.575.958.011 2.182 0 0\" transform=\"translate(36.522 130.061)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.01-2.141.575-3.829 2.49-1.915C4.405 0 5.553 2.298 6.895 1.341c1.34-.958 3.638-.703 4.594-.639.959.064 1.15 2.937 3.831 2.554s1.724.574 4.596 2.107c2.873 1.532 9.001 4.212 2.681 3.446-6.32-.766-6.703.958-11.108-1.914-4.403-2.873-5.36-2.873-6.509-3.639-1.149-.766-2.49 2.298-4.022 0C-.575.958.011 2.182 0 0Z\" transform=\"translate(36.522 130.061)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-2.263-1.956-5.744-4.788-3.064-4.788 2.681 0 3.983 1.404 5.439-.447 1.456-1.85.88-4.723.88-6.063 0-1.341-.766-4.406 1.15-8.235 1.915-3.829 2.106-6.319 4.022-3.829 1.914 2.488 6.51 7.276 8.808 7.658 2.298.384 4.597 1.342 5.746 3.257 1.148 1.915 0 3.773 1.914 5.141 1.914 1.369 1.531 3.093 2.107 5.199C27.575 0 32.747 0 30.448 1.148c-2.297 1.15-6.51 1.916-11.49 1.341C13.979 1.915 4.213 3.638 0 0\" transform=\"translate(59.502 135.998)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-2.263-1.956-5.744-4.788-3.064-4.788 2.681 0 3.983 1.404 5.439-.447 1.456-1.85.88-4.723.88-6.063 0-1.341-.766-4.406 1.15-8.235 1.915-3.829 2.106-6.319 4.022-3.829 1.914 2.488 6.51 7.276 8.808 7.658 2.298.384 4.597 1.342 5.746 3.257 1.148 1.915 0 3.773 1.914 5.141 1.914 1.369 1.531 3.093 2.107 5.199C27.575 0 32.747 0 30.448 1.148c-2.297 1.15-6.51 1.916-11.49 1.341C13.979 1.915 4.213 3.638 0 0Z\" transform=\"translate(59.502 135.998)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.218-1.986-.575-2.107.766-2.49 1.34-.383-.575-2.68.957-2.872 1.532-.193 4.979-1.15 5.936 0 .959 1.148-1.531.7-3.255 1.977C2.682-2.107.865 1.41 0 0\" transform=\"translate(38.438 76.826)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.218-1.986-.575-2.107.766-2.49 1.34-.383-.575-2.68.957-2.872 1.532-.193 4.979-1.15 5.936 0 .959 1.148-1.531.7-3.255 1.977C2.682-2.107.865 1.41 0 0Z\" transform=\"translate(38.438 76.826)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-2.063-1.033-1.148-2.682-3.064-3.831-1.915-1.148-1.149-1.531-1.723-4.213-.575-2.68.191-4.212 1.532-2.106S2.298 1.148 0 0\" transform=\"translate(131.121 45.612)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-2.063-1.033-1.148-2.682-3.064-3.831-1.915-1.148-1.149-1.531-1.723-4.213-.575-2.68.191-4.212 1.532-2.106S2.298 1.148 0 0Z\" transform=\"translate(131.121 45.612)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.575-.575-1.532 2.681-2.106 4.213-.575 1.532-.561 4.195 1.056 5.675C.964 11.734 0 7.469 0 5.17 0 2.873.574.575 0 0m-6.704 5.936c-1.341.766-3.828 0-6.892-.957-3.065-.958-.613 2.131.766 4.213 1.233 1.861.574-.574 3.256-.766 2.68-.192 4.213-3.256 2.87-2.49m-4.402-6.511c-.192-1.531.574-4.021-3.639-3.064-4.213.958-4.213 3.256-5.936 1.533-1.723-1.724-3.83-3.255-6.32-.575C-29.49 0-29.107.766-30.447.958c-.955.135-4.138.846-6.792.074.206.123.426.285.663.5 1.915 1.723 1.532 2.298 3.638 4.213 2.108 1.916 3.639 3.638 5.171 1.916 1.532-1.725 4.788-2.108 3.639-4.023-1.149-1.914-.383-3.063.958-1.914 1.339 1.149 3.255 1.914 1.915 3.446-1.342 1.532-2.682 5.554-.766 2.873 1.915-2.681 2.489-4.022 3.637-5.553C-17.234.958-16.085 0-15.702.958c.383.957-.192 3.063.383 3.446.574.383 0-3.255 1.723-3.446 1.723-.192 2.681 0 2.49-1.533M9.192-8.81c-.574 3.257-4.787 32.747-4.787 32.747s-11.299 7.277-13.213 5.746c-1.916-1.533-5.171-1.302-4.788.21s2.872 1.128-1.341 4.002c-4.212 2.873-4.978 5.362-8.233 1.724-3.257-3.639-4.022-6.703-5.937-7.661-1.915-.957-3.447-4.021-1.34-4.787 2.106-.765 2.298 0 4.02-1.531 1.725-1.533 4.023-1.149 4.406-.193.383.959.766 4.022.957 5.171.192 1.149 2.138 4.979 1.93 1.915-.207-3.064 2.665-3.064.75-5.17-1.914-2.106-.765-3.831-4.595-4.214-3.831-.382-4.022 1.915-6.128.766-2.107-1.148-1.915-1.915-2.681-3.063-.766-1.149-4.788-3.447-4.788-3.447s-3.255 1.149-1.724-.958c1.533-2.106 2.873-4.595 1.533-4.786-1.341-.192-4.98 1.914-4.98-.384s-.573-4.787.959-5.362c1.081-.405 1.783-1.284 2.775-1.161-.769-.332-1.468-.813-2.009-1.52-1.491-1.947-.575-5.362-3.639-6.511-3.063-1.15-3.063-2.489-3.639-4.979-.573-2.489 0-8.808.766-9.383.765-.574 2.107-5.362 5.363-4.978 3.256.383 6.702.53 7.851-.023 1.149-.551 3.063 1.171 3.638-3.233.575-4.404 1.915-4.979 2.681-7.277.766-2.297-.383-7.086 0-9.958s3.064-7.852 3.064-10.341c0-2.489 2.873-3.638 4.405-2.681 1.532.958 4.787 2.873 6.127 5.937 1.342 3.063 1.342 4.595 3.447 8.617 2.106 4.021 1.533 6.894 2.489 9.958.958 3.064 3.262 5.171 6.419 8.617 3.156 3.446 2.588 5.362 0 5.171-2.588-.191-4.314 2.297-5.654 5.361-1.338 3.065-2.87 10.724-1.721 8.235 1.149-2.491 3.446-9.384 5.744-10.533 2.298-1.149 6.512 1.953 7.469 3.083.957 1.131.574 4.385-1.916 5.726C.383-8.617 1.915-7.469 4.405-9c2.489-1.532 5.362-3.064 4.787.19\" transform=\"translate(132.845 86.592)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.575-.575-1.532 2.681-2.106 4.213-.575 1.532-.561 4.195 1.056 5.675C.964 11.734 0 7.469 0 5.17 0 2.873.574.575 0 0Zm-6.704 5.936c-1.341.766-3.828 0-6.892-.957-3.065-.958-.613 2.131.766 4.213 1.233 1.861.574-.574 3.256-.766 2.68-.192 4.213-3.256 2.87-2.49zm-4.402-6.511c-.192-1.531.574-4.021-3.639-3.064-4.213.958-4.213 3.256-5.936 1.533-1.723-1.724-3.83-3.255-6.32-.575C-29.49 0-29.107.766-30.447.958c-.955.135-4.138.846-6.792.074.206.123.426.285.663.5 1.915 1.723 1.532 2.298 3.638 4.213 2.108 1.916 3.639 3.638 5.171 1.916 1.532-1.725 4.788-2.108 3.639-4.023-1.149-1.914-.383-3.063.958-1.914 1.339 1.149 3.255 1.914 1.915 3.446-1.342 1.532-2.682 5.554-.766 2.873 1.915-2.681 2.489-4.022 3.637-5.553C-17.234.958-16.085 0-15.702.958c.383.957-.192 3.063.383 3.446.574.383 0-3.255 1.723-3.446 1.723-.192 2.681 0 2.49-1.533zM9.192-8.81c-.574 3.257-4.787 32.747-4.787 32.747s-11.299 7.277-13.213 5.746c-1.916-1.533-5.171-1.302-4.788.21s2.872 1.128-1.341 4.002c-4.212 2.873-4.978 5.362-8.233 1.724-3.257-3.639-4.022-6.703-5.937-7.661-1.915-.957-3.447-4.021-1.34-4.787 2.106-.765 2.298 0 4.02-1.531 1.725-1.533 4.023-1.149 4.406-.193.383.959.766 4.022.957 5.171.192 1.149 2.138 4.979 1.93 1.915-.207-3.064 2.665-3.064.75-5.17-1.914-2.106-.765-3.831-4.595-4.214-3.831-.382-4.022 1.915-6.128.766-2.107-1.148-1.915-1.915-2.681-3.063-.766-1.149-4.788-3.447-4.788-3.447s-3.255 1.149-1.724-.958c1.533-2.106 2.873-4.595 1.533-4.786-1.341-.192-4.98 1.914-4.98-.384s-.573-4.787.959-5.362c1.081-.405 1.783-1.284 2.775-1.161-.769-.332-1.468-.813-2.009-1.52-1.491-1.947-.575-5.362-3.639-6.511-3.063-1.15-3.063-2.489-3.639-4.979-.573-2.489 0-8.808.766-9.383.765-.574 2.107-5.362 5.363-4.978 3.256.383 6.702.53 7.851-.023 1.149-.551 3.063 1.171 3.638-3.233.575-4.404 1.915-4.979 2.681-7.277.766-2.297-.383-7.086 0-9.958s3.064-7.852 3.064-10.341c0-2.489 2.873-3.638 4.405-2.681 1.532.958 4.787 2.873 6.127 5.937 1.342 3.063 1.342 4.595 3.447 8.617 2.106 4.021 1.533 6.894 2.489 9.958.958 3.064 3.262 5.171 6.419 8.617 3.156 3.446 2.588 5.362 0 5.171-2.588-.191-4.314 2.297-5.654 5.361-1.338 3.065-2.87 10.724-1.721 8.235 1.149-2.491 3.446-9.384 5.744-10.533 2.298-1.149 6.512 1.953 7.469 3.083.957 1.131.574 4.385-1.916 5.726C.383-8.617 1.915-7.469 4.405-9c2.489-1.532 5.362-3.064 4.787.19z\" transform=\"translate(132.845 86.592)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.173-.353-2.106-2.681-1.532-3.831.576-1.148-.574.576-2.106-.382-1.533-.957-3.808-3.639-1.713-3.829 2.096-.193 1.713 1.531 3.628.765 1.915-.765 4.021-.575 4.021 1.34C2.298-4.021 1.915.574 0 0\" transform=\"translate(95.886 109.955)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.173-.353-2.106-2.681-1.532-3.831.576-1.148-.574.576-2.106-.382-1.533-.957-3.808-3.639-1.713-3.829 2.096-.193 1.713 1.531 3.628.765 1.915-.765 4.021-.575 4.021 1.34C2.298-4.021 1.915.574 0 0Z\" transform=\"translate(95.886 109.955)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.154-.165-1.533-3.064.957-3.447 2.49-.383 6.947.575 5.293 2.107C4.596.191 2.682.383 0 0\" transform=\"translate(83.44 118.763)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.154-.165-1.533-3.064.957-3.447 2.49-.383 6.947.575 5.293 2.107C4.596.191 2.682.383 0 0Z\" transform=\"translate(83.44 118.763)\"/>\n  </g>\n  <g clip-path=\"url(#b)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c0-37.068-30.05-67.119-67.119-67.119S-134.238-37.068-134.238 0c0 37.069 30.05 67.119 67.119 67.119S0 37.069 0 0Z\" transform=\"translate(139.738 74.049)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c0-36.731-29.777-66.509-66.509-66.509S-133.019-36.731-133.019 0c0 36.733 29.778 66.51 66.51 66.51C-29.777 66.51 0 36.733 0 0Z\" transform=\"translate(139.438 73.186)\"/>\n  </g>\n  <g clip-path=\"url(#c)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:#fff;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0m12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754\" transform=\"translate(119.64 109.307)\"/>\n    <path style=\"fill:#fff;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0m12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754\" transform=\"translate(119.64 109.307)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0Zm12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754z\" transform=\"translate(119.64 109.307)\"/>\n  </g>\n</svg>\n";
+  var minimizeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="#000000"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19h12v2H6v-2z"/></svg>';
+  var editIconUrl = URL.createObjectURL(new Blob([iconEdit], {
+    type: 'image/svg+xml'
+  }));
+  var i18nextIconUrl = URL.createObjectURL(new Blob([i18nextIcon], {
+    type: 'image/svg+xml'
+  }));
+  var minimizeIconUrl = URL.createObjectURL(new Blob([minimizeIcon], {
+    type: 'image/svg+xml'
+  }));
+  var locizeIconUrl = URL.createObjectURL(new Blob([locizeIcon], {
+    type: 'image/svg+xml'
+  }));
+
+  function EditIcon() {
+    var image = document.createElement('img');
+    image.setAttribute('data-i18next-editor-element', 'true');
+    image.src = editIconUrl;
+    image.style.width = '15px';
+    return image;
+  }
+
+  function RibbonLogo() {
+    var circleSize = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '18px';
+    var logoSize = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '15px';
+    var ribbon = document.createElement('div');
+    ribbon.setAttribute('data-i18next-editor-element', 'true');
+    ribbon.style = "display: inline-flex; align-items: center; justify-content: center; width: ".concat(circleSize, "; height: ").concat(circleSize, "; box-shadow: inset 0 0 5px ").concat(colors.highlight, "; border: 2px solid ").concat(colors.highlight, "; border-radius: 50%");
+    var image = document.createElement('img');
+    image.src = i18nextIconUrl;
+    image.style.width = logoSize;
+    ribbon.appendChild(image);
+    return ribbon;
+  }
+
+  if (sheet) {
+    sheet.insertRule("@keyframes i18next-editor-animate-top { \n      from {\n        top: calc(100vh + 600px); \n        left: calc(100vw + 300px);\n        opacity: 0;\n      }\n      to {\n        top: var(--i18next-editor-popup-position-top);\n        left: var(--i18next-editor-popup-position-left);\n        opacity: 1;\n      }\n    }");
+    sheet.insertRule("@keyframes i18next-editor-animate-bottom { \n      from {\n        top: var(--i18next-editor-popup-position-top);\n        left: var(--i18next-editor-popup-position-left);\n        opacity: 1;\n      }\n      to {\n        top: calc(100vh + 600px); \n        left: calc(100vw + 300px);\n        opacity: 0;\n      }\n    }");
+    sheet.insertRule(".i18next-editor-popup * { \n      -webkit-touch-callout: none; /* iOS Safari */\n      -webkit-user-select: none; /* Safari */\n      -khtml-user-select: none; /* Konqueror HTML */\n      -moz-user-select: none; /* Firefox */\n      -ms-user-select: none; /* Internet Explorer/Edge */\n      user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */\n    }");
+    sheet.insertRule(".i18next-editor-popup .resizer-right {\n      width: 15px;\n      height: 100%;\n      background: transparent;\n      position: absolute;\n      right: -15px;\n      bottom: 0;\n      cursor: e-resize;\n    }");
+    sheet.insertRule(".i18next-editor-popup .resizer-both {\n      width: 15px;\n      height: 15px;\n      background: transparent;\n      z-index: 10;\n      position: absolute;\n      right: -15px;\n      bottom: -15px;\n      cursor: se-resize;\n    }");
+    sheet.insertRule(".i18next-editor-popup .resizer-bottom {\n      width: 100%;\n      height: 15px;\n      background: transparent;\n      position: absolute;\n      right: 0;\n      bottom: -15px;\n      cursor: s-resize;\n    }");
+  }
+
+  function Ribbon(popupEle, onMaximize) {
+    var ribbon = document.createElement('div');
+    ribbon.setAttribute('data-i18next-editor-element', 'true');
+    ribbon.style = "\n  cursor: pointer;\n  position: fixed;\n  bottom: 25px;\n  right: 25px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 50px;\n  height: 50px;\n  background-color:  rgba(249, 249, 249, 0.2);\n  backdrop-filter: blur(3px);\n  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);\n  border-radius: 50%\n  ";
+
+    ribbon.onclick = function () {
+      onMaximize();
+    };
+
+    var image = document.createElement('img');
+    image.src = locizeIconUrl;
+    image.style.width = '45px';
+    ribbon.appendChild(image);
+    return ribbon;
+  }
+
+  function Minimize(popupEle, onMinimize) {
+    var image = document.createElement('img');
+    image.setAttribute('data-i18next-editor-element', 'true');
+    image.src = minimizeIconUrl;
+    image.style.width = '24px';
+    image.style.cursor = 'pointer';
+
+    image.onclick = function () {
+      popupEle.style.setProperty('--i18next-editor-popup-position-top', popupEle.style.top);
+      popupEle.style.setProperty('--i18next-editor-popup-position-left', popupEle.style.left);
+      popupEle.style.animation = 'i18next-editor-animate-bottom 2s forwards';
+      onMinimize();
+    };
+
+    return image;
+  }
+
+  var popupId = 'i18next-editor-popup';
+
+  function Popup(url, cb) {
+    var popup = document.createElement('div');
+    popup.setAttribute('id', popupId);
+    popup.classList.add('i18next-editor-popup');
+    popup.style = "\n  z-index: 9;\n  background-color: transparent;\n  border: 1px solid rgba(200, 200, 200, 0.9);\n  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);\n  border-radius: 3px;\n  --i18next-editor-popup-height: 200px;\n  height: var(--i18next-editor-popup-height);\n  min-height: 150px;\n  min-width: 300px;\n  --i18next-editor-popup-width: 400px;\n  width: var(--i18next-editor-popup-width);\n  max-height: 600px;\n  max-width: 800px;\n\n  position: fixed;\n  --i18next-editor-popup-position-top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  --i18next-editor-popup-position-left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n  left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n\n  overflow: visible;\n  ";
+    popup.setAttribute('data-i18next-editor-element', 'true');
+    var header = document.createElement('div');
+    header.classList.add('i18next-editor-popup-header');
+    header.style = "\n  padding: 2px 10px;\n  cursor: move;\n  z-index: 10;\n  backdrop-filter: blur(3px);\n  background-color: rgba(200, 200, 200, 0.5);\n  background: linear-gradient(0deg, rgba(200, 200, 200, 0.6), rgba(200, 200, 200, 0.5));\n  color: #fff;\n  text-align: right;\n  ";
+    popup.appendChild(header);
+    header.appendChild(Minimize(popup, function () {
+      var ribbon = Ribbon(popup, function () {
+        popup.style.animation = 'i18next-editor-animate-top 1s';
+        startMouseTracking();
+        setTimeout(function () {
+          document.body.removeChild(ribbon);
+        }, 1000);
+      });
+      document.body.appendChild(ribbon);
+      stopMouseTracking();
+    }));
+    var iframe = document.createElement('iframe');
+    iframe.setAttribute('id', 'i18next-editor-iframe');
+    iframe.setAttribute('data-i18next-editor-element', 'true');
+    iframe.style = "\n    z-index: 100;\n    width: 100%;\n    height: calc(100% - 28px);\n    border: none;\n    background: #fff;\n  ";
+    iframe.setAttribute('src', url);
+    iframe.addEventListener('load', cb);
+    popup.appendChild(iframe);
+    var overlay = document.createElement('div');
+    overlay.setAttribute('id', 'i18next-editor-popup-overlay');
+    overlay.setAttribute('data-i18next-editor-element', 'true');
+    overlay.style = "\n  display: none;\n  position: absolute;\n  top: 32px;\n  z-index: 101;\n  width: 100%;\n  height: calc(100% - 32px);\n  background-color: rgba(200, 200, 200, 0.5);\n  background: linear-gradient(0deg, rgba(240, 240, 240, 0.6), rgba(255, 255, 255, 0.5));\n  backdrop-filter: blur(2px);\n";
+    popup.appendChild(overlay);
+    return popup;
+  }
+
   function handler$4(payload) {
     var containerStyle = payload.containerStyle;
 
     if (containerStyle) {
-      var popup = document.getElementById('i18next-editor-popup');
+      var popup = document.getElementById(popupId);
 
       if (containerStyle.height) {
         var diff = "calc(".concat(containerStyle.height, " - ").concat(popup.style.height, ")");
@@ -10033,7 +10448,7 @@
 
   var _excluded = ["lng", "ns"];
 
-  function ownKeys$5(e, r) {
+  function ownKeys$6(e, r) {
     var t = Object.keys(e);
 
     if (Object.getOwnPropertySymbols) {
@@ -10046,12 +10461,12 @@
     return t;
   }
 
-  function _objectSpread$4(e) {
+  function _objectSpread$5(e) {
     for (var r = 1; r < arguments.length; r++) {
       var t = null != arguments[r] ? arguments[r] : {};
-      r % 2 ? ownKeys$5(Object(t), !0).forEach(function (r) {
+      r % 2 ? ownKeys$6(Object(t), !0).forEach(function (r) {
         _defineProperty$3(e, r, t[r]);
-      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$5(Object(t)).forEach(function (r) {
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$6(Object(t)).forEach(function (r) {
         Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
       });
     }
@@ -10065,7 +10480,7 @@
         rest = _objectWithoutProperties$1(payload, _excluded);
 
     api.i18n.getResourceBundle(lng, ns, function (resources) {
-      api.confirmResourceBundle(_objectSpread$4({
+      api.confirmResourceBundle(_objectSpread$5({
         resources: resources,
         lng: lng,
         ns: ns
@@ -10120,44 +10535,6 @@
   }
 
   api.addHandler('turnOff', handler$9);
-
-  var iconEdit = '<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24" fill="#FFFFFF"><g></g><g><g><g><path d="M3,21l3.75,0L17.81,9.94l-3.75-3.75L3,17.25L3,21z M5,18.08l9.06-9.06l0.92,0.92L5.92,19L5,19L5,18.08z"/></g><g><path d="M18.37,3.29c-0.39-0.39-1.02-0.39-1.41,0l-1.83,1.83l3.75,3.75l1.83-1.83c0.39-0.39,0.39-1.02,0-1.41L18.37,3.29z"/></g></g></g></svg>';
-  var i18nextIcon = "\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 210 304\" stroke=\"#000\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"#fff\" fill-rule=\"evenodd\">\n  <g stroke=\"none\" class=\"B\">\n    <path d=\"M 142 31.5 v 57.2 l 64.3 165.1 s 19.6 40.3 -36.5 50.1 h -128 s -52.3 -5.5 -39.8 -46.9 L 69.5 88.7 V 31.5 z\" fill=\"#009688\"/>\n    <path d=\"M 143.3 24.8 H 66.2 c -6.2 0 -11.3 -5.6 -11.3 -12.4 S 60 0 66.2 0 h 77.1 c 6.3 0 11.3 5.6 11.3 12.4 s -5.1 12.4 -11.3 12.4 z\" class=\"C\" fill=\"#004d40\"/>\n    <path d=\"M 123 124.9 c 8.3 0 15 8.1 15 18.1 c 0 10 -6.8 18.1 -15 18.1 c -8.3 0 -15 -8.1 -15 -18.1 c 0 -10 6.7 -18.1 15 -18.1 z m -58.8 31.7 c 0 -8.5 5.6 -15.3 12.7 -15.3 s 12.7 6.8 12.7 15.3 s -5.6 15.3 -12.7 15.3 s -12.7 -6.8 -12.7 -15.3 z\" fill=\"white\"/>\n    <path d=\"M 147.7 84.9 V 57.7 s 34.5 -7.6 51.7 32.5 c 0 0 -26.9 19.6 -51.7 -5.3 z m -84.5 0 V 57.7 s -34.5 -7.6 -51.7 32.5 c 0 0 26.8 19.6 51.7 -5.3 z\" class=\"C\" fill=\"#004d40\"/>\n    <path d=\"M 168.4 197.5 c -56.1 -17.4 -103.3 -8.1 -126.3 -1 l -23.2 56 c -10.5 33.4 33.2 37.8 33.2 37.8 h 106.9 c 46.9 -7.9 30.5 -40.4 30.5 -40.4 z\" fill=\"white\"/>\n    <path d=\"M 87.6 218.3 c 0 6 -8.1 10.9 -18.1 10.9 s -18.1 -4.9 -18.1 -10.9 c 0 -6.1 8.1 -10.9 18.1 -10.9 s 18.1 4.9 18.1 10.9 z m 64.4 0 c 0 6 -8.1 10.9 -18.1 10.9 c -10 0 -18.1 -4.9 -18.1 -10.9 c 0 -6.1 8.1 -10.9 18.1 -10.9 c 10 0 18.1 4.9 18.1 10.9 z\" class=\"C\" fill=\"#004d40\"/>\n  </g>\n</svg>\n";
-  var locizeIcon = "\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 194.667 196\" height=\"196\" width=\"194.667\" xml:space=\"preserve\">\n  <defs>\n    <clipPath id=\"a\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M5.5 74.048C5.5 36.98 35.551 6.93 72.619 6.93c37.069 0 67.119 30.05 67.119 67.118 0 37.07-30.05 67.12-67.119 67.12-37.068 0-67.119-30.05-67.119-67.12\"/>\n    </clipPath>\n    <clipPath id=\"b\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M0 147h146V0H0Z\"/>\n    </clipPath>\n    <clipPath id=\"c\" clipPathUnits=\"userSpaceOnUse\">\n      <path d=\"M88.756 55.055h50.982l4.512 88.195-64 1.25z\"/>\n    </clipPath>\n  </defs>\n  <g clip-path=\"url(#a)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.766-5.554 1.148-8.427 0-11.107-1.149-2.681-2.49-7.469-1.341-10.724 1.149-3.255 2.872-10.34 4.404-10.533 1.532-.19-1.148 7.66.383 5.171 1.533-2.49 1.533-6.193 4.214-8.746 2.68-2.553 6.319-2.17 9.192-4.658 2.872-2.49 5.744-6.129 8.425-5.746 0 0-.192-1.914-1.532-5.17-1.34-3.255-1.532-7.084.192-9.383 1.723-2.298 3.446-5.746 4.979-7.469 1.532-1.723 2.681-10.915 2.297-15.51-.382-4.596 1.724-14.937 6.511-17.236 4.787-2.298 0 1.15-.957 4.022-.958 2.872.739 9.575 3.052 10.533 2.309.958 4.416 4.787 6.139 7.469 1.724 2.68 6.128 3.83 7.469 7.084 1.341 3.255.766 7.085 1.532 8.809.766 1.724 2.873 5.554-1.724 7.852-4.595 2.298-6.51 1.148-6.702 3.255-.192 2.107-1.341 4.404-4.595 5.361-3.256.959-6.129 2.816-9.768 3.227-3.638.412-4.404-2.461-6.319-.928-1.914 1.531-3.446 3.064-4.213 4.978-.765 1.915-3.064.766-2.871 1.915.19 1.15 3.254 4.404-.193 3.255-3.446-1.148-6.51-.765-6.319 2.298.193 3.064 4.405 4.214 6.129 4.597 1.722.383 3.063-1.723 5.17-3.065 2.106-1.34.191 1.915 1.34 4.214 1.149 2.298 5.554 2.106 6.128 5.361.575 3.255-.191 5.937 3.256 6.32 3.446.383 7.084-.191 7.468 1.533.382 1.722-4.022-.576-4.213 1.531-.192 2.106 3.829 4.978 4.978 2.872 1.149-2.106 4.022-2.298 4.405-1.531.383.765 0 2.105-1.341 5.361-1.34 3.256-2.681 2.298-3.829 5.936-1.149 3.639-3.064-.191-4.979 1.724s-4.213 5.937-4.597 2.489c-.382-3.446-.382-5.361-2.105-8.042-1.724-2.682-2.489-.575-4.022 1.149-1.532 1.723-4.979 3.447-3.83 4.978C23.362 4.979 24.511 9 26.234 7.85c1.724-1.149 4.405-1.149 4.022.767-.383 1.914 0 2.681.766 3.638.766.958 3.447 2.682 3.447-.766 0-3.447-.384-4.405 2.298-4.788 2.681-.383 5.744-.574 5.554 1.149-.193 1.724.766 1.341 0 4.214-.767 2.873-3.065 3.063-5.554 4.405-2.489 1.34-3.83 3.446-5.936 2.68s-2.299-1.531-2.49-3.638c-.192-2.107-1.341-2.873-2.107-1.915-.765.957.192 4.022-2.68 2.106-2.873-1.914-4.021-5.171-5.553-2.872-1.533 2.297 2.297 6.319-1.724 4.595-4.022-1.723-6.895-3.637-4.788-4.404 2.107-.766 4.214-2.107 2.107-2.873-2.107-.765-6.32.575-7.852-.957C4.212 7.66 0 0 0 0\" transform=\"translate(13.926 109.38)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.766-5.554 1.148-8.427 0-11.107-1.149-2.681-2.49-7.469-1.341-10.724 1.149-3.255 2.872-10.34 4.404-10.533 1.532-.19-1.148 7.66.383 5.171 1.533-2.49 1.533-6.193 4.214-8.746 2.68-2.553 6.319-2.17 9.192-4.658 2.872-2.49 5.744-6.129 8.425-5.746 0 0-.192-1.914-1.532-5.17-1.34-3.255-1.532-7.084.192-9.383 1.723-2.298 3.446-5.746 4.979-7.469 1.532-1.723 2.681-10.915 2.297-15.51-.382-4.596 1.724-14.937 6.511-17.236 4.787-2.298 0 1.15-.957 4.022-.958 2.872.739 9.575 3.052 10.533 2.309.958 4.416 4.787 6.139 7.469 1.724 2.68 6.128 3.83 7.469 7.084 1.341 3.255.766 7.085 1.532 8.809.766 1.724 2.873 5.554-1.724 7.852-4.595 2.298-6.51 1.148-6.702 3.255-.192 2.107-1.341 4.404-4.595 5.361-3.256.959-6.129 2.816-9.768 3.227-3.638.412-4.404-2.461-6.319-.928-1.914 1.531-3.446 3.064-4.213 4.978-.765 1.915-3.064.766-2.871 1.915.19 1.15 3.254 4.404-.193 3.255-3.446-1.148-6.51-.765-6.319 2.298.193 3.064 4.405 4.214 6.129 4.597 1.722.383 3.063-1.723 5.17-3.065 2.106-1.34.191 1.915 1.34 4.214 1.149 2.298 5.554 2.106 6.128 5.361.575 3.255-.191 5.937 3.256 6.32 3.446.383 7.084-.191 7.468 1.533.382 1.722-4.022-.576-4.213 1.531-.192 2.106 3.829 4.978 4.978 2.872 1.149-2.106 4.022-2.298 4.405-1.531.383.765 0 2.105-1.341 5.361-1.34 3.256-2.681 2.298-3.829 5.936-1.149 3.639-3.064-.191-4.979 1.724s-4.213 5.937-4.597 2.489c-.382-3.446-.382-5.361-2.105-8.042-1.724-2.682-2.489-.575-4.022 1.149-1.532 1.723-4.979 3.447-3.83 4.978C23.362 4.979 24.511 9 26.234 7.85c1.724-1.149 4.405-1.149 4.022.767-.383 1.914 0 2.681.766 3.638.766.958 3.447 2.682 3.447-.766 0-3.447-.384-4.405 2.298-4.788 2.681-.383 5.744-.574 5.554 1.149-.193 1.724.766 1.341 0 4.214-.767 2.873-3.065 3.063-5.554 4.405-2.489 1.34-3.83 3.446-5.936 2.68s-2.299-1.531-2.49-3.638c-.192-2.107-1.341-2.873-2.107-1.915-.765.957.192 4.022-2.68 2.106-2.873-1.914-4.021-5.171-5.553-2.872-1.533 2.297 2.297 6.319-1.724 4.595-4.022-1.723-6.895-3.637-4.788-4.404 2.107-.766 4.214-2.107 2.107-2.873-2.107-.765-6.32.575-7.852-.957C4.212 7.66 0 0 0 0Z\" transform=\"translate(13.926 109.38)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.01-2.141.575-3.829 2.49-1.915C4.405 0 5.553 2.298 6.895 1.341c1.34-.958 3.638-.703 4.594-.639.959.064 1.15 2.937 3.831 2.554s1.724.574 4.596 2.107c2.873 1.532 9.001 4.212 2.681 3.446-6.32-.766-6.703.958-11.108-1.914-4.403-2.873-5.36-2.873-6.509-3.639-1.149-.766-2.49 2.298-4.022 0C-.575.958.011 2.182 0 0\" transform=\"translate(36.522 130.061)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.01-2.141.575-3.829 2.49-1.915C4.405 0 5.553 2.298 6.895 1.341c1.34-.958 3.638-.703 4.594-.639.959.064 1.15 2.937 3.831 2.554s1.724.574 4.596 2.107c2.873 1.532 9.001 4.212 2.681 3.446-6.32-.766-6.703.958-11.108-1.914-4.403-2.873-5.36-2.873-6.509-3.639-1.149-.766-2.49 2.298-4.022 0C-.575.958.011 2.182 0 0Z\" transform=\"translate(36.522 130.061)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-2.263-1.956-5.744-4.788-3.064-4.788 2.681 0 3.983 1.404 5.439-.447 1.456-1.85.88-4.723.88-6.063 0-1.341-.766-4.406 1.15-8.235 1.915-3.829 2.106-6.319 4.022-3.829 1.914 2.488 6.51 7.276 8.808 7.658 2.298.384 4.597 1.342 5.746 3.257 1.148 1.915 0 3.773 1.914 5.141 1.914 1.369 1.531 3.093 2.107 5.199C27.575 0 32.747 0 30.448 1.148c-2.297 1.15-6.51 1.916-11.49 1.341C13.979 1.915 4.213 3.638 0 0\" transform=\"translate(59.502 135.998)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-2.263-1.956-5.744-4.788-3.064-4.788 2.681 0 3.983 1.404 5.439-.447 1.456-1.85.88-4.723.88-6.063 0-1.341-.766-4.406 1.15-8.235 1.915-3.829 2.106-6.319 4.022-3.829 1.914 2.488 6.51 7.276 8.808 7.658 2.298.384 4.597 1.342 5.746 3.257 1.148 1.915 0 3.773 1.914 5.141 1.914 1.369 1.531 3.093 2.107 5.199C27.575 0 32.747 0 30.448 1.148c-2.297 1.15-6.51 1.916-11.49 1.341C13.979 1.915 4.213 3.638 0 0Z\" transform=\"translate(59.502 135.998)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.218-1.986-.575-2.107.766-2.49 1.34-.383-.575-2.68.957-2.872 1.532-.193 4.979-1.15 5.936 0 .959 1.148-1.531.7-3.255 1.977C2.682-2.107.865 1.41 0 0\" transform=\"translate(38.438 76.826)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.218-1.986-.575-2.107.766-2.49 1.34-.383-.575-2.68.957-2.872 1.532-.193 4.979-1.15 5.936 0 .959 1.148-1.531.7-3.255 1.977C2.682-2.107.865 1.41 0 0Z\" transform=\"translate(38.438 76.826)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-2.063-1.033-1.148-2.682-3.064-3.831-1.915-1.148-1.149-1.531-1.723-4.213-.575-2.68.191-4.212 1.532-2.106S2.298 1.148 0 0\" transform=\"translate(131.121 45.612)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-2.063-1.033-1.148-2.682-3.064-3.831-1.915-1.148-1.149-1.531-1.723-4.213-.575-2.68.191-4.212 1.532-2.106S2.298 1.148 0 0Z\" transform=\"translate(131.121 45.612)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-.575-.575-1.532 2.681-2.106 4.213-.575 1.532-.561 4.195 1.056 5.675C.964 11.734 0 7.469 0 5.17 0 2.873.574.575 0 0m-6.704 5.936c-1.341.766-3.828 0-6.892-.957-3.065-.958-.613 2.131.766 4.213 1.233 1.861.574-.574 3.256-.766 2.68-.192 4.213-3.256 2.87-2.49m-4.402-6.511c-.192-1.531.574-4.021-3.639-3.064-4.213.958-4.213 3.256-5.936 1.533-1.723-1.724-3.83-3.255-6.32-.575C-29.49 0-29.107.766-30.447.958c-.955.135-4.138.846-6.792.074.206.123.426.285.663.5 1.915 1.723 1.532 2.298 3.638 4.213 2.108 1.916 3.639 3.638 5.171 1.916 1.532-1.725 4.788-2.108 3.639-4.023-1.149-1.914-.383-3.063.958-1.914 1.339 1.149 3.255 1.914 1.915 3.446-1.342 1.532-2.682 5.554-.766 2.873 1.915-2.681 2.489-4.022 3.637-5.553C-17.234.958-16.085 0-15.702.958c.383.957-.192 3.063.383 3.446.574.383 0-3.255 1.723-3.446 1.723-.192 2.681 0 2.49-1.533M9.192-8.81c-.574 3.257-4.787 32.747-4.787 32.747s-11.299 7.277-13.213 5.746c-1.916-1.533-5.171-1.302-4.788.21s2.872 1.128-1.341 4.002c-4.212 2.873-4.978 5.362-8.233 1.724-3.257-3.639-4.022-6.703-5.937-7.661-1.915-.957-3.447-4.021-1.34-4.787 2.106-.765 2.298 0 4.02-1.531 1.725-1.533 4.023-1.149 4.406-.193.383.959.766 4.022.957 5.171.192 1.149 2.138 4.979 1.93 1.915-.207-3.064 2.665-3.064.75-5.17-1.914-2.106-.765-3.831-4.595-4.214-3.831-.382-4.022 1.915-6.128.766-2.107-1.148-1.915-1.915-2.681-3.063-.766-1.149-4.788-3.447-4.788-3.447s-3.255 1.149-1.724-.958c1.533-2.106 2.873-4.595 1.533-4.786-1.341-.192-4.98 1.914-4.98-.384s-.573-4.787.959-5.362c1.081-.405 1.783-1.284 2.775-1.161-.769-.332-1.468-.813-2.009-1.52-1.491-1.947-.575-5.362-3.639-6.511-3.063-1.15-3.063-2.489-3.639-4.979-.573-2.489 0-8.808.766-9.383.765-.574 2.107-5.362 5.363-4.978 3.256.383 6.702.53 7.851-.023 1.149-.551 3.063 1.171 3.638-3.233.575-4.404 1.915-4.979 2.681-7.277.766-2.297-.383-7.086 0-9.958s3.064-7.852 3.064-10.341c0-2.489 2.873-3.638 4.405-2.681 1.532.958 4.787 2.873 6.127 5.937 1.342 3.063 1.342 4.595 3.447 8.617 2.106 4.021 1.533 6.894 2.489 9.958.958 3.064 3.262 5.171 6.419 8.617 3.156 3.446 2.588 5.362 0 5.171-2.588-.191-4.314 2.297-5.654 5.361-1.338 3.065-2.87 10.724-1.721 8.235 1.149-2.491 3.446-9.384 5.744-10.533 2.298-1.149 6.512 1.953 7.469 3.083.957 1.131.574 4.385-1.916 5.726C.383-8.617 1.915-7.469 4.405-9c2.489-1.532 5.362-3.064 4.787.19\" transform=\"translate(132.845 86.592)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-.575-.575-1.532 2.681-2.106 4.213-.575 1.532-.561 4.195 1.056 5.675C.964 11.734 0 7.469 0 5.17 0 2.873.574.575 0 0Zm-6.704 5.936c-1.341.766-3.828 0-6.892-.957-3.065-.958-.613 2.131.766 4.213 1.233 1.861.574-.574 3.256-.766 2.68-.192 4.213-3.256 2.87-2.49zm-4.402-6.511c-.192-1.531.574-4.021-3.639-3.064-4.213.958-4.213 3.256-5.936 1.533-1.723-1.724-3.83-3.255-6.32-.575C-29.49 0-29.107.766-30.447.958c-.955.135-4.138.846-6.792.074.206.123.426.285.663.5 1.915 1.723 1.532 2.298 3.638 4.213 2.108 1.916 3.639 3.638 5.171 1.916 1.532-1.725 4.788-2.108 3.639-4.023-1.149-1.914-.383-3.063.958-1.914 1.339 1.149 3.255 1.914 1.915 3.446-1.342 1.532-2.682 5.554-.766 2.873 1.915-2.681 2.489-4.022 3.637-5.553C-17.234.958-16.085 0-15.702.958c.383.957-.192 3.063.383 3.446.574.383 0-3.255 1.723-3.446 1.723-.192 2.681 0 2.49-1.533zM9.192-8.81c-.574 3.257-4.787 32.747-4.787 32.747s-11.299 7.277-13.213 5.746c-1.916-1.533-5.171-1.302-4.788.21s2.872 1.128-1.341 4.002c-4.212 2.873-4.978 5.362-8.233 1.724-3.257-3.639-4.022-6.703-5.937-7.661-1.915-.957-3.447-4.021-1.34-4.787 2.106-.765 2.298 0 4.02-1.531 1.725-1.533 4.023-1.149 4.406-.193.383.959.766 4.022.957 5.171.192 1.149 2.138 4.979 1.93 1.915-.207-3.064 2.665-3.064.75-5.17-1.914-2.106-.765-3.831-4.595-4.214-3.831-.382-4.022 1.915-6.128.766-2.107-1.148-1.915-1.915-2.681-3.063-.766-1.149-4.788-3.447-4.788-3.447s-3.255 1.149-1.724-.958c1.533-2.106 2.873-4.595 1.533-4.786-1.341-.192-4.98 1.914-4.98-.384s-.573-4.787.959-5.362c1.081-.405 1.783-1.284 2.775-1.161-.769-.332-1.468-.813-2.009-1.52-1.491-1.947-.575-5.362-3.639-6.511-3.063-1.15-3.063-2.489-3.639-4.979-.573-2.489 0-8.808.766-9.383.765-.574 2.107-5.362 5.363-4.978 3.256.383 6.702.53 7.851-.023 1.149-.551 3.063 1.171 3.638-3.233.575-4.404 1.915-4.979 2.681-7.277.766-2.297-.383-7.086 0-9.958s3.064-7.852 3.064-10.341c0-2.489 2.873-3.638 4.405-2.681 1.532.958 4.787 2.873 6.127 5.937 1.342 3.063 1.342 4.595 3.447 8.617 2.106 4.021 1.533 6.894 2.489 9.958.958 3.064 3.262 5.171 6.419 8.617 3.156 3.446 2.588 5.362 0 5.171-2.588-.191-4.314 2.297-5.654 5.361-1.338 3.065-2.87 10.724-1.721 8.235 1.149-2.491 3.446-9.384 5.744-10.533 2.298-1.149 6.512 1.953 7.469 3.083.957 1.131.574 4.385-1.916 5.726C.383-8.617 1.915-7.469 4.405-9c2.489-1.532 5.362-3.064 4.787.19z\" transform=\"translate(132.845 86.592)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.173-.353-2.106-2.681-1.532-3.831.576-1.148-.574.576-2.106-.382-1.533-.957-3.808-3.639-1.713-3.829 2.096-.193 1.713 1.531 3.628.765 1.915-.765 4.021-.575 4.021 1.34C2.298-4.021 1.915.574 0 0\" transform=\"translate(95.886 109.955)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.173-.353-2.106-2.681-1.532-3.831.576-1.148-.574.576-2.106-.382-1.533-.957-3.808-3.639-1.713-3.829 2.096-.193 1.713 1.531 3.628.765 1.915-.765 4.021-.575 4.021 1.34C2.298-4.021 1.915.574 0 0Z\" transform=\"translate(95.886 109.955)\"/>\n    <path style=\"fill:#2196f3;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.154-.165-1.533-3.064.957-3.447 2.49-.383 6.947.575 5.293 2.107C4.596.191 2.682.383 0 0\" transform=\"translate(83.44 118.763)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.154-.165-1.533-3.064.957-3.447 2.49-.383 6.947.575 5.293 2.107C4.596.191 2.682.383 0 0Z\" transform=\"translate(83.44 118.763)\"/>\n  </g>\n  <g clip-path=\"url(#b)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c0-37.068-30.05-67.119-67.119-67.119S-134.238-37.068-134.238 0c0 37.069 30.05 67.119 67.119 67.119S0 37.069 0 0Z\" transform=\"translate(139.738 74.049)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c0-36.731-29.777-66.509-66.509-66.509S-133.019-36.731-133.019 0c0 36.733 29.778 66.51 66.51 66.51C-29.777 66.51 0 36.733 0 0Z\" transform=\"translate(139.438 73.186)\"/>\n  </g>\n  <g clip-path=\"url(#c)\" transform=\"matrix(1.33333 0 0 -1.33333 0 196)\">\n    <path style=\"fill:#fff;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0m12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754\" transform=\"translate(119.64 109.307)\"/>\n    <path style=\"fill:#fff;fill-opacity:1;fill-rule:nonzero;stroke:none\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0m12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754\" transform=\"translate(119.64 109.307)\"/>\n    <path style=\"fill:none;stroke:#2196f3;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1\" d=\"M0 0c-1.542-1.541-3.386-2.311-5.533-2.311-2.148 0-3.991.77-5.532 2.311s-2.313 3.387-2.313 5.533c0 2.147.772 3.963 2.313 5.45 1.541 1.486 3.384 2.23 5.532 2.23 2.147 0 3.991-.744 5.533-2.23 1.54-1.487 2.312-3.303 2.312-5.45C2.312 3.387 1.54 1.541 0 0Zm12.551 23.039c-4.954 4.9-10.954 7.35-18.001 7.35-7.047 0-13.047-2.45-18.002-7.35-4.955-4.898-7.432-10.817-7.432-17.754 0-4.183 2.119-11.176 6.359-20.974 4.238-9.799 8.477-18.717 12.715-26.754 4.241-8.037 6.36-11.946 6.36-11.727.66 1.211 1.568 2.863 2.724 4.955 1.157 2.092 3.194 6.029 6.112 11.809 2.917 5.781 5.477 11.094 7.678 15.935a203.312 203.312 0 0 1 6.111 15.032c1.873 5.173 2.807 9.082 2.807 11.724 0 6.937-2.477 12.856-7.431 17.754z\" transform=\"translate(119.64 109.307)\"/>\n  </g>\n</svg>\n";
-  var minimizeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="#000000"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19h12v2H6v-2z"/></svg>';
-  var editIconUrl = URL.createObjectURL(new Blob([iconEdit], {
-    type: 'image/svg+xml'
-  }));
-  var i18nextIconUrl = URL.createObjectURL(new Blob([i18nextIcon], {
-    type: 'image/svg+xml'
-  }));
-  var minimizeIconUrl = URL.createObjectURL(new Blob([minimizeIcon], {
-    type: 'image/svg+xml'
-  }));
-  var locizeIconUrl = URL.createObjectURL(new Blob([locizeIcon], {
-    type: 'image/svg+xml'
-  }));
-
-  function EditIcon() {
-    var image = document.createElement('img');
-    image.setAttribute('data-i18next-editor-element', 'true');
-    image.src = editIconUrl;
-    image.style.width = '15px';
-    return image;
-  }
-
-  function RibbonLogo() {
-    var circleSize = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '18px';
-    var logoSize = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '15px';
-    var ribbon = document.createElement('div');
-    ribbon.setAttribute('data-i18next-editor-element', 'true');
-    ribbon.style = "display: inline-flex; align-items: center; justify-content: center; width: ".concat(circleSize, "; height: ").concat(circleSize, "; box-shadow: inset 0 0 5px ").concat(colors.highlight, "; border: 2px solid ").concat(colors.highlight, "; border-radius: 50%");
-    var image = document.createElement('img');
-    image.src = i18nextIconUrl;
-    image.style.width = logoSize;
-    ribbon.appendChild(image);
-    return ribbon;
-  }
 
   if (sheet) {
     sheet.insertRule('.i18next-editor-button:hover { background-color: rgba(38, 166, 154, 1) !important; }');
@@ -10873,7 +11250,7 @@
     return _convertValueToCoords.apply(this, arguments);
   }
 
-  var offset = function offset(options) {
+  var offset$1 = function offset(options) {
     if (options === void 0) {
       options = 0;
     }
@@ -11002,7 +11379,7 @@
     return '#document';
   }
 
-  function getWindow(node) {
+  function getWindow$1(node) {
     var _node$ownerDocument;
 
     return (node == null ? void 0 : (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
@@ -11015,15 +11392,15 @@
   }
 
   function isNode(value) {
-    return value instanceof Node || value instanceof getWindow(value).Node;
+    return value instanceof Node || value instanceof getWindow$1(value).Node;
   }
 
   function isElement(value) {
-    return value instanceof Element || value instanceof getWindow(value).Element;
+    return value instanceof Element || value instanceof getWindow$1(value).Element;
   }
 
   function isHTMLElement(value) {
-    return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
+    return value instanceof HTMLElement || value instanceof getWindow$1(value).HTMLElement;
   }
 
   function isShadowRoot(value) {
@@ -11032,7 +11409,7 @@
       return false;
     }
 
-    return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
+    return value instanceof ShadowRoot || value instanceof getWindow$1(value).ShadowRoot;
   }
 
   function isOverflowElement(element) {
@@ -11080,7 +11457,7 @@
   }
 
   function getComputedStyle(element) {
-    return getWindow(element).getComputedStyle(element);
+    return getWindow$1(element).getComputedStyle(element);
   }
 
   function getNodeScroll(element) {
@@ -11137,7 +11514,7 @@
 
     var scrollableAncestor = getNearestOverflowAncestor(node);
     var isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
-    var win = getWindow(scrollableAncestor);
+    var win = getWindow$1(scrollableAncestor);
 
     if (isBody) {
       return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], win.frameElement && traverseIframes ? getOverflowAncestors(win.frameElement) : []);
@@ -11206,7 +11583,7 @@
   var noOffsets = /*#__PURE__*/createCoords(0);
 
   function getVisualOffsets(element) {
-    var win = getWindow(element);
+    var win = getWindow$1(element);
 
     if (!isWebKit() || !win.visualViewport) {
       return noOffsets;
@@ -11223,7 +11600,7 @@
       isFixed = false;
     }
 
-    if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element)) {
+    if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow$1(element)) {
       return false;
     }
 
@@ -11260,8 +11637,8 @@
     var height = clientRect.height / scale.y;
 
     if (domElement) {
-      var win = getWindow(domElement);
-      var offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
+      var win = getWindow$1(domElement);
+      var offsetWin = offsetParent && isElement(offsetParent) ? getWindow$1(offsetParent) : offsetParent;
       var currentIFrame = win.frameElement;
 
       while (currentIFrame && offsetParent && offsetWin !== win) {
@@ -11276,7 +11653,7 @@
         height *= iframeScale.y;
         x += left;
         y += top;
-        currentIFrame = getWindow(currentIFrame).frameElement;
+        currentIFrame = getWindow$1(currentIFrame).frameElement;
       }
     }
 
@@ -11363,7 +11740,7 @@
   }
 
   function getViewportRect(element, strategy) {
-    var win = getWindow(element);
+    var win = getWindow$1(element);
     var html = getDocumentElement(element);
     var visualViewport = win.visualViewport;
     var width = html.clientWidth;
@@ -11558,7 +11935,7 @@
 
 
   function getOffsetParent(element, polyfill) {
-    var window = getWindow(element);
+    var window = getWindow$1(element);
 
     if (!isHTMLElement(element)) {
       return window;
@@ -11697,7 +12074,7 @@
         placement: 'right',
         middleware: [flip({
           fallbackPlacements: ['left', 'bottom']
-        }), shift(), offset(function (_ref) {
+        }), shift(), offset$1(function (_ref) {
           var placement = _ref.placement,
               rects = _ref.rects;
           if (placement === 'bottom') return rects.r;
@@ -11813,74 +12190,6 @@
     delete selected[id];
   }
 
-  function ownKeys$6(e, r) {
-    var t = Object.keys(e);
-
-    if (Object.getOwnPropertySymbols) {
-      var o = Object.getOwnPropertySymbols(e);
-      r && (o = o.filter(function (r) {
-        return Object.getOwnPropertyDescriptor(e, r).enumerable;
-      })), t.push.apply(t, o);
-    }
-
-    return t;
-  }
-
-  function _objectSpread$5(e) {
-    for (var r = 1; r < arguments.length; r++) {
-      var t = null != arguments[r] ? arguments[r] : {};
-      r % 2 ? ownKeys$6(Object(t), !0).forEach(function (r) {
-        _defineProperty$3(e, r, t[r]);
-      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$6(Object(t)).forEach(function (r) {
-        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
-      });
-    }
-
-    return e;
-  }
-
-  var data = {};
-
-  function clean() {
-    Object.values(data).forEach(function (item) {
-      if (!document.body.contains(item.node)) {
-        resetHighlight(item.id, item.node);
-        delete data[item.id];
-      }
-    });
-  }
-
-  function save(id, subliminal, type, meta, node, children) {
-    if (!id || !type || !meta || !node) return;
-
-    if (!data[id]) {
-      data[id] = {
-        id: id,
-        node: node,
-        subliminal: subliminal
-      };
-    }
-
-    data[id].keys = _objectSpread$5(_objectSpread$5({}, data[id].keys), {}, _defineProperty$3({}, "".concat(type), meta));
-
-    if (children) {
-      data[id].children = _objectSpread$5(_objectSpread$5({}, data[id].children), {}, _defineProperty$3({}, "".concat(type, "-").concat(children.map(function (c) {
-        return c.childIndex;
-      }).join(',')), children));
-    }
-  }
-
-  function get$1(id) {
-    return data[id];
-  }
-
-  var store = {
-    save: save,
-    clean: clean,
-    get: get$1,
-    data: data
-  };
-
   function ownKeys$7(e, r) {
     var t = Object.keys(e);
 
@@ -11918,24 +12227,31 @@
     });
   }
 
-  function save$1(id, type, node) {
-    if (!id || !type || !node) return;
+  function save$1(id, subliminal, type, meta, node, children) {
+    if (!id || !type || !meta || !node) return;
 
     if (!data$1[id]) {
       data$1[id] = {
         id: id,
-        node: node
+        node: node,
+        subliminal: subliminal
       };
     }
 
-    data$1[id].keys = _objectSpread$6(_objectSpread$6({}, data$1[id].keys), {}, _defineProperty$3({}, "".concat(type), 'uninstrumented'));
+    data$1[id].keys = _objectSpread$6(_objectSpread$6({}, data$1[id].keys), {}, _defineProperty$3({}, "".concat(type), meta));
+
+    if (children) {
+      data$1[id].children = _objectSpread$6(_objectSpread$6({}, data$1[id].children), {}, _defineProperty$3({}, "".concat(type, "-").concat(children.map(function (c) {
+        return c.childIndex;
+      }).join(',')), children));
+    }
   }
 
   function get$2(id) {
     return data$1[id];
   }
 
-  var uninstrumentedStore = {
+  var store = {
     save: save$1,
     clean: clean$1,
     get: get$2,
@@ -12116,167 +12432,6 @@
     return store.data;
   }
 
-  function debounce$2(func, wait, immediate) {
-    var timeout;
-    return function () {
-      var context = this;
-      var args = arguments;
-
-      var later = function later() {
-        timeout = null;
-        if (!immediate) func.apply(context, args);
-      };
-
-      var callNow = immediate && !timeout;
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-      if (callNow) func.apply(context, args);
-    };
-  }
-
-  function isWindow(obj) {
-    return obj != null && obj === obj.window;
-  }
-
-  function getWindow$1(elem) {
-    return isWindow(elem) ? elem : elem.nodeType === 9 && elem.defaultView;
-  }
-
-  function offset$1(elem) {
-    var box = {
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0
-    };
-    var doc = elem && elem.ownerDocument;
-    var docElem = doc && doc.documentElement;
-    if (!docElem) return box;
-
-    if (_typeof$3(elem.getBoundingClientRect) !== "undefined") {
-      box = elem.getBoundingClientRect();
-    }
-
-    var win = getWindow$1(doc);
-    var top = box.top + win.pageYOffset - docElem.clientTop;
-    var left = box.left + win.pageXOffset - docElem.clientLeft;
-    return {
-      top: top,
-      left: left,
-      right: left + (box.right - box.left),
-      bottom: top + (box.bottom - box.top)
-    };
-  }
-
-  function getClickedElement(e) {
-    if (e.srcElement && e.srcElement.nodeType === 1 && (e.srcElement.nodeName === 'BUTTON' || e.srcElement.nodeName === 'INPUT')) {
-      if (e.srcElement.getAttribute && e.srcElement.getAttribute('ignorelocizeeditor') === '') {
-        return null;
-      }
-
-      return e.srcElement;
-    }
-
-    var el;
-
-    if (e.originalEvent && e.originalEvent.explicitOriginalTarget) {
-      el = e.originalEvent.explicitOriginalTarget;
-    } else {
-      var parent = e.srcElement;
-      if (parent.getAttribute && parent.getAttribute('ignorelocizeeditor') === '') return null;
-      var left = e.pageX;
-      var top = e.pageY;
-      var topStartsAt = 0;
-      var topBreaksAt;
-
-      for (var i = 0; i < parent.childNodes.length; i++) {
-        var n = parent.childNodes[i];
-        var nOffset = offset$1(n);
-        if (n.nodeType === 1 && nOffset.bottom < top) topStartsAt = i + 1;
-        if (!topBreaksAt && nOffset.top + (n.clientHeight || 0) > top) topBreaksAt = i;
-      }
-
-      if (topStartsAt + 1 > parent.childNodes.length) topStartsAt = parent.childNodes.length - 1;
-      if (!topBreaksAt) topBreaksAt = parent.childNodes.length;
-
-      for (var y = topStartsAt; y < topBreaksAt; y++) {
-        var _n = parent.childNodes[y];
-
-        var _nOffset = offset$1(_n);
-
-        if (_nOffset.left > left) {
-          break;
-        }
-
-        if (_n && _n.nodeType !== 8) el = _n;
-      }
-    }
-
-    return el;
-  }
-
-  function getElementText(el) {
-    var str = el.textContent || el.text && el.text.innerText || el.placeholder;
-    if (typeof str !== 'string') return;
-    return str.replace(/\n +/g, '').trim();
-  }
-
-  function getAttribute$1(el, name) {
-    return el && el.getAttribute && el.getAttribute(name);
-  }
-
-  function getElementI18nKey(el) {
-    var key = getAttribute$1(el, 'data-i18n');
-    if (key) return key;
-
-    if (el.nodeType === window.Node.TEXT_NODE && el.parentElement) {
-      return getElementI18nKey(el.parentElement);
-    }
-
-    return undefined;
-  }
-
-  function getElementNamespace(el) {
-    var found;
-
-    var find = function find(ele) {
-      var opts = getAttribute$1(ele, 'i18next-options');
-      if (!opts) opts = getAttribute$1(ele, 'data-i18next-options');
-      if (!opts) opts = getAttribute$1(ele, 'i18n-options');
-      if (!opts) opts = getAttribute$1(ele, 'data-i18n-options');
-
-      if (opts) {
-        var jsonData = {};
-
-        try {
-          jsonData = JSON.parse(opts);
-        } catch (e) {}
-
-        if (jsonData.ns) found = jsonData.ns;
-      }
-
-      if (!found) found = getAttribute$1(ele, 'i18next-ns');
-      if (!found) found = getAttribute$1(ele, 'data-i18next-ns');
-      if (!found) found = getAttribute$1(ele, 'i18n-ns');
-      if (!found) found = getAttribute$1(ele, 'data-i18n-ns');
-      if (!found && ele.parentElement) find(ele.parentElement);
-    };
-
-    find(el);
-    return found;
-  }
-
-  function getQsParameterByName(name, url) {
-    if (typeof window === 'undefined') return null;
-    if (!url) url = window.location.href.toLowerCase();
-    name = name.replace(/[\[\]]/g, '\\$&');
-    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
-    var results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, ' '));
-  }
-
   var mutationTriggeringElements = {};
 
   function ignoreMutation(ele) {
@@ -12393,81 +12548,6 @@
         internalChange = true;
       }
     };
-  }
-
-  function isInViewport(el) {
-    var rect = el.getBoundingClientRect();
-    var windowHeight = window.innerHeight || document.documentElement.clientHeight;
-    var windowWidth = window.innerWidth || document.documentElement.clientWidth;
-    var vertInView = rect.top <= windowHeight && rect.top + rect.height >= 0;
-    var horInView = rect.left <= windowWidth && rect.left + rect.width >= 0;
-    return vertInView && horInView;
-  }
-
-  function mouseDistanceFromElement(mouseEvent, element) {
-    var $n = element,
-        mX = mouseEvent.pageX,
-        mY = mouseEvent.pageY,
-        from = {
-      x: mX,
-      y: mY
-    },
-        off = $n.getBoundingClientRect(),
-        ny1 = off.top + document.documentElement.scrollTop,
-        ny2 = ny1 + $n.offsetHeight,
-        nx1 = off.left + document.documentElement.scrollLeft,
-        nx2 = nx1 + $n.offsetWidth,
-        maxX1 = Math.max(mX, nx1),
-        minX2 = Math.min(mX, nx2),
-        maxY1 = Math.max(mY, ny1),
-        minY2 = Math.min(mY, ny2),
-        intersectX = minX2 >= maxX1,
-        intersectY = minY2 >= maxY1,
-        to = {
-      x: intersectX ? mX : nx2 < mX ? nx2 : nx1,
-      y: intersectY ? mY : ny2 < mY ? ny2 : ny1
-    },
-        distX = to.x - from.x,
-        distY = to.y - from.y,
-        hypot = Math.pow(Math.pow(distX, 2) + Math.pow(distY, 2), 1 / 2);
-    return Math.floor(hypot);
-  }
-
-  var debouncedUpdateDistance = debounce$2(function (e, observer) {
-    Object.values(store.data).forEach(function (item) {
-      if (!isInViewport(item.node)) return;
-      var distance = mouseDistanceFromElement(e, item.node);
-
-      if (distance < 5) {
-        highlight(item, item.node, item.keys);
-      } else if (distance > 5) {
-        var boxDistance = item.ribbonBox ? mouseDistanceFromElement(e, item.ribbonBox) : 1000;
-        if (boxDistance > 10) resetHighlight(item, item.node, item.keys);
-      }
-    });
-    Object.values(uninstrumentedStore.data).forEach(function (item) {
-      if (!isInViewport(item.node)) return;
-      var distance = mouseDistanceFromElement(e, item.node);
-
-      if (distance < 10) {
-        highlightUninstrumented(item, item.node, item.keys);
-      } else if (distance > 10) {
-        resetHighlight(item, item.node, item.keys);
-      }
-    });
-  }, 50);
-  var currentFC;
-
-  function startMouseTracking(observer) {
-    currentFC = function handle(e) {
-      debouncedUpdateDistance(e, observer);
-    };
-
-    document.addEventListener('mousemove', currentFC);
-  }
-
-  function stopMouseTracking() {
-    document.removeEventListener('mousemove', currentFC);
   }
 
   function initDragElement() {
@@ -12590,84 +12670,6 @@
     }
   }
 
-  if (sheet) {
-    sheet.insertRule("@keyframes i18next-editor-animate-top { \n      from {\n        top: calc(100vh + 600px); \n        left: calc(100vw + 300px);\n        opacity: 0;\n      }\n      to {\n        top: var(--i18next-editor-popup-position-top);\n        left: var(--i18next-editor-popup-position-left);\n        opacity: 1;\n      }\n    }");
-    sheet.insertRule("@keyframes i18next-editor-animate-bottom { \n      from {\n        top: var(--i18next-editor-popup-position-top);\n        left: var(--i18next-editor-popup-position-left);\n        opacity: 1;\n      }\n      to {\n        top: calc(100vh + 600px); \n        left: calc(100vw + 300px);\n        opacity: 0;\n      }\n    }");
-    sheet.insertRule(".i18next-editor-popup * { \n      -webkit-touch-callout: none; /* iOS Safari */\n      -webkit-user-select: none; /* Safari */\n      -khtml-user-select: none; /* Konqueror HTML */\n      -moz-user-select: none; /* Firefox */\n      -ms-user-select: none; /* Internet Explorer/Edge */\n      user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */\n    }");
-    sheet.insertRule(".i18next-editor-popup .resizer-right {\n      width: 15px;\n      height: 100%;\n      background: transparent;\n      position: absolute;\n      right: -15px;\n      bottom: 0;\n      cursor: e-resize;\n    }");
-    sheet.insertRule(".i18next-editor-popup .resizer-both {\n      width: 15px;\n      height: 15px;\n      background: transparent;\n      z-index: 10;\n      position: absolute;\n      right: -15px;\n      bottom: -15px;\n      cursor: se-resize;\n    }");
-    sheet.insertRule(".i18next-editor-popup .resizer-bottom {\n      width: 100%;\n      height: 15px;\n      background: transparent;\n      position: absolute;\n      right: 0;\n      bottom: -15px;\n      cursor: s-resize;\n    }");
-  }
-
-  function Ribbon(popupEle, onMaximize) {
-    var ribbon = document.createElement('div');
-    ribbon.setAttribute('data-i18next-editor-element', 'true');
-    ribbon.style = "\n  cursor: pointer;\n  position: fixed;\n  bottom: 25px;\n  right: 25px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 50px;\n  height: 50px;\n  background-color:  rgba(249, 249, 249, 0.2);\n  backdrop-filter: blur(3px);\n  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);\n  border-radius: 50%\n  ";
-
-    ribbon.onclick = function () {
-      onMaximize();
-    };
-
-    var image = document.createElement('img');
-    image.src = locizeIconUrl;
-    image.style.width = '45px';
-    ribbon.appendChild(image);
-    return ribbon;
-  }
-
-  function Minimize(popupEle, onMinimize) {
-    var image = document.createElement('img');
-    image.setAttribute('data-i18next-editor-element', 'true');
-    image.src = minimizeIconUrl;
-    image.style.width = '24px';
-    image.style.cursor = 'pointer';
-
-    image.onclick = function () {
-      popupEle.style.setProperty('--i18next-editor-popup-position-top', popupEle.style.top);
-      popupEle.style.setProperty('--i18next-editor-popup-position-left', popupEle.style.left);
-      popupEle.style.animation = 'i18next-editor-animate-bottom 2s forwards';
-      onMinimize();
-    };
-
-    return image;
-  }
-
-  function Popup(url, cb) {
-    var popup = document.createElement('div');
-    popup.setAttribute('id', 'i18next-editor-popup');
-    popup.classList.add('i18next-editor-popup');
-    popup.style = "\n  z-index: 9;\n  background-color: transparent;\n  border: 1px solid rgba(200, 200, 200, 0.9);\n  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);\n  border-radius: 3px;\n  --i18next-editor-popup-height: 200px;\n  height: var(--i18next-editor-popup-height);\n  min-height: 150px;\n  min-width: 300px;\n  --i18next-editor-popup-width: 400px;\n  width: var(--i18next-editor-popup-width);\n  max-height: 600px;\n  max-width: 800px;\n\n  position: fixed;\n  --i18next-editor-popup-position-top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  --i18next-editor-popup-position-left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n  left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n\n  overflow: visible;\n  ";
-    popup.setAttribute('data-i18next-editor-element', 'true');
-    var header = document.createElement('div');
-    header.classList.add('i18next-editor-popup-header');
-    header.style = "\n  padding: 2px 10px;\n  cursor: move;\n  z-index: 10;\n  backdrop-filter: blur(3px);\n  background-color: rgba(200, 200, 200, 0.5);\n  background: linear-gradient(0deg, rgba(200, 200, 200, 0.6), rgba(200, 200, 200, 0.5));\n  color: #fff;\n  text-align: right;\n  ";
-    popup.appendChild(header);
-    header.appendChild(Minimize(popup, function () {
-      var ribbon = Ribbon(popup, function () {
-        popup.style.animation = 'i18next-editor-animate-top 1s';
-        startMouseTracking();
-        setTimeout(function () {
-          document.body.removeChild(ribbon);
-        }, 1000);
-      });
-      document.body.appendChild(ribbon);
-      stopMouseTracking();
-    }));
-    var iframe = document.createElement('iframe');
-    iframe.setAttribute('id', 'i18next-editor-iframe');
-    iframe.setAttribute('data-i18next-editor-element', 'true');
-    iframe.style = "\n    z-index: 100;\n    width: 100%;\n    height: calc(100% - 28px);\n    border: none;\n    background: #fff;\n  ";
-    iframe.setAttribute('src', url);
-    iframe.addEventListener('load', cb);
-    popup.appendChild(iframe);
-    var overlay = document.createElement('div');
-    overlay.setAttribute('id', 'i18next-editor-popup-overlay');
-    overlay.setAttribute('data-i18next-editor-element', 'true');
-    overlay.style = "\n  display: none;\n  position: absolute;\n  top: 32px;\n  z-index: 101;\n  width: 100%;\n  height: calc(100% - 32px);\n  background-color: rgba(200, 200, 200, 0.5);\n  background: linear-gradient(0deg, rgba(240, 240, 240, 0.6), rgba(255, 255, 255, 0.5));\n  backdrop-filter: blur(2px);\n";
-    popup.appendChild(overlay);
-    return popup;
-  }
-
   function ownKeys$9(e, r) {
     var t = Object.keys(e);
 
@@ -12722,11 +12724,14 @@
       });
       observer.start();
       startMouseTracking(observer);
-      document.body.append(Popup(getIframeUrl(), function () {
-        api.requestInitialize(config);
-      }));
-      initDragElement();
-      initResizeElement();
+
+      if (!document.getElementById(popupId)) {
+        document.body.append(Popup(getIframeUrl(), function () {
+          api.requestInitialize(config);
+        }));
+        initDragElement();
+        initResizeElement();
+      }
     }
 
     if (document.body) return continueToStart();
