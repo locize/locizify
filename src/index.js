@@ -1,6 +1,6 @@
 import i18nextify from 'i18nextify';
 import LocizeBackend from 'i18next-locize-backend';
-import { locizePlugin, turnOn, turnOff, setEditorLng } from 'locize';
+import { locizeEditorPlugin, turnOn, turnOff, setEditorLng } from 'locize';
 
 const { i18next } = i18nextify;
 
@@ -13,32 +13,23 @@ const defaults = {
   bindSavedMissing: true,
 };
 
-function getParameterByName(name, url = window.location.href.toLowerCase()) {
-  name = name.replace(/[\[\]]/g, '\\$&');
-  var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
-      results = regex.exec(url);
-  if (!results) return null;
-  if (!results[2]) return '';
-  return decodeURIComponent(results[2].replace(/\+/g, ' '));
-}
-
-let isInIframe = typeof window !== 'undefined'
-try {
-  // eslint-disable-next-line no-undef, no-restricted-globals
-  isInIframe = self !== top
-  // eslint-disable-next-line no-empty
-} catch (e) {}
-
-i18next.use(LocizeBackend);
-if (isInIframe) {
-  i18next.use(locizePlugin);
-} else if (getParameterByName('incontext') === 'true') {
-  i18next.use(locizePlugin);
-}
+i18next.use(LocizeBackend).use(locizeEditorPlugin());
 
 i18next.on('editorSaved', () => {
   i18nextify.forceRerender();
 });
+
+function getQsParameterByName (name, url) {
+  if (typeof window === 'undefined') return null
+  if (!url) url = window.location.href.toLowerCase()
+  // eslint-disable-next-line no-useless-escape
+  name = name.replace(/[\[\]]/g, '\\$&')
+  const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)')
+  const results = regex.exec(url)
+  if (!results) return null
+  if (!results[2]) return ''
+  return decodeURIComponent(results[2].replace(/\+/g, ' '))
+}
 
 const originalInit = i18next.init;
 i18next.init = (options = {}, callback) => {
@@ -102,7 +93,7 @@ i18next.init = (options = {}, callback) => {
       if (value !== undefined && value !== null) backend[attr] = value;
 
       if (!value) {
-        value = getParameterByName(attr.toLowerCase())
+        value = getQsParameterByName(attr.toLowerCase())
         if (value === 'true') value = true;
         if (value === 'false') value = false;
         if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
@@ -126,8 +117,8 @@ i18next.init = (options = {}, callback) => {
     callback(err, t);
   }
 
-  if (!options.backend.apiKey && getParameterByName('apikey')) {
-    options.backend.apiKey = getParameterByName('apikey');
+  if (!options.backend.apiKey && getQsParameterByName('apikey')) {
+    options.backend.apiKey = getQsParameterByName('apikey');
   }
 
   if (!options.backend.autoPilot || options.backend.autoPilot === 'false')

@@ -9967,6 +9967,7 @@
   function handler$3(payload) {
     api.initialized = true;
     clearInterval(api.initInterval);
+    delete api.initInterval;
     api.sendCurrentParsedContent();
     api.sendCurrentTargetLanguage();
   }
@@ -12265,7 +12266,33 @@
     return found;
   }
 
+  function getQsParameterByName(name, url) {
+    if (typeof window === 'undefined') return null;
+    if (!url) url = window.location.href.toLowerCase();
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+    var results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+  }
+
+  var mutationTriggeringElements = {};
+
   function ignoreMutation(ele) {
+    if (ele.uniqueID) {
+      var info = mutationTriggeringElements[ele.uniqueID];
+
+      if (info && info.triggered > 10 && info.lastTriggerDate + 500 < Date.now()) {
+        if (!info.warned && console) {
+          console.warn('locize ::: ignoring element change - an element is rerendering too often in short interval', '\n', 'consider adding the "data-locize-editor-ignore:" attribute to the element:', ele);
+          info.warned = true;
+        }
+
+        return true;
+      }
+    }
+
     var ret = ele.dataset && (ele.dataset.i18nextEditorElement === 'true' || ele.dataset.locizeEditorIgnore === 'true');
     if (!ret && ele.parentElement) return ignoreMutation(ele.parentElement);
     return ret;
@@ -12299,6 +12326,14 @@
           return;
         }
 
+        Object.keys(mutationTriggeringElements).forEach(function (k) {
+          var info = mutationTriggeringElements[k];
+
+          if (info.lastTriggerDate + 60000 < Date.now()) {
+            delete mutationTriggeringElements[k];
+          }
+        });
+
         if (mutation.type === 'childList') {
           var notOurs = 0;
 
@@ -12317,8 +12352,21 @@
         }
 
         triggerMutation = true;
+
+        if (mutation.target && mutation.target.uniqueID) {
+          var info = mutationTriggeringElements[mutation.target.uniqueID] || {
+            triggered: 0
+          };
+          info.triggered = info.triggered + 1;
+          info.lastTriggerDate = Date.now();
+          mutationTriggeringElements[mutation.target.uniqueID] = info;
+        }
+
         var includedAlready = targetEles.reduce(function (mem, element) {
-          if (mem || element.contains(mutation.target) || !mutation.target.parentElement) return true;
+          if (mem || element.contains(mutation.target) || !mutation.target.parentElement) {
+            return true;
+          }
+
           return false;
         }, false);
 
@@ -12850,105 +12898,116 @@
     isInIframe = self !== top;
   } catch (e) {}
 
-  var i18next;
-  var locizePlugin = {
-    type: '3rdParty',
-    init: function init(i18n) {
-      var options = i18n.options;
-      i18next = i18n;
+  function configurePostProcessor(i18next, options) {
+    i18next.use(SubliminalPostProcessor);
 
-      if (!isInIframe) {
-        i18next.use(SubliminalPostProcessor);
-
-        if (typeof options.postProcess === 'string') {
-          options.postProcess = [options.postProcess, 'subliminal'];
-        } else if (Array.isArray(options.postProcess)) {
-          options.postProcess.push('subliminal');
-        } else {
-          options.postProcess = 'subliminal';
-        }
-
-        options.postProcessPassResolved = true;
-      }
-
-      var impl = {
-        getResource: function getResource(lng, ns, key) {
-          return i18n.getResource(lng, ns, key);
-        },
-        setResource: function setResource(lng, ns, key, value) {
-          return i18n.addResource(lng, ns, key, value, {
-            silent: true
-          });
-        },
-        getResourceBundle: function getResourceBundle(lng, ns, cb) {
-          i18n.loadNamespaces(ns, function () {
-            cb(i18n.getResourceBundle(lng, ns));
-          });
-        },
-        getLng: function getLng() {
-          return i18n.languages[0];
-        },
-        getSourceLng: function getSourceLng() {
-          var fallback = i18n.options.fallbackLng;
-          if (typeof fallback === 'string') return fallback;
-          if (Array.isArray(fallback)) return fallback[fallback.length - 1];
-
-          if (fallback && fallback["default"]) {
-            if (typeof fallback["default"] === 'string') return fallback;
-            if (Array.isArray(fallback["default"])) return fallback["default"][fallback["default"].length - 1];
-          }
-
-          if (typeof fallback === 'function') {
-            var res = fallback(i18n.resolvedLanguage);
-            if (typeof res === 'string') return res;
-            if (Array.isArray(res)) return res[res.length - 1];
-          }
-
-          return 'dev';
-        },
-        getLocizeDetails: function getLocizeDetails() {
-          var backendName;
-
-          if (i18n.services.backendConnector.backend && i18n.services.backendConnector.backend.options && i18n.services.backendConnector.backend.options.loadPath && i18n.services.backendConnector.backend.options.loadPath.indexOf('.locize.') > 0) {
-            backendName = 'I18NextLocizeBackend';
-          } else {
-            backendName = i18n.services.backendConnector.backend ? i18n.services.backendConnector.backend.constructor.name : 'options.resources';
-          }
-
-          var opts = {
-            backendName: backendName,
-            sourceLng: impl.getSourceLng(),
-            i18nFormat: i18n.options.compatibilityJSON === 'v3' ? 'i18next_v3' : 'i18next_v4',
-            i18nFramework: 'i18next',
-            isLocizify: i18n.options.isLocizify,
-            defaultNS: i18n.options.defaultNS
-          };
-          if (!i18n.options.backend && !i18n.options.editor) return opts;
-          var pickFrom = i18n.options.backend || i18n.options.editor;
-          return _objectSpread$a(_objectSpread$a({}, opts), {}, {
-            projectId: pickFrom.projectId,
-            version: pickFrom.version
-          });
-        },
-        bindLanguageChange: function bindLanguageChange(cb) {
-          i18n.on('languageChanged', cb);
-        },
-        bindMissingKeyHandler: function bindMissingKeyHandler(cb) {
-          i18n.options.missingKeyHandler = function (lng, ns, k, val, isUpdate, opts) {
-            if (!isUpdate) cb(lng, ns, k, val);
-          };
-        },
-        triggerRerender: function triggerRerender() {
-          i18n.emit('editorSaved');
-        }
-      };
-
-      if (!isInIframe) {
-        start(impl);
-      } else {
-        startLegacy(impl);
-      }
+    if (typeof options.postProcess === 'string') {
+      options.postProcess = [options.postProcess, 'subliminal'];
+    } else if (Array.isArray(options.postProcess)) {
+      options.postProcess.push('subliminal');
+    } else {
+      options.postProcess = 'subliminal';
     }
+
+    options.postProcessPassResolved = true;
+  }
+
+  function getImplementation(i18n) {
+    var impl = {
+      getResource: function getResource(lng, ns, key) {
+        return i18n.getResource(lng, ns, key);
+      },
+      setResource: function setResource(lng, ns, key, value) {
+        return i18n.addResource(lng, ns, key, value, {
+          silent: true
+        });
+      },
+      getResourceBundle: function getResourceBundle(lng, ns, cb) {
+        i18n.loadNamespaces(ns, function () {
+          cb(i18n.getResourceBundle(lng, ns));
+        });
+      },
+      getLng: function getLng() {
+        return i18n.languages[0];
+      },
+      getSourceLng: function getSourceLng() {
+        var fallback = i18n.options.fallbackLng;
+        if (typeof fallback === 'string') return fallback;
+        if (Array.isArray(fallback)) return fallback[fallback.length - 1];
+
+        if (fallback && fallback["default"]) {
+          if (typeof fallback["default"] === 'string') return fallback;
+          if (Array.isArray(fallback["default"])) return fallback["default"][fallback["default"].length - 1];
+        }
+
+        if (typeof fallback === 'function') {
+          var res = fallback(i18n.resolvedLanguage);
+          if (typeof res === 'string') return res;
+          if (Array.isArray(res)) return res[res.length - 1];
+        }
+
+        return 'dev';
+      },
+      getLocizeDetails: function getLocizeDetails() {
+        var backendName;
+
+        if (i18n.services.backendConnector.backend && i18n.services.backendConnector.backend.options && i18n.services.backendConnector.backend.options.loadPath && i18n.services.backendConnector.backend.options.loadPath.indexOf('.locize.') > 0) {
+          backendName = 'I18NextLocizeBackend';
+        } else {
+          backendName = i18n.services.backendConnector.backend ? i18n.services.backendConnector.backend.constructor.name : 'options.resources';
+        }
+
+        var opts = {
+          backendName: backendName,
+          sourceLng: impl.getSourceLng(),
+          i18nFormat: i18n.options.compatibilityJSON === 'v3' ? 'i18next_v3' : 'i18next_v4',
+          i18nFramework: 'i18next',
+          isLocizify: i18n.options.isLocizify,
+          defaultNS: i18n.options.defaultNS
+        };
+        if (!i18n.options.backend && !i18n.options.editor) return opts;
+        var pickFrom = i18n.options.backend || i18n.options.editor;
+        return _objectSpread$a(_objectSpread$a({}, opts), {}, {
+          projectId: pickFrom.projectId,
+          version: pickFrom.version
+        });
+      },
+      bindLanguageChange: function bindLanguageChange(cb) {
+        i18n.on('languageChanged', cb);
+      },
+      bindMissingKeyHandler: function bindMissingKeyHandler(cb) {
+        i18n.options.missingKeyHandler = function (lng, ns, k, val, isUpdate, opts) {
+          if (!isUpdate) cb(lng, ns, k, val);
+        };
+      },
+      triggerRerender: function triggerRerender() {
+        i18n.emit('editorSaved');
+      }
+    };
+    return impl;
+  }
+
+  var i18next;
+
+  var locizeEditorPlugin = function locizeEditorPlugin() {
+    var opt = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    opt.qsProp = opt.qsProp || 'incontext';
+    return {
+      type: '3rdParty',
+      init: function init(i18n) {
+        var options = i18n.options;
+        i18next = i18n;
+        var showInContext = getQsParameterByName(opt.qsProp) === 'true';
+        if (!isInIframe && showInContext) configurePostProcessor(i18next, options);
+        var impl = getImplementation(i18n);
+
+        if (!isInIframe && showInContext) {
+          start(impl);
+        } else {
+          startLegacy(impl);
+        }
+      }
+    };
   };
 
   function startStandalone() {
@@ -12979,35 +13038,23 @@
     reloadOnSave: true,
     bindSavedMissing: true
   };
+  i18next$1.use(I18NextLocizeBackend).use(locizeEditorPlugin());
+  i18next$1.on('editorSaved', () => {
+    i18nextify.forceRerender();
+  });
 
-  function getParameterByName(name) {
-    var url = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : window.location.href.toLowerCase();
+  function getQsParameterByName$1(name, url) {
+    if (typeof window === 'undefined') return null;
+    if (!url) url = window.location.href.toLowerCase(); // eslint-disable-next-line no-useless-escape
+
     name = name.replace(/[\[\]]/g, '\\$&');
-    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
-        results = regex.exec(url);
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+    var results = regex.exec(url);
     if (!results) return null;
     if (!results[2]) return '';
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
   }
 
-  var isInIframe$1 = typeof window !== 'undefined';
-
-  try {
-    // eslint-disable-next-line no-undef, no-restricted-globals
-    isInIframe$1 = self !== top; // eslint-disable-next-line no-empty
-  } catch (e) {}
-
-  i18next$1.use(I18NextLocizeBackend);
-
-  if (isInIframe$1) {
-    i18next$1.use(locizePlugin);
-  } else if (getParameterByName('incontext') === 'true') {
-    i18next$1.use(locizePlugin);
-  }
-
-  i18next$1.on('editorSaved', () => {
-    i18nextify.forceRerender();
-  });
   var originalInit = i18next$1.init;
 
   i18next$1.init = function () {
@@ -13042,7 +13089,7 @@
         if (value !== undefined && value !== null) backend[attr] = value;
 
         if (!value) {
-          value = getParameterByName(attr.toLowerCase());
+          value = getQsParameterByName$1(attr.toLowerCase());
           if (value === 'true') value = true;
           if (value === 'false') value = false;
           if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
@@ -13065,8 +13112,8 @@
       callback(err, t);
     }
 
-    if (!options.backend.apiKey && getParameterByName('apikey')) {
-      options.backend.apiKey = getParameterByName('apikey');
+    if (!options.backend.apiKey && getQsParameterByName$1('apikey')) {
+      options.backend.apiKey = getQsParameterByName$1('apikey');
     }
 
     if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next$1, _objectSpread2(_objectSpread2({}, options), enforce), handleI18nextInitialized);
