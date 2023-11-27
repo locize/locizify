@@ -1,4 +1,3 @@
-[![Travis](https://img.shields.io/travis/locize/locizify/master.svg?style=flat-square)](https://travis-ci.org/locize/locizify)
 [![Coveralls](https://img.shields.io/coveralls/locize/locizify/master.svg?style=flat-square)](https://coveralls.io/github/locize/locizify)
 [![npm version](https://img.shields.io/npm/v/locizify.svg?style=flat-square)](https://www.npmjs.com/package/locizify)
 
@@ -13,9 +12,19 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  src="https://unpkg.com/locizify@^5.3.1"
+  src="https://unpkg.com/locizify@^6.0.7"
   autopilot
 ></script>
+
+<!-- or -->
+<script
+  id="locizify"
+  projectid="[PROJECT_ID]"
+  apikey="[API_KEY]"
+  src="https://cdn.jsdelivr.net/npm/locizify@6.0.7"
+  autopilot
+></script>
+
 ```
 
 Checkout this [video](https://youtu.be/f0ukRI0LMfo?t=180) to see locizify in action.
