@@ -21,7 +21,7 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  src="https://cdn.jsdelivr.net/npm/locizify@6.0.7"
+  src="https://cdn.jsdelivr.net/npm/locizify@^6.0.7"
   autopilot
 ></script>
 
