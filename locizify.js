@@ -13002,7 +13002,7 @@
       init: function init(i18n) {
         var options = i18n.options;
         i18next = i18n;
-        var showInContext = getQsParameterByName(opt.qsProp) === 'true';
+        var showInContext = opt.show || getQsParameterByName(opt.qsProp) === 'true';
         if (!isInIframe && showInContext) configurePostProcessor(i18next, options);
         var impl = getImplementation(i18n);
 
@@ -13014,6 +13014,8 @@
       }
     };
   };
+
+  var locizePlugin = locizeEditorPlugin();
 
   function startStandalone() {
     startLegacy({
@@ -13043,7 +13045,7 @@
     reloadOnSave: true,
     bindSavedMissing: true
   };
-  i18next$1.use(I18NextLocizeBackend).use(locizeEditorPlugin());
+  i18next$1.use(I18NextLocizeBackend).use(locizePlugin);
   i18next$1.on('editorSaved', () => {
     i18nextify.forceRerender();
   });

@@ -1,6 +1,6 @@
 import i18nextify from 'i18nextify';
 import LocizeBackend from 'i18next-locize-backend';
-import { locizeEditorPlugin, turnOn, turnOff, setEditorLng } from 'locize';
+import { locizePlugin, turnOn, turnOff, setEditorLng } from 'locize';
 
 const { i18next } = i18nextify;
 
@@ -13,7 +13,7 @@ const defaults = {
   bindSavedMissing: true,
 };
 
-i18next.use(LocizeBackend).use(locizeEditorPlugin());
+i18next.use(LocizeBackend).use(locizePlugin);
 
 i18next.on('editorSaved', () => {
   i18nextify.forceRerender();
