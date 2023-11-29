@@ -12933,7 +12933,7 @@
         });
       },
       getLng: function getLng() {
-        return i18n.languages[0];
+        return i18n.resolvedLanguage || i18n.languages[0];
       },
       getSourceLng: function getSourceLng() {
         var fallback = i18n.options.fallbackLng;

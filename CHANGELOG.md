@@ -1,3 +1,7 @@
+### 6.0.8
+
+- update locize plugin
+
 ### 6.0.7
 
 - update locize plugin
