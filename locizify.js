@@ -143,45 +143,45 @@
 
   unwrapExports(_typeof_1);
 
-  var toPrimitive = createCommonjsModule(function (module) {
+  var toPrimitive_1 = createCommonjsModule(function (module) {
   var _typeof = _typeof_1["default"];
 
-  function _toPrimitive(input, hint) {
-    if (_typeof(input) !== "object" || input === null) return input;
-    var prim = input[Symbol.toPrimitive];
+  function toPrimitive(t, r) {
+    if ("object" != _typeof(t) || !t) return t;
+    var e = t[Symbol.toPrimitive];
 
-    if (prim !== undefined) {
-      var res = prim.call(input, hint || "default");
-      if (_typeof(res) !== "object") return res;
+    if (void 0 !== e) {
+      var i = e.call(t, r || "default");
+      if ("object" != _typeof(i)) return i;
       throw new TypeError("@@toPrimitive must return a primitive value.");
     }
 
-    return (hint === "string" ? String : Number)(input);
+    return ("string" === r ? String : Number)(t);
   }
 
-  module.exports = _toPrimitive, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  module.exports = toPrimitive, module.exports.__esModule = true, module.exports["default"] = module.exports;
   });
 
-  unwrapExports(toPrimitive);
+  unwrapExports(toPrimitive_1);
 
-  var toPropertyKey = createCommonjsModule(function (module) {
+  var toPropertyKey_1 = createCommonjsModule(function (module) {
   var _typeof = _typeof_1["default"];
 
 
 
-  function _toPropertyKey(arg) {
-    var key = toPrimitive(arg, "string");
-    return _typeof(key) === "symbol" ? key : String(key);
+  function toPropertyKey(t) {
+    var i = toPrimitive_1(t, "string");
+    return "symbol" == _typeof(i) ? i : String(i);
   }
 
-  module.exports = _toPropertyKey, module.exports.__esModule = true, module.exports["default"] = module.exports;
+  module.exports = toPropertyKey, module.exports.__esModule = true, module.exports["default"] = module.exports;
   });
 
-  unwrapExports(toPropertyKey);
+  unwrapExports(toPropertyKey_1);
 
   var defineProperty = createCommonjsModule(function (module) {
   function _defineProperty(obj, key, value) {
-    key = toPropertyKey(key);
+    key = toPropertyKey_1(key);
 
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -3386,22 +3386,22 @@
     }, _typeof$3(o);
   }
 
-  function _toPrimitive$1(input, hint) {
-    if (_typeof$3(input) !== "object" || input === null) return input;
-    var prim = input[Symbol.toPrimitive];
+  function toPrimitive(t, r) {
+    if ("object" != _typeof$3(t) || !t) return t;
+    var e = t[Symbol.toPrimitive];
 
-    if (prim !== undefined) {
-      var res = prim.call(input, hint || "default");
-      if (_typeof$3(res) !== "object") return res;
+    if (void 0 !== e) {
+      var i = e.call(t, r || "default");
+      if ("object" != _typeof$3(i)) return i;
       throw new TypeError("@@toPrimitive must return a primitive value.");
     }
 
-    return (hint === "string" ? String : Number)(input);
+    return ("string" === r ? String : Number)(t);
   }
 
-  function _toPropertyKey$1(arg) {
-    var key = _toPrimitive$1(arg, "string");
-    return _typeof$3(key) === "symbol" ? key : String(key);
+  function toPropertyKey(t) {
+    var i = toPrimitive(t, "string");
+    return "symbol" == _typeof$3(i) ? i : String(i);
   }
 
   function _defineProperties$1(target, props) {
@@ -3410,7 +3410,7 @@
       descriptor.enumerable = descriptor.enumerable || false;
       descriptor.configurable = true;
       if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, _toPropertyKey$1(descriptor.key), descriptor);
+      Object.defineProperty(target, toPropertyKey(descriptor.key), descriptor);
     }
   }
 
@@ -3863,7 +3863,7 @@
       descriptor.enumerable = descriptor.enumerable || false;
       descriptor.configurable = true;
       if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, toPropertyKey(descriptor.key), descriptor);
+      Object.defineProperty(target, toPropertyKey_1(descriptor.key), descriptor);
     }
   }
 
@@ -8618,7 +8618,7 @@
       descriptor.enumerable = descriptor.enumerable || false;
       descriptor.configurable = true;
       if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, _toPropertyKey$2(descriptor.key), descriptor);
+      Object.defineProperty(target, _toPropertyKey$1(descriptor.key), descriptor);
     }
   }
 
@@ -8631,13 +8631,13 @@
     return Constructor;
   }
 
-  function _toPropertyKey$2(arg) {
-    var key = _toPrimitive$2(arg, "string");
+  function _toPropertyKey$1(arg) {
+    var key = _toPrimitive$1(arg, "string");
 
     return _typeof$5(key) === "symbol" ? key : String(key);
   }
 
-  function _toPrimitive$2(input, hint) {
+  function _toPrimitive$1(input, hint) {
     if (_typeof$5(input) !== "object" || input === null) return input;
     var prim = input[Symbol.toPrimitive];
 
@@ -9399,7 +9399,7 @@
   I18NextLocizeBackend.type = 'backend';
 
   function _defineProperty$3(obj, key, value) {
-    key = _toPropertyKey$1(key);
+    key = toPropertyKey(key);
 
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -13008,7 +13008,7 @@
 
         if (!isInIframe && showInContext) {
           start(impl);
-        } else {
+        } else if (isInIframe) {
           startLegacy(impl);
         }
       }
