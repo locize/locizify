@@ -1,3 +1,7 @@
+### 6.0.10
+
+- update i18next and locize deps
+
 ### 6.0.9
 
 - update locize plugin
