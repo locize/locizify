@@ -1,3 +1,7 @@
+### 6.0.12
+
+- update i18next-locize-backend and i18nextify dep (before next major versions)
+
 ### 6.0.11
 
 - update i18next-locize-backend dep

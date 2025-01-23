@@ -2987,16 +2987,12 @@
     return Promise.resolve(maybePromise);
   }
 
-  var fetchApi;
+  var fetchApi = typeof fetch === 'function' ? fetch : undefined;
 
-  if (typeof fetch === 'function') {
-    if (typeof global !== 'undefined' && global.fetch) {
-      fetchApi = global.fetch;
-    } else if (typeof window !== 'undefined' && window.fetch) {
-      fetchApi = window.fetch;
-    } else {
-      fetchApi = fetch;
-    }
+  if (typeof global !== 'undefined' && global.fetch) {
+    fetchApi = global.fetch;
+  } else if (typeof window !== 'undefined' && window.fetch) {
+    fetchApi = window.fetch;
   }
 
   if (typeof require !== 'undefined' && typeof window === 'undefined') {
@@ -3074,16 +3070,12 @@
       return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
     }, _typeof$1(o);
   }
-  var fetchApi$1;
+  var fetchApi$1 = typeof fetch === 'function' ? fetch : undefined;
 
-  if (typeof fetch === 'function') {
-    if (typeof global !== 'undefined' && global.fetch) {
-      fetchApi$1 = global.fetch;
-    } else if (typeof window !== 'undefined' && window.fetch) {
-      fetchApi$1 = window.fetch;
-    } else {
-      fetchApi$1 = fetch;
-    }
+  if (typeof global !== 'undefined' && global.fetch) {
+    fetchApi$1 = global.fetch;
+  } else if (typeof window !== 'undefined' && window.fetch) {
+    fetchApi$1 = window.fetch;
   }
 
   var XmlHttpRequestApi;
@@ -8337,7 +8329,11 @@
 
   function getDefaults$2() {
     var scriptEle = document.getElementById('i18nextify');
-    return {
+    var supportedLngs = scriptEle && (scriptEle.getAttribute('supportedlngs') || scriptEle.getAttribute('supportedLngs')) || undefined;
+    if (typeof supportedLngs === 'string') supportedLngs = supportedLngs.split(',').map(function (lng) {
+      return lng.trim();
+    });
+    var opt = {
       autorun: true,
       ele: document.body,
       keyAttr: 'i18next-key',
@@ -8356,13 +8352,25 @@
       keySeparator: '#|#',
       debug: window.location.search && window.location.search.indexOf('debug=true') > -1,
       saveMissing: window.location.search && window.location.search.indexOf('saveMissing=true') > -1,
-      namespace: false,
-      namespaceFromPath: false,
+      namespace: scriptEle && scriptEle.getAttribute('namespace') || false,
+      namespaceFromPath: scriptEle && (scriptEle.getAttribute('namespacefrompath') || scriptEle.getAttribute('namespaceFromPath')) || false,
       missingKeyHandler: missingHandler,
       ns: [],
-      onInitialTranslate: function onInitialTranslate() {},
-      fallbackLng: scriptEle && (scriptEle.getAttribute('fallbacklng') || scriptEle.getAttribute('fallbackLng')) || undefined
+      supportedLngs: supportedLngs,
+      load: scriptEle && scriptEle.getAttribute('load') || undefined,
+      fallbackLng: scriptEle && (scriptEle.getAttribute('fallbacklng') || scriptEle.getAttribute('fallbackLng')) || undefined,
+      onInitialTranslate: function onInitialTranslate() {}
     };
+    var loadPath = scriptEle && (scriptEle.getAttribute('loadpath') || scriptEle.getAttribute('loadPath')) || undefined;
+    var addPath = scriptEle && (scriptEle.getAttribute('addpath') || scriptEle.getAttribute('addPath')) || undefined;
+
+    if (loadPath || addPath) {
+      opt.backend = {};
+      if (loadPath) opt.backend.loadPath = loadPath;
+      if (addPath) opt.backend.addPath = addPath;
+    }
+
+    return opt;
   } // auto initialize on dom ready
 
 
@@ -8624,16 +8632,12 @@
     return promise;
   }
 
-  var fetchApi$2;
+  var fetchApi$2 = typeof fetch === 'function' ? fetch : undefined;
 
-  if (typeof fetch === 'function') {
-    if (typeof global !== 'undefined' && global.fetch) {
-      fetchApi$2 = global.fetch;
-    } else if (typeof window !== 'undefined' && window.fetch) {
-      fetchApi$2 = window.fetch;
-    } else {
-      fetchApi$2 = fetch;
-    }
+  if (typeof global !== 'undefined' && global.fetch) {
+    fetchApi$2 = global.fetch;
+  } else if (typeof window !== 'undefined' && window.fetch) {
+    fetchApi$2 = window.fetch;
   }
 
   if (typeof require !== 'undefined' && typeof window === 'undefined') {
@@ -8657,16 +8661,12 @@
       return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
     }, _typeof$4(o);
   }
-  var fetchApi$3;
+  var fetchApi$3 = typeof fetch === 'function' ? fetch : undefined;
 
-  if (typeof fetch === 'function') {
-    if (typeof global !== 'undefined' && global.fetch) {
-      fetchApi$3 = global.fetch;
-    } else if (typeof window !== 'undefined' && window.fetch) {
-      fetchApi$3 = window.fetch;
-    } else {
-      fetchApi$3 = fetch;
-    }
+  if (typeof global !== 'undefined' && global.fetch) {
+    fetchApi$3 = global.fetch;
+  } else if (typeof window !== 'undefined' && window.fetch) {
+    fetchApi$3 = window.fetch;
   }
 
   var XmlHttpRequestApi$1;
