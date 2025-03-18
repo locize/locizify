@@ -1,23 +1,23 @@
-import i18nextify from 'i18nextify';
-import LocizeBackend from 'i18next-locize-backend';
-import { locizePlugin, turnOn, turnOff, setEditorLng } from 'locize';
+import i18nextify from 'i18nextify'
+import LocizeBackend from 'i18next-locize-backend'
+import { locizePlugin, setEditorLng } from 'locize'
 
-const { i18next } = i18nextify;
+const { i18next } = i18nextify
 
 const enforce = {
-  saveMissingTo: 'all',
-};
+  saveMissingTo: 'all'
+}
 
 const defaults = {
   reloadOnSave: true,
-  bindSavedMissing: true,
-};
+  bindSavedMissing: true
+}
 
-i18next.use(LocizeBackend).use(locizePlugin);
+i18next.use(LocizeBackend).use(locizePlugin)
 
 i18next.on('editorSaved', () => {
-  i18nextify.forceRerender();
-});
+  i18nextify.forceRerender()
+})
 
 function getQsParameterByName (name, url) {
   if (typeof window === 'undefined') return null
@@ -31,14 +31,14 @@ function getQsParameterByName (name, url) {
   return decodeURIComponent(results[2].replace(/\+/g, ' '))
 }
 
-const originalInit = i18next.init;
+const originalInit = i18next.init
 i18next.init = (options = {}, callback) => {
-  options = { ...defaults, ...options, isLocizify: true };
-  const scriptEle = document.getElementById('locizify');
+  options = { ...defaults, ...options, isLocizify: true }
+  const scriptEle = document.getElementById('locizify')
 
   if (scriptEle) {
-    const config = {};
-    const backend = {};
+    const config = {}
+    const backend = {}
 
     const toRead = [
       'fallbackLng',
@@ -50,8 +50,8 @@ i18next.init = (options = {}, callback) => {
       'cleanWhitespace',
       'namespace',
       'namespaceFromPath',
-      'load',
-    ];
+      'load'
+    ]
     const toReadAsArray = [
       'ignoreTags',
       'ignoreIds',
@@ -61,64 +61,70 @@ i18next.init = (options = {}, callback) => {
       'inlineTags',
       'ignoreInlineOn',
       'ignoreCleanIndentFor',
-      'ns',
-    ];
+      'ns'
+    ]
     const toReadBackend = [
       'projectId',
       'apiKey',
       'referenceLng',
       'version',
       'allowedAddOrUpdateHost',
-      'autoPilot',
-    ];
+      'autoPilot'
+    ]
 
-    toRead.forEach((attr) => {
-      let value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
-      if (value === 'true') value = true;
-      if (value === 'false') value = false;
-      if (value !== undefined && value !== null) config[attr] = value;
-    });
+    toRead.forEach(attr => {
+      let value =
+        scriptEle.getAttribute(attr.toLowerCase()) ||
+        scriptEle.getAttribute('data-' + attr.toLowerCase())
+      if (value === 'true') value = true
+      if (value === 'false') value = false
+      if (value !== undefined && value !== null) config[attr] = value
+    })
 
-    toReadAsArray.forEach((attr) => {
-      let value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
+    toReadAsArray.forEach(attr => {
+      let value =
+        scriptEle.getAttribute(attr.toLowerCase()) ||
+        scriptEle.getAttribute('data-' + attr.toLowerCase())
       if (value !== undefined && value !== null)
-        config[attr] = value.split(',').map((item) => item.trim());
-    });
+        config[attr] = value.split(',').map(item => item.trim())
+    })
 
-    toReadBackend.forEach((attr) => {
-      let value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
-      if (value === 'true') value = true;
-      if (value === 'false') value = false;
-      if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
-      if (value !== undefined && value !== null) backend[attr] = value;
+    toReadBackend.forEach(attr => {
+      let value =
+        scriptEle.getAttribute(attr.toLowerCase()) ||
+        scriptEle.getAttribute('data-' + attr.toLowerCase())
+      if (value === 'true') value = true
+      if (value === 'false') value = false
+      if (attr.toLowerCase() === 'autopilot' && value === '') value = true
+      if (value !== undefined && value !== null) backend[attr] = value
 
       if (!value) {
         value = getQsParameterByName(attr.toLowerCase())
-        if (value === 'true') value = true;
-        if (value === 'false') value = false;
-        if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
-        if (value !== undefined && value !== null) backend[attr] = value;
+        if (value === 'true') value = true
+        if (value === 'false') value = false
+        if (attr.toLowerCase() === 'autopilot' && value === '') value = true
+        if (value !== undefined && value !== null) backend[attr] = value
       }
-    });
+    })
 
     if (backend.allowedAddOrUpdateHost) {
-      backend.allowedAddOrUpdateHosts = [backend.allowedAddOrUpdateHost];
-      delete backend.allowedAddOrUpdateHost;
+      backend.allowedAddOrUpdateHosts = [backend.allowedAddOrUpdateHost]
+      delete backend.allowedAddOrUpdateHost
     }
 
-    options = { ...defaults, ...options, ...config };
-    options.backend = { ...options.backend, ...backend };
+    options = { ...defaults, ...options, ...config }
+    options.backend = { ...options.backend, ...backend }
   }
 
-  function handleI18nextInitialized(err, t) {
+  function handleI18nextInitialized (err, t) {
     // ready now
 
     // call orginal callback
-    callback(err, t);
+    callback(err, t)
   }
 
   if (!options.backend.apiKey && getQsParameterByName('apikey')) {
-    options.backend.apiKey = getQsParameterByName('apikey');
+    options.backend.apiKey = getQsParameterByName('apikey')
   }
 
   if (!options.backend.autoPilot || options.backend.autoPilot === 'false')
@@ -126,49 +132,49 @@ i18next.init = (options = {}, callback) => {
       i18next,
       { ...options, ...enforce },
       handleI18nextInitialized
-    );
+    )
 
-  const locizeBackend = new LocizeBackend(options.backend);
+  const locizeBackend = new LocizeBackend(options.backend)
   locizeBackend.getOptions((err, opts) => {
     if (
       err &&
       typeof console === 'object' &&
       typeof console.error === 'function'
     )
-      console.error(err);
+      console.error(err)
     originalInit.call(
       i18next,
       { ...opts, ...options, ...enforce },
       handleI18nextInitialized
-    );
-  });
-};
+    )
+  })
+}
 
 i18nextify.getLanguages = function (callback) {
   if (i18next.services.backendConnector) {
-    i18next.services.backendConnector.backend.getLanguages(callback);
+    i18next.services.backendConnector.backend.getLanguages(callback)
   } else {
-    function ready() {
-      i18next.off('initialized', ready);
-      i18next.services.backendConnector.backend.getLanguages(callback);
+    function ready () {
+      i18next.off('initialized', ready)
+      i18next.services.backendConnector.backend.getLanguages(callback)
     }
-    i18next.on('initialized', ready);
+    i18next.on('initialized', ready)
   }
-};
+}
 
 i18nextify.getOptions = function (callback) {
   if (i18next.services.backendConnector) {
-    i18next.services.backendConnector.backend.getOptions(callback);
+    i18next.services.backendConnector.backend.getOptions(callback)
   } else {
-    function ready() {
-      i18next.off('initialized', ready);
-      i18next.services.backendConnector.backend.getOptions(callback);
+    function ready () {
+      i18next.off('initialized', ready)
+      i18next.services.backendConnector.backend.getOptions(callback)
     }
-    i18next.on('initialized', ready);
+    i18next.on('initialized', ready)
   }
-};
+}
 
 // add editor functions
-i18nextify.editor = { turnOn, turnOff, setEditorLng };
+i18nextify.editor = { setEditorLng }
 
-export default i18nextify;
+export default i18nextify

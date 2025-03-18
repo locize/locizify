@@ -1,3 +1,7 @@
+### 6.1.0
+
+- update locize script for incontext editor
+
 ### 6.0.12
 
 - update i18next-locize-backend and i18nextify dep (before next major versions)
@@ -61,7 +65,7 @@
 
 ### 5.4.0
 
-- optional data-* attributes for script tag usage
+- optional data-\* attributes for script tag usage
 
 ### 5.3.3
 

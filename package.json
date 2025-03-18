@@ -1,6 +1,6 @@
 {
   "name": "locizify",
-  "version": "6.0.12",
+  "version": "6.1.0",
   "description": "main script for using locize service in frontend",
   "main": "dist/commonjs/index.js",
   "jsnext:main": "dist/es/index.js",
@@ -22,7 +22,7 @@
   "dependencies": {
     "i18next-locize-backend": "6.5.5",
     "i18nextify": "3.3.4",
-    "locize": "3.3.0"
+    "locize": "4.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.19.3",
