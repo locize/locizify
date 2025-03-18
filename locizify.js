@@ -8548,76 +8548,6 @@
       if (callNow) func.apply(context, args);
     };
   }
-  function isWindow(obj) {
-    return obj != null && obj === obj.window;
-  }
-  function getWindow(elem) {
-    return isWindow(elem) ? elem : elem.nodeType === 9 && elem.defaultView;
-  }
-  function offset(elem) {
-    var box = {
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0
-    };
-    var doc = elem && elem.ownerDocument;
-    var docElem = doc && doc.documentElement;
-    if (!docElem) return box;
-    if (_typeof$3(elem.getBoundingClientRect) !== "undefined") {
-      box = elem.getBoundingClientRect();
-    }
-    var win = getWindow(doc);
-    var top = box.top + win.pageYOffset - docElem.clientTop;
-    var left = box.left + win.pageXOffset - docElem.clientLeft;
-    return {
-      top: top,
-      left: left,
-      right: left + (box.right - box.left),
-      bottom: top + (box.bottom - box.top)
-    };
-  }
-  function getClickedElement(e) {
-    if (e.srcElement && e.srcElement.nodeType === 1 && (e.srcElement.nodeName === 'BUTTON' || e.srcElement.nodeName === 'INPUT')) {
-      if (e.srcElement.getAttribute && e.srcElement.getAttribute('ignorelocizeeditor') === '') {
-        return null;
-      }
-      return e.srcElement;
-    }
-    var el;
-    if (e.originalEvent && e.originalEvent.explicitOriginalTarget) {
-      el = e.originalEvent.explicitOriginalTarget;
-    } else {
-      var parent = e.srcElement;
-      if (parent.getAttribute && parent.getAttribute('ignorelocizeeditor') === '') return null;
-      var left = e.pageX;
-      var top = e.pageY;
-      var topStartsAt = 0;
-      var topBreaksAt;
-      for (var i = 0; i < parent.childNodes.length; i++) {
-        var n = parent.childNodes[i];
-        var nOffset = offset(n);
-        if (n.nodeType === 1 && nOffset.bottom < top) topStartsAt = i + 1;
-        if (!topBreaksAt && nOffset.top + (n.clientHeight || 0) > top) topBreaksAt = i;
-      }
-      if (topStartsAt + 1 > parent.childNodes.length) topStartsAt = parent.childNodes.length - 1;
-      if (!topBreaksAt) topBreaksAt = parent.childNodes.length;
-      for (var y = topStartsAt; y < topBreaksAt; y++) {
-        var _n = parent.childNodes[y];
-        var _nOffset = offset(_n);
-        if (_nOffset.left > left) {
-          break;
-        }
-        if (_n && _n.nodeType !== 8) el = _n;
-      }
-    }
-    return el;
-  }
-  function getElementText(el) {
-    var str = el.textContent || el.text && el.text.innerText || el.placeholder;
-    if (typeof str !== 'string') return;
-    return str.replace(/\n +/g, '').trim();
-  }
   function getAttribute$1(el, name) {
     return el && el.getAttribute && el.getAttribute(name);
   }
@@ -8825,7 +8755,7 @@
     sendCurrentParsedContent: debounce$2(sendCurrentParsedContentDebounced, 500),
     sendCurrentTargetLanguage: function sendCurrentTargetLanguage(lng) {
       sendMessage('sendCurrentTargetLanguage', {
-        targetLng: lng || api.i18n.getLng()
+        targetLng: lng || api.i18n && api.i18n.getLng && api.i18n.getLng()
       });
     },
     sendHrefchanged: function sendHrefchanged(href) {
@@ -9293,8 +9223,8 @@
         ns: item.ns,
         key: item.key
       }), item.value), uni === null || uni === void 0 ? void 0 : uni.node);
-      delete uni.keys["".concat(item.textType)];
-      if (!Object.keys(uni.keys).length) uninstrumentedStore.remove(item.eleUniqueID, uni.node);
+      if (uni && uni.keys) delete uni.keys["".concat(item.textType)];
+      if (uni && uni.keys && !Object.keys(uni.keys).length) uninstrumentedStore.remove(item.eleUniqueID, uni.node);
     });
     api.sendCurrentParsedContent();
   }
@@ -9963,7 +9893,7 @@
     });
     return _convertValueToCoords.apply(this, arguments);
   }
-  var offset$1 = function offset(options) {
+  var offset = function offset(options) {
     if (options === void 0) {
       options = 0;
     }
@@ -10089,7 +10019,7 @@
     // https://github.com/floating-ui/floating-ui/issues/2317
     return '#document';
   }
-  function getWindow$1(node) {
+  function getWindow(node) {
     var _node$ownerDocument;
     return (node == null || (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
   }
@@ -10101,25 +10031,25 @@
     if (!hasWindow()) {
       return false;
     }
-    return value instanceof Node || value instanceof getWindow$1(value).Node;
+    return value instanceof Node || value instanceof getWindow(value).Node;
   }
   function isElement(value) {
     if (!hasWindow()) {
       return false;
     }
-    return value instanceof Element || value instanceof getWindow$1(value).Element;
+    return value instanceof Element || value instanceof getWindow(value).Element;
   }
   function isHTMLElement(value) {
     if (!hasWindow()) {
       return false;
     }
-    return value instanceof HTMLElement || value instanceof getWindow$1(value).HTMLElement;
+    return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
   }
   function isShadowRoot(value) {
     if (!hasWindow() || typeof ShadowRoot === 'undefined') {
       return false;
     }
-    return value instanceof ShadowRoot || value instanceof getWindow$1(value).ShadowRoot;
+    return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
   }
   function isOverflowElement(element) {
     var {
@@ -10170,7 +10100,7 @@
     return ['html', 'body', '#document'].includes(getNodeName(node));
   }
   function getComputedStyle(element) {
-    return getWindow$1(element).getComputedStyle(element);
+    return getWindow(element).getComputedStyle(element);
   }
   function getNodeScroll(element) {
     if (isElement(element)) {
@@ -10219,7 +10149,7 @@
     }
     var scrollableAncestor = getNearestOverflowAncestor(node);
     var isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
-    var win = getWindow$1(scrollableAncestor);
+    var win = getWindow(scrollableAncestor);
     if (isBody) {
       var frameElement = getFrameElement(win);
       return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], frameElement && traverseIframes ? getOverflowAncestors(frameElement) : []);
@@ -10282,7 +10212,7 @@
   }
   var noOffsets = /*#__PURE__*/createCoords(0);
   function getVisualOffsets(element) {
-    var win = getWindow$1(element);
+    var win = getWindow(element);
     if (!isWebKit() || !win.visualViewport) {
       return noOffsets;
     }
@@ -10295,7 +10225,7 @@
     if (isFixed === void 0) {
       isFixed = false;
     }
-    if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow$1(element)) {
+    if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element)) {
       return false;
     }
     return isFixed;
@@ -10325,8 +10255,8 @@
     var width = clientRect.width / scale.x;
     var height = clientRect.height / scale.y;
     if (domElement) {
-      var win = getWindow$1(domElement);
-      var offsetWin = offsetParent && isElement(offsetParent) ? getWindow$1(offsetParent) : offsetParent;
+      var win = getWindow(domElement);
+      var offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
       var currentWin = win;
       var currentIFrame = getFrameElement(currentWin);
       while (currentIFrame && offsetParent && offsetWin !== currentWin) {
@@ -10341,7 +10271,7 @@
         height *= iframeScale.y;
         x += left;
         y += top;
-        currentWin = getWindow$1(currentIFrame);
+        currentWin = getWindow(currentIFrame);
         currentIFrame = getFrameElement(currentWin);
       }
     }
@@ -10440,7 +10370,7 @@
     };
   }
   function getViewportRect(element, strategy) {
-    var win = getWindow$1(element);
+    var win = getWindow(element);
     var html = getDocumentElement(element);
     var visualViewport = win.visualViewport;
     var width = html.clientWidth;
@@ -10638,7 +10568,7 @@
   // Gets the closest ancestor positioned element. Handles some edge cases,
   // such as table ancestors and cross browser bugs.
   function getOffsetParent(element, polyfill) {
-    var win = getWindow$1(element);
+    var win = getWindow(element);
     if (isTopLayer(element)) {
       return win;
     }
@@ -10703,7 +10633,7 @@
    * object may be passed.
    * @see https://floating-ui.com/docs/offset
    */
-  var offset$2 = offset$1;
+  var offset$1 = offset;
 
   /**
    * Optimizes the visibility of the floating element by shifting it in order to
@@ -10765,7 +10695,7 @@
         placement: 'right',
         middleware: [flip$1({
           fallbackPlacements: ['left', 'bottom']
-        }), shift$1(), offset$2(function (_ref) {
+        }), shift$1(), offset$1(function (_ref) {
           var placement = _ref.placement,
             rects = _ref.rects;
           if (placement === 'bottom') return rects.r;
@@ -10969,8 +10899,8 @@
       uninstrumentedStore.remove(id, node.parentElement);
     }
     var children = node.childNodes;
-    for (var _i = 0; _i < children.length; _i++) {
-      walk$2(children[_i], func);
+    for (var i = 0; i < children.length; i++) {
+      walk$2(children[i], func);
     }
   }
   function extractHiddenMeta(id, type, meta, children) {
@@ -11030,7 +10960,7 @@
     var meta = extractNodeMeta(id, type, nodeI18nMeta, txt, children);
     if (meta.qualifiedKey) {
       store.save(id, null, type, meta, node, children);
-      uninstrumentedStore.removeKey(i, type, node);
+      uninstrumentedStore.removeKey(id, type, node);
     } else {
       uninstrumentedStore.save(id, type, node, txt);
     }
@@ -11418,7 +11348,7 @@
       qsProp: 'incontext'
     };
     if (typeof document === 'undefined') return;
-    var showInContext = opt.show || getQsParameterByName(opt.qsProp) === 'true';
+    var showInContext = opt.show || getQsParameterByName(opt.qsProp || 'incontext') === 'true';
     var scriptEle = document.getElementById('locize');
     var config = {};
     ['projectId', 'version'].forEach(function (attr) {
@@ -11605,145 +11535,12 @@
   };
   var locizePlugin = locizeEditorPlugin();
 
-  function createClickHandler(cb) {
-    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    var handler = function handler(e) {
-      var el = getClickedElement(e);
-      if (!el) return {};
-      e.preventDefault();
-      e.stopPropagation();
-      function getFallbackNS() {
-        if (options.isLocizify) return options.defaultNS;
-      }
-      var text = getElementText(el);
-      var key = getElementI18nKey(el);
-      var ns = getElementNamespace(el) || getFallbackNS();
-      if (containsHiddenMeta(text)) {
-        var meta = unwrap(text);
-        if (meta && meta.invisibleMeta && meta.invisibleMeta.key) key = meta.invisibleMeta.key;
-        if (meta && meta.invisibleMeta && meta.invisibleMeta.ns) ns = meta.invisibleMeta.ns;
-      }
-      var rectEl = el.getBoundingClientRect ? el : el.parentElement;
-      var _rectEl$getBoundingCl = rectEl.getBoundingClientRect(),
-        top = _rectEl$getBoundingCl.top,
-        left = _rectEl$getBoundingCl.left,
-        width = _rectEl$getBoundingCl.width,
-        height = _rectEl$getBoundingCl.height;
-      var style = window.getComputedStyle(rectEl, null);
-      var pT = parseFloat(style.getPropertyValue('padding-top'));
-      var pB = parseFloat(style.getPropertyValue('padding-bottom'));
-      var pR = parseFloat(style.getPropertyValue('padding-right'));
-      var pL = parseFloat(style.getPropertyValue('padding-left'));
-      var sizing = style.getPropertyValue('box-sizing');
-      cb({
-        tagName: rectEl.tagName,
-        text: text,
-        key: key,
-        ns: ns,
-        box: {
-          top: top,
-          left: left,
-          width: sizing === 'border-box' ? width : width - pR - pL,
-          height: sizing === 'border-box' ? height : height - pT - pB
-        },
-        style: style.cssText
-      });
-    };
-    return handler;
-  }
-
-  function ownKeys$d(e, r) {
-    var t = Object.keys(e);
-    if (Object.getOwnPropertySymbols) {
-      var o = Object.getOwnPropertySymbols(e);
-      r && (o = o.filter(function (r) {
-        return Object.getOwnPropertyDescriptor(e, r).enumerable;
-      })), t.push.apply(t, o);
-    }
-    return t;
-  }
-  function _objectSpread$c(e) {
-    for (var r = 1; r < arguments.length; r++) {
-      var t = null != arguments[r] ? arguments[r] : {};
-      r % 2 ? ownKeys$d(Object(t), !0).forEach(function (r) {
-        _defineProperty$4(e, r, t[r]);
-      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$d(Object(t)).forEach(function (r) {
-        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
-      });
-    }
-    return e;
-  }
-  function startLegacy() {
-    var implementation = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-    if (typeof document === 'undefined') return;
-    var scriptEle = document.getElementById('locize');
-    var config = {};
-    ['projectId', 'version'].forEach(function (attr) {
-      if (!scriptEle) return;
-      var value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
-      if (value === 'true') value = true;
-      if (value === 'false') value = false;
-      if (value !== undefined && value !== null) config[attr] = value;
-    });
-    config = _objectSpread$c(_objectSpread$c({}, implementation.getLocizeDetails()), config);
-    api.init(implementation, createClickHandler(function (payload) {
-      sendMessage('clickedElement', {
-        payload: payload
-      });
-    }, implementation.getLocizeDetails()));
-    api.sendCurrentTargetLanguage = function (lng) {
-      sendMessage('setLng', {
-        lng: lng || implementation.getLng()
-      });
-    };
-    if (typeof window !== 'undefined') {
-      var oldHref = window.document.location.href;
-      window.addEventListener('load', function () {
-        sendMessage('hrefChanged', {
-          href: window.document.location.href
-        });
-        var bodyList = window.document.querySelector('body');
-        var observer = new window.MutationObserver(function (mutations) {
-          mutations.forEach(function (mutation) {
-            if (oldHref !== window.document.location.href) {
-              oldHref = window.document.location.href;
-              sendMessage('hrefChanged', {
-                href: oldHref
-              });
-            }
-          });
-        });
-        var config = {
-          childList: true,
-          subtree: true
-        };
-        observer.observe(bodyList, config);
-      });
-    }
-    implementation === null || implementation === void 0 || implementation.bindLanguageChange(function (lng) {
-      api.sendCurrentTargetLanguage(implementation.getLng());
-    });
-    implementation === null || implementation === void 0 || implementation.bindMissingKeyHandler(function (lng, ns, k, val) {
-      api.onAddedKey(lng, ns, k, val);
-    });
-  }
-
+  var _excluded$1 = ["implementation"];
   function startStandalone() {
-    startLegacy({
-      getLocizeDetails: function getLocizeDetails() {
-        return {};
-      },
-      getLng: function getLng() {
-        return undefined;
-      },
-      setResource: function setResource() {},
-      triggerRerender: function triggerRerender() {},
-      getResourceBundle: function getResourceBundle() {
-        return {};
-      },
-      bindMissingKeyHandler: function bindMissingKeyHandler() {},
-      bindLanguageChange: function bindLanguageChange() {}
-    });
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var implementation = options.implementation,
+      rest = _objectWithoutProperties$1(options, _excluded$1);
+    start(implementation, Object.keys(rest).length > 0 ? rest : undefined);
   }
   if (typeof window !== 'undefined') window.locizeStartStandalone = startStandalone;
 

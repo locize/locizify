@@ -1,4 +1,4 @@
-### 6.1.0
+### 6.1.1
 
 - update locize script for incontext editor
 
