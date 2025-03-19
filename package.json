@@ -22,7 +22,7 @@
   "dependencies": {
     "i18next-locize-backend": "6.5.5",
     "i18nextify": "3.3.4",
-    "locize": "4.0.7"
+    "locize": "4.0.11"
   },
   "devDependencies": {
     "@babel/cli": "^7.19.3",

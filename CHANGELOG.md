@@ -1,3 +1,7 @@
+### 6.1.3
+
+- update locize script for incontext editor (added classes and zindex for better modal support)
+
 ### 6.1.2
 
 - update locize script for incontext editor
