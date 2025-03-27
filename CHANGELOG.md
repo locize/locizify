@@ -1,3 +1,7 @@
+### 6.1.4
+
+- update locize script for incontext editor (start i18next-subliminal only if popup or in iframe)
+
 ### 6.1.3
 
 - update locize script for incontext editor (added classes and zindex for better modal support)
