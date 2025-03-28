@@ -1,3 +1,7 @@
+### 6.1.5
+
+- update locize script for incontext editor (improvement for firefox)
+
 ### 6.1.4
 
 - update locize script for incontext editor (start i18next-subliminal only if popup or in iframe)

@@ -131,11 +131,11 @@
   function _typeof(o) {
     "@babel/helpers - typeof";
 
-    return (module.exports = _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
+    return module.exports = _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
       return typeof o;
     } : function (o) {
       return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
-    }, module.exports.__esModule = true, module.exports["default"] = module.exports), _typeof(o);
+    }, module.exports.__esModule = true, module.exports["default"] = module.exports, _typeof(o);
   }
 
   module.exports = _typeof, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -171,7 +171,7 @@
 
   function toPropertyKey(t) {
     var i = toPrimitive_1(t, "string");
-    return "symbol" == _typeof(i) ? i : String(i);
+    return "symbol" == _typeof(i) ? i : i + "";
   }
 
   module.exports = toPropertyKey, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -180,21 +180,13 @@
   unwrapExports(toPropertyKey_1);
 
   var defineProperty = createCommonjsModule(function (module) {
-  function _defineProperty(obj, key, value) {
-    key = toPropertyKey_1(key);
-
-    if (key in obj) {
-      Object.defineProperty(obj, key, {
-        value: value,
-        enumerable: true,
-        configurable: true,
-        writable: true
-      });
-    } else {
-      obj[key] = value;
-    }
-
-    return obj;
+  function _defineProperty(e, r, t) {
+    return (r = toPropertyKey_1(r)) in e ? Object.defineProperty(e, r, {
+      value: t,
+      enumerable: !0,
+      configurable: !0,
+      writable: !0
+    }) : e[r] = t, e;
   }
 
   module.exports = _defineProperty, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -3551,10 +3543,8 @@
 
   Backend.type = 'backend';
 
-  function _classCallCheck$1(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
+  function _classCallCheck$1(a, n) {
+    if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
   }
 
   function _typeof$3(o) {
@@ -3582,26 +3572,20 @@
 
   function toPropertyKey(t) {
     var i = toPrimitive(t, "string");
-    return "symbol" == _typeof$3(i) ? i : String(i);
+    return "symbol" == _typeof$3(i) ? i : i + "";
   }
 
-  function _defineProperties$1(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, toPropertyKey(descriptor.key), descriptor);
+  function _defineProperties$1(e, r) {
+    for (var t = 0; t < r.length; t++) {
+      var o = r[t];
+      o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, toPropertyKey(o.key), o);
     }
   }
 
-  function _createClass$1(Constructor, protoProps, staticProps) {
-    if (protoProps) _defineProperties$1(Constructor.prototype, protoProps);
-    if (staticProps) _defineProperties$1(Constructor, staticProps);
-    Object.defineProperty(Constructor, "prototype", {
-      writable: false
-    });
-    return Constructor;
+  function _createClass$1(e, r, t) {
+    return r && _defineProperties$1(e.prototype, r), t && _defineProperties$1(e, t), Object.defineProperty(e, "prototype", {
+      writable: !1
+    }), e;
   }
 
   var arr = [];
@@ -4036,10 +4020,8 @@
   Browser.type = 'languageDetector';
 
   var classCallCheck = createCommonjsModule(function (module) {
-  function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
+  function _classCallCheck(a, n) {
+    if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
   }
 
   module.exports = _classCallCheck, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -4048,23 +4030,17 @@
   var _classCallCheck$2 = unwrapExports(classCallCheck);
 
   var createClass = createCommonjsModule(function (module) {
-  function _defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, toPropertyKey_1(descriptor.key), descriptor);
+  function _defineProperties(e, r) {
+    for (var t = 0; t < r.length; t++) {
+      var o = r[t];
+      o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, toPropertyKey_1(o.key), o);
     }
   }
 
-  function _createClass(Constructor, protoProps, staticProps) {
-    if (protoProps) _defineProperties(Constructor.prototype, protoProps);
-    if (staticProps) _defineProperties(Constructor, staticProps);
-    Object.defineProperty(Constructor, "prototype", {
-      writable: false
-    });
-    return Constructor;
+  function _createClass(e, r, t) {
+    return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", {
+      writable: !1
+    }), e;
   }
 
   module.exports = _createClass, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -4073,12 +4049,10 @@
   var _createClass$2 = unwrapExports(createClass);
 
   var setPrototypeOf = createCommonjsModule(function (module) {
-  function _setPrototypeOf(o, p) {
-    module.exports = _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function _setPrototypeOf(o, p) {
-      o.__proto__ = p;
-      return o;
-    }, module.exports.__esModule = true, module.exports["default"] = module.exports;
-    return _setPrototypeOf(o, p);
+  function _setPrototypeOf(t, e) {
+    return module.exports = _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function (t, e) {
+      return t.__proto__ = e, t;
+    }, module.exports.__esModule = true, module.exports["default"] = module.exports, _setPrototypeOf(t, e);
   }
 
   module.exports = _setPrototypeOf, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -4087,22 +4061,17 @@
   unwrapExports(setPrototypeOf);
 
   var inherits = createCommonjsModule(function (module) {
-  function _inherits(subClass, superClass) {
-    if (typeof superClass !== "function" && superClass !== null) {
-      throw new TypeError("Super expression must either be null or a function");
-    }
-
-    subClass.prototype = Object.create(superClass && superClass.prototype, {
+  function _inherits(t, e) {
+    if ("function" != typeof e && null !== e) throw new TypeError("Super expression must either be null or a function");
+    t.prototype = Object.create(e && e.prototype, {
       constructor: {
-        value: subClass,
-        writable: true,
-        configurable: true
+        value: t,
+        writable: !0,
+        configurable: !0
       }
-    });
-    Object.defineProperty(subClass, "prototype", {
-      writable: false
-    });
-    if (superClass) setPrototypeOf(subClass, superClass);
+    }), Object.defineProperty(t, "prototype", {
+      writable: !1
+    }), e && setPrototypeOf(t, e);
   }
 
   module.exports = _inherits, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -4111,12 +4080,9 @@
   var _inherits = unwrapExports(inherits);
 
   var assertThisInitialized = createCommonjsModule(function (module) {
-  function _assertThisInitialized(self) {
-    if (self === void 0) {
-      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-    }
-
-    return self;
+  function _assertThisInitialized(e) {
+    if (void 0 === e) throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    return e;
   }
 
   module.exports = _assertThisInitialized, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -4129,14 +4095,10 @@
 
 
 
-  function _possibleConstructorReturn(self, call) {
-    if (call && (_typeof(call) === "object" || typeof call === "function")) {
-      return call;
-    } else if (call !== void 0) {
-      throw new TypeError("Derived constructors may only return object or undefined");
-    }
-
-    return assertThisInitialized(self);
+  function _possibleConstructorReturn(t, e) {
+    if (e && ("object" == _typeof(e) || "function" == typeof e)) return e;
+    if (void 0 !== e) throw new TypeError("Derived constructors may only return object or undefined");
+    return assertThisInitialized(t);
   }
 
   module.exports = _possibleConstructorReturn, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -4145,11 +4107,10 @@
   var _possibleConstructorReturn = unwrapExports(possibleConstructorReturn);
 
   var getPrototypeOf = createCommonjsModule(function (module) {
-  function _getPrototypeOf(o) {
-    module.exports = _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf.bind() : function _getPrototypeOf(o) {
-      return o.__proto__ || Object.getPrototypeOf(o);
-    }, module.exports.__esModule = true, module.exports["default"] = module.exports;
-    return _getPrototypeOf(o);
+  function _getPrototypeOf(t) {
+    return module.exports = _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf.bind() : function (t) {
+      return t.__proto__ || Object.getPrototypeOf(t);
+    }, module.exports.__esModule = true, module.exports["default"] = module.exports, _getPrototypeOf(t);
   }
 
   module.exports = _getPrototypeOf, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -7674,8 +7635,8 @@
   }
 
   var arrayWithHoles = createCommonjsModule(function (module) {
-  function _arrayWithHoles(arr) {
-    if (Array.isArray(arr)) return arr;
+  function _arrayWithHoles(r) {
+    if (Array.isArray(r)) return r;
   }
 
   module.exports = _arrayWithHoles, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -7723,14 +7684,14 @@
   unwrapExports(iterableToArrayLimit);
 
   var arrayLikeToArray = createCommonjsModule(function (module) {
-  function _arrayLikeToArray(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
+  function _arrayLikeToArray(r, a) {
+    (null == a || a > r.length) && (a = r.length);
 
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
+    for (var e = 0, n = Array(a); e < a; e++) {
+      n[e] = r[e];
     }
 
-    return arr2;
+    return n;
   }
 
   module.exports = _arrayLikeToArray, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -7739,13 +7700,12 @@
   unwrapExports(arrayLikeToArray);
 
   var unsupportedIterableToArray = createCommonjsModule(function (module) {
-  function _unsupportedIterableToArray(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return arrayLikeToArray(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return arrayLikeToArray(o, minLen);
+  function _unsupportedIterableToArray(r, a) {
+    if (r) {
+      if ("string" == typeof r) return arrayLikeToArray(r, a);
+      var t = {}.toString.call(r).slice(8, -1);
+      return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? arrayLikeToArray(r, a) : void 0;
+    }
   }
 
   module.exports = _unsupportedIterableToArray, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -7764,8 +7724,8 @@
   unwrapExports(nonIterableRest);
 
   var slicedToArray = createCommonjsModule(function (module) {
-  function _slicedToArray(arr, i) {
-    return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || unsupportedIterableToArray(arr, i) || nonIterableRest();
+  function _slicedToArray(r, e) {
+    return arrayWithHoles(r) || iterableToArrayLimit(r, e) || unsupportedIterableToArray(r, e) || nonIterableRest();
   }
 
   module.exports = _slicedToArray, module.exports.__esModule = true, module.exports["default"] = module.exports;
@@ -9595,24 +9555,17 @@
 
   I18NextLocizeBackend.type = 'backend';
 
-  function _defineProperty$4(obj, key, value) {
-    key = toPropertyKey(key);
-
-    if (key in obj) {
-      Object.defineProperty(obj, key, {
-        value: value,
-        enumerable: true,
-        configurable: true,
-        writable: true
-      });
-    } else {
-      obj[key] = value;
-    }
-
-    return obj;
+  function _defineProperty$4(e, r, t) {
+    return (r = toPropertyKey(r)) in e ? Object.defineProperty(e, r, {
+      value: t,
+      enumerable: !0,
+      configurable: !0,
+      writable: !0
+    }) : e[r] = t, e;
   }
 
-  var INVISIBLE_CHARACTERS = ["\u200B", "\u200C"];
+  var isBrowser = typeof window !== 'undefined';
+  var INVISIBLE_CHARACTERS = isBrowser ? ["\u200C", "\u200D"] : ["\u200B", "\u200C"];
   var INVISIBLE_REGEX = RegExp("([".concat(INVISIBLE_CHARACTERS.join(''), "]{9})+"), 'gu');
   var TEMPLATE_MINIMUM_LENGTH = '{"k":"a"}'.length;
   var invisibleStartMarker = 'subliminal:start';
@@ -9740,7 +9693,7 @@
   function _objectSpread$4(e) {
     for (var r = 1; r < arguments.length; r++) {
       var t = null != arguments[r] ? arguments[r] : {};
-      r % 2 ? ownKeys$5(Object(t), !0).forEach(function (r) {
+      r % 2 ? ownKeys$5(Object(t), true).forEach(function (r) {
         _defineProperty$4(e, r, t[r]);
       }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$5(Object(t)).forEach(function (r) {
         Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
@@ -9917,8 +9870,8 @@
     data: data
   };
 
-  function _arrayWithHoles(arr) {
-    if (Array.isArray(arr)) return arr;
+  function _arrayWithHoles(r) {
+    if (Array.isArray(r)) return r;
   }
 
   function _iterableToArrayLimit(r, l) {
@@ -9954,31 +9907,30 @@
     }
   }
 
-  function _arrayLikeToArray(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
+  function _arrayLikeToArray(r, a) {
+    (null == a || a > r.length) && (a = r.length);
 
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
+    for (var e = 0, n = Array(a); e < a; e++) {
+      n[e] = r[e];
     }
 
-    return arr2;
+    return n;
   }
 
-  function _unsupportedIterableToArray(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  function _unsupportedIterableToArray(r, a) {
+    if (r) {
+      if ("string" == typeof r) return _arrayLikeToArray(r, a);
+      var t = {}.toString.call(r).slice(8, -1);
+      return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
+    }
   }
 
   function _nonIterableRest() {
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
-  function _slicedToArray$1(arr, i) {
-    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+  function _slicedToArray$1(r, e) {
+    return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest();
   }
 
   function debounce$2(func, wait, immediate) {
@@ -10379,20 +10331,20 @@
 
   api.addHandler('commitKey', handler$1);
 
-  function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
+  function _arrayWithoutHoles(r) {
+    if (Array.isArray(r)) return _arrayLikeToArray(r);
   }
 
-  function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
+  function _iterableToArray(r) {
+    if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r);
   }
 
   function _nonIterableSpread() {
     throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
-  function _toConsumableArray(arr) {
-    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
+  function _toConsumableArray(r) {
+    return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread();
   }
 
   function handler$2(payload) {
@@ -10687,38 +10639,35 @@
 
   api.addHandler('requestPopupChanges', handler$4);
 
-  function _objectWithoutPropertiesLoose$1(source, excluded) {
-    if (source == null) return {};
-    var target = {};
-    var sourceKeys = Object.keys(source);
-    var key, i;
+  function _objectWithoutPropertiesLoose$1(r, e) {
+    if (null == r) return {};
+    var t = {};
 
-    for (i = 0; i < sourceKeys.length; i++) {
-      key = sourceKeys[i];
-      if (excluded.indexOf(key) >= 0) continue;
-      target[key] = source[key];
-    }
-
-    return target;
-  }
-
-  function _objectWithoutProperties$1(source, excluded) {
-    if (source == null) return {};
-    var target = _objectWithoutPropertiesLoose$1(source, excluded);
-    var key, i;
-
-    if (Object.getOwnPropertySymbols) {
-      var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
-
-      for (i = 0; i < sourceSymbolKeys.length; i++) {
-        key = sourceSymbolKeys[i];
-        if (excluded.indexOf(key) >= 0) continue;
-        if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
-        target[key] = source[key];
+    for (var n in r) {
+      if ({}.hasOwnProperty.call(r, n)) {
+        if (-1 !== e.indexOf(n)) continue;
+        t[n] = r[n];
       }
     }
 
-    return target;
+    return t;
+  }
+
+  function _objectWithoutProperties$1(e, t) {
+    if (null == e) return {};
+    var o,
+        r,
+        i = _objectWithoutPropertiesLoose$1(e, t);
+
+    if (Object.getOwnPropertySymbols) {
+      var n = Object.getOwnPropertySymbols(e);
+
+      for (r = 0; r < n.length; r++) {
+        o = n[r], -1 === t.indexOf(o) && {}.propertyIsEnumerable.call(e, o) && (i[o] = e[o]);
+      }
+    }
+
+    return i;
   }
 
   var _excluded = ["lng", "ns"];
