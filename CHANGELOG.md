@@ -1,3 +1,13 @@
+### 7.0.0
+
+- update i18next and locize dependencies to the current major versions
+  - for more information read:
+    - https://github.com/i18next/i18nextify/blob/master/CHANGELOG.md#400
+    - https://github.com/i18next/i18next/blob/master/CHANGELOG.md#2400
+    - https://github.com/i18next/i18next-http-backend/blob/master/CHANGELOG.md#300
+    - https://github.com/i18next/i18next-browser-languageDetector/blob/master/CHANGELOG.md#800
+    - https://github.com/locize/i18next-locize-backend/blob/master/CHANGELOG.md#700
+
 ### 6.1.5
 
 - update locize script for incontext editor (improvement for firefox)
