@@ -1,3 +1,7 @@
+### 7.0.1
+
+- update i18next-locize-backend
+
 ### 7.0.0
 
 - update i18next and locize dependencies to the current major versions
