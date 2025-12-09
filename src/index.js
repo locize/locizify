@@ -69,7 +69,9 @@ i18next.init = (options = {}, callback) => {
       'referenceLng',
       'version',
       'allowedAddOrUpdateHost',
-      'autoPilot'
+      'autoPilot',
+      'cdnType',
+      'noCache'
     ]
 
     toRead.forEach(attr => {
@@ -82,11 +84,10 @@ i18next.init = (options = {}, callback) => {
     })
 
     toReadAsArray.forEach(attr => {
-      let value =
+      const value =
         scriptEle.getAttribute(attr.toLowerCase()) ||
         scriptEle.getAttribute('data-' + attr.toLowerCase())
-      if (value !== undefined && value !== null)
-        config[attr] = value.split(',').map(item => item.trim())
+      if (value !== undefined && value !== null) { config[attr] = value.split(',').map(item => item.trim()) }
     })
 
     toReadBackend.forEach(attr => {
@@ -127,12 +128,13 @@ i18next.init = (options = {}, callback) => {
     options.backend.apiKey = getQsParameterByName('apikey')
   }
 
-  if (!options.backend.autoPilot || options.backend.autoPilot === 'false')
+  if (!options.backend.autoPilot || options.backend.autoPilot === 'false') {
     return originalInit.call(
       i18next,
       { ...options, ...enforce },
       handleI18nextInitialized
     )
+  }
 
   const locizeBackend = new LocizeBackend(options.backend)
   locizeBackend.getOptions((err, opts) => {
@@ -140,8 +142,7 @@ i18next.init = (options = {}, callback) => {
       err &&
       typeof console === 'object' &&
       typeof console.error === 'function'
-    )
-      console.error(err)
+    ) { console.error(err) }
     originalInit.call(
       i18next,
       { ...opts, ...options, ...enforce },

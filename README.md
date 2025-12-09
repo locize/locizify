@@ -117,6 +117,7 @@ Add the script to your page:
       debug="[true|false (default false)]"
       autopilot="[true|false (default false)]" // automatically configures fallbackLng and supportedLngs
       load="[all|currentOnly|languageOnly (default all)]" // https://www.i18next.com/overview/configuration-options
+      cdnType="[standard|pro (default pro)]"
 
       // others
       // you can define any other option below just use the lowercased name and for arrays use comma separated values, eg.:
@@ -146,7 +147,8 @@ Add the script to your page:
           // please keep those to your local system, staging, test servers (not production)
           allowedAddOrUpdateHosts: ['localhost']
           // alternatively, pass a function:
-          allowedAddOrUpdateHosts: function(hostname) { return hostname.endsWith('staging.example.com') }
+          allowedAddOrUpdateHosts: function(hostname) { return hostname.endsWith('staging.example.com') },
+          cdnType: 'standard' // default 'pro'
         },
 
         // defaults that are set

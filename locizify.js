@@ -7273,6 +7273,14 @@
     }
     var resolver = function resolver(response) {
       var resourceNotExisting = response.headers && response.headers.get('x-cache') === 'Error from cloudfront';
+      if (options.cdnType === 'standard' && response.status === 404 && (!response.headers || !response.headers.get('x-cache'))) {
+        resourceNotExisting = true;
+        return callback(null, {
+          status: 200,
+          data: '{}',
+          resourceNotExisting: resourceNotExisting
+        });
+      }
       if (!response.ok) return callback(response.statusText || 'Error', {
         status: response.status,
         resourceNotExisting: resourceNotExisting
@@ -7314,6 +7322,14 @@
       }
       x.onreadystatechange = function () {
         var resourceNotExisting = x.getResponseHeader('x-cache') === 'Error from cloudfront';
+        if (options.cdnType === 'standard' && x.status === 404 && !x.getResponseHeader('x-cache')) {
+          resourceNotExisting = true;
+          return x.readyState > 3 && callback(null, {
+            status: 200,
+            data: '{}',
+            resourceNotExisting: resourceNotExisting
+          });
+        }
         x.readyState > 3 && callback(x.status >= 400 ? x.statusText : null, {
           status: x.status,
           data: x.responseText,
@@ -7377,13 +7393,21 @@
     }
     return ("string" === r ? String : Number)(t);
   }
-  var getDefaults$3 = function getDefaults() {
+  var getApiPaths = function getApiPaths(cdnType) {
+    if (!cdnType) cdnType = 'pro';
     return {
-      loadPath: 'https://api.locize.app/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
-      privatePath: 'https://api.locize.app/private/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
-      getLanguagesPath: 'https://api.locize.app/languages/{{projectId}}',
-      addPath: 'https://api.locize.app/missing/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
-      updatePath: 'https://api.locize.app/update/{{projectId}}/{{version}}/{{lng}}/{{ns}}',
+      loadPath: "https://api".concat(cdnType === 'standard' ? '.lite' : '', ".locize.app/{{projectId}}/{{version}}/{{lng}}/{{ns}}"),
+      privatePath: "https://api".concat(cdnType === 'standard' ? '.lite' : '', ".locize.app/private/{{projectId}}/{{version}}/{{lng}}/{{ns}}"),
+      getLanguagesPath: "https://api".concat(cdnType === 'standard' ? '.lite' : '', ".locize.app/languages/{{projectId}}"),
+      addPath: "https://api".concat(cdnType === 'standard' ? '.lite' : '', ".locize.app/missing/{{projectId}}/{{version}}/{{lng}}/{{ns}}"),
+      updatePath: "https://api".concat(cdnType === 'standard' ? '.lite' : '', ".locize.app/update/{{projectId}}/{{version}}/{{lng}}/{{ns}}")
+    };
+  };
+  var getDefaults$3 = function getDefaults(cdnType) {
+    if (!cdnType) cdnType = 'pro';
+    return defaults$1({
+      cdnType: cdnType,
+      noCache: false,
       referenceLng: 'en',
       crossDomain: true,
       setContentTypeJSON: false,
@@ -7397,7 +7421,7 @@
       checkForProjectTimeout: 3 * 1000,
       storageExpiration: 60 * 60 * 1000,
       writeDebounce: 5 * 1000
-    };
+    }, getApiPaths(cdnType));
   };
   var hasLocalStorageSupport$1;
   try {
@@ -7519,8 +7543,9 @@
           options.referenceLng = allOptions.fallbackLng[0];
         }
         this.services = services;
-        var defOpt = getDefaults$3();
+        var orgPassedOptions = defaults$1({}, options);
         var passedOpt = defaults$1(options, this.options || {});
+        var defOpt = getDefaults$3(passedOpt.cdnType);
         if (passedOpt.reloadInterval && passedOpt.reloadInterval < 5 * 60 * 1000) {
           console.warn('Your configured reloadInterval option is to low.');
           passedOpt.reloadInterval = defOpt.reloadInterval;
@@ -7530,8 +7555,18 @@
         this.somethingLoaded = false;
         this.isProjectNotExisting = false;
         this.storage = getStorage(this.options.storageExpiration);
+        var apiPaths = getApiPaths(this.options.cdnType);
+        Object.keys(apiPaths).forEach(function (ap) {
+          if (!orgPassedOptions[ap]) _this.options[ap] = apiPaths[ap];
+        });
         if (this.options.pull) {
           console.warn('The pull API was removed use "private: true" option instead: https://www.locize.com/docs/api#fetch-private-namespace-resources');
+        }
+        if (allOptions.debug && orgPassedOptions.noCache === undefined && this.options.cdnType !== 'standard') {
+          this.options.noCache = true;
+        }
+        if (this.options.noCache && this.options.cdnType !== 'standard') {
+          console.warn("The 'noCache' option is not available for 'cdnType' '".concat(this.options.cdnType, "'!"));
         }
         var hostname = typeof window !== 'undefined' && window.location && window.location.hostname;
         if (hostname) {
@@ -11492,7 +11527,7 @@
       var backend = {};
       var toRead = ['fallbackLng', 'saveMissing', 'debug', 'autorun', 'ele', 'cleanIndent', 'cleanWhitespace', 'namespace', 'namespaceFromPath', 'load'];
       var toReadAsArray = ['ignoreTags', 'ignoreIds', 'ignoreClasses', 'translateAttributes', 'mergeTags', 'inlineTags', 'ignoreInlineOn', 'ignoreCleanIndentFor', 'ns'];
-      var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version', 'allowedAddOrUpdateHost', 'autoPilot'];
+      var toReadBackend = ['projectId', 'apiKey', 'referenceLng', 'version', 'allowedAddOrUpdateHost', 'autoPilot', 'cdnType', 'noCache'];
       toRead.forEach(attr => {
         var value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
         if (value === 'true') value = true;
@@ -11501,7 +11536,9 @@
       });
       toReadAsArray.forEach(attr => {
         var value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
-        if (value !== undefined && value !== null) config[attr] = value.split(',').map(item => item.trim());
+        if (value !== undefined && value !== null) {
+          config[attr] = value.split(',').map(item => item.trim());
+        }
       });
       toReadBackend.forEach(attr => {
         var value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute('data-' + attr.toLowerCase());
@@ -11533,10 +11570,14 @@
     if (!options.backend.apiKey && getQsParameterByName$1('apikey')) {
       options.backend.apiKey = getQsParameterByName$1('apikey');
     }
-    if (!options.backend.autoPilot || options.backend.autoPilot === 'false') return originalInit.call(i18next$1, _objectSpread2(_objectSpread2({}, options), enforce), handleI18nextInitialized);
+    if (!options.backend.autoPilot || options.backend.autoPilot === 'false') {
+      return originalInit.call(i18next$1, _objectSpread2(_objectSpread2({}, options), enforce), handleI18nextInitialized);
+    }
     var locizeBackend = new I18NextLocizeBackend(options.backend);
     locizeBackend.getOptions((err, opts) => {
-      if (err && typeof console === 'object' && typeof console.error === 'function') console.error(err);
+      if (err && typeof console === 'object' && typeof console.error === 'function') {
+        console.error(err);
+      }
       originalInit.call(i18next$1, _objectSpread2(_objectSpread2(_objectSpread2({}, opts), options), enforce), handleI18nextInitialized);
     });
   };

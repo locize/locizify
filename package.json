@@ -20,7 +20,7 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-locize-backend": "7.1.1",
+    "i18next-locize-backend": "7.2.0",
     "i18nextify": "4.0.0",
     "locize": "4.0.14"
   },
@@ -35,15 +35,13 @@
     "@babel/preset-env": "^7.28.5",
     "@babel/preset-react": "^7.28.5",
     "@babel/register": "^7.28.3",
-    "eslint": "8.53.0",
-    "eslint-config-airbnb": "19.0.4",
-    "eslint-plugin-import": "2.31.0",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-react": "^7.37.5",
+    "eslint": "9.39.1",
+    "eslint-plugin-import": "2.32.0",
     "html-to-vdom": "^0.7.0",
     "jest": "^30.2.0",
     "jest-cli": "^30.2.0",
     "mkdirp": "3.0.1",
+    "neostandard": "0.12.2",
     "rimraf": "6.1.2",
     "rollup": "1.27.8",
     "rollup-plugin-babel": "^4.3.2",
@@ -54,6 +52,8 @@
     "yargs": "18.0.0"
   },
   "scripts": {
+    "lint": "eslint .",
+    "test": "npm run lint",
     "clean": "rimraf dist && mkdirp dist",
     "copy": "cp ./dist/umd/locizify.min.js ./locizify.min.js && cp ./dist/umd/locizify.js ./locizify.js",
     "build:es": "BABEL_ENV=jsnext babel src --out-dir dist/es",

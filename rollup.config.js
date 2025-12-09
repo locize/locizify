@@ -1,15 +1,15 @@
-import babel from 'rollup-plugin-babel';
-import commonjs from 'rollup-plugin-commonjs';
-import nodeResolve from 'rollup-plugin-node-resolve';
-import replace from 'rollup-plugin-replace';
-import { terser } from 'rollup-plugin-terser';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
+import babel from 'rollup-plugin-babel'
+import commonjs from 'rollup-plugin-commonjs'
+import nodeResolve from 'rollup-plugin-node-resolve'
+import replace from 'rollup-plugin-replace'
+import { terser } from 'rollup-plugin-terser'
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 
-const argv = yargs(hideBin(process.argv)).argv;
+const argv = yargs(hideBin(process.argv)).argv
 
-const format = argv.format || argv.f || 'iife';
-const compress = argv.uglify;
+const format = argv.format || argv.f || 'iife'
+const compress = argv.uglify
 
 const babelOptions = {
   presets: [
@@ -24,13 +24,13 @@ const babelOptions = {
     '@babel/react'
   ],
   babelrc: false
-};
+}
 
 const file = {
   amd: `dist/amd/locizify${compress ? '.min' : ''}.js`,
   umd: `dist/umd/locizify${compress ? '.min' : ''}.js`,
   iife: `dist/iife/locizify${compress ? '.min' : ''}.js`
-}[format];
+}[format]
 
 export default {
   input: 'src/index.js',
@@ -49,4 +49,4 @@ export default {
     format,
     file
   }
-};
+}
