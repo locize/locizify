@@ -14,6 +14,7 @@ Just drop the following line to your header to deliver your content in any langu
   apikey="[API_KEY]"
   src="https://unpkg.com/locizify@^6.0.11"
   autopilot="true"
+  cdnType="standard"
 ></script>
 
 <!-- or -->
@@ -23,6 +24,7 @@ Just drop the following line to your header to deliver your content in any langu
   apikey="[API_KEY]"
   src="https://cdn.jsdelivr.net/npm/locizify@^6.0.11"
   autopilot="true"
+  cdnType="standard"
 ></script>
 
 ```
@@ -71,6 +73,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       src="https://unpkg.com/locizify@^6.0.11"
       autopilot
+      cdnType="standard"
     ></script>
   </head>
   ...
