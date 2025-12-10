@@ -1,3 +1,7 @@
+### 7.0.4
+
+- update i18next-locize-backend
+
 ### 7.0.3
 
 - update i18next-locize-backend

@@ -20,7 +20,7 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-locize-backend": "7.2.0",
+    "i18next-locize-backend": "7.2.1",
     "i18nextify": "4.0.0",
     "locize": "4.0.14"
   },
