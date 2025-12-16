@@ -1,3 +1,7 @@
+### 8.0.2
+
+- update i18next-locize-backend
+
 ### 8.0.1
 
 - update i18next-locize-backend
