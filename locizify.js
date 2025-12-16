@@ -7260,6 +7260,12 @@
       }).catch(function () {});
     } catch (e) {}
   }
+  var storage = {};
+  var parseMaxAge = function parseMaxAge(headerString) {
+    if (!headerString) return 0;
+    var matches = headerString.match(/max-age=([0-9]+)/);
+    return matches ? parseInt(matches[1], 10) : 0;
+  };
   var requestWithFetch$1 = function requestWithFetch(options, url, payload, callback) {
     var headers = {};
     if (typeof window === 'undefined' && typeof global !== 'undefined' && typeof global.process !== 'undefined' && global.process.versions && global.process.versions.node) {
@@ -7285,11 +7291,13 @@
         status: response.status,
         resourceNotExisting: resourceNotExisting
       });
+      var cacheControl = response.headers && response.headers.get('cache-control');
       response.text().then(function (data) {
         callback(null, {
           status: response.status,
           data: data,
-          resourceNotExisting: resourceNotExisting
+          resourceNotExisting: resourceNotExisting,
+          cacheControl: cacheControl
         });
       }).catch(callback);
     };
@@ -7330,10 +7338,12 @@
             resourceNotExisting: resourceNotExisting
           });
         }
+        var cacheControl = x.getResponseHeader('Cache-Control');
         x.readyState > 3 && callback(x.status >= 400 ? x.statusText : null, {
           status: x.status,
           data: x.responseText,
-          resourceNotExisting: resourceNotExisting
+          resourceNotExisting: resourceNotExisting,
+          cacheControl: cacheControl
         });
       };
       x.send(JSON.stringify(payload));
@@ -7347,6 +7357,26 @@
       payload = undefined;
     }
     callback = callback || function () {};
+    var useCacheLayer = typeof window === 'undefined' && options.useCacheLayer;
+    if (useCacheLayer && !payload && !options.noCache && storage[url] && storage[url].expires > Date.now()) {
+      return callback(null, storage[url].data);
+    }
+    var originalCallback = callback;
+    callback = function callback(err, res) {
+      if (useCacheLayer && !err && res && !payload && res.cacheControl) {
+        var maxAge = parseMaxAge(res.cacheControl);
+        if (maxAge > 0) {
+          storage[url] = {
+            data: res,
+            expires: Date.now() + maxAge * 1000
+          };
+        }
+      }
+      originalCallback(err, res);
+    };
+    if (!payload && options.noCache && options.cdnType === 'standard') {
+      url += (url.indexOf('?') >= 0 ? '&' : '?') + 'cache=no';
+    }
     if (fetchApi$1) {
       return requestWithFetch$1(options, url, payload, callback);
     }
@@ -7420,7 +7450,8 @@
       reloadInterval: typeof window !== 'undefined' ? false : 60 * 60 * 1000,
       checkForProjectTimeout: 3 * 1000,
       storageExpiration: 60 * 60 * 1000,
-      writeDebounce: 5 * 1000
+      writeDebounce: 5 * 1000,
+      useCacheLayer: typeof window === 'undefined'
     }, getApiPaths(cdnType));
   };
   var hasLocalStorageSupport$1;
