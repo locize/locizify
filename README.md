@@ -12,7 +12,7 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  src="https://unpkg.com/locizify@^8.0.0"
+  src="https://unpkg.com/locizify@^9.0.0"
   autopilot="true"
   cdnType="standard"
 ></script>
@@ -22,7 +22,7 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  src="https://cdn.jsdelivr.net/npm/locizify@^8.0.0"
+  src="https://cdn.jsdelivr.net/npm/locizify@^9.0.0"
   autopilot="true"
   cdnType="standard"
 ></script>
@@ -71,7 +71,7 @@ Add the script to your page:
       id="locizify"
       projectid="[PROJECT_ID]"
       apikey="[API_KEY]"
-      src="https://unpkg.com/locizify@^8.0.0"
+      src="https://unpkg.com/locizify@^9.0.0"
       autopilot
       cdnType="standard"
     ></script>
@@ -105,7 +105,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^8.0.0"
+      src="https://unpkg.com/locizify@^9.0.0"
 
       // all custom attributes can also be prefixed with data-
       // data-projectid="[PROJECT_ID]"
@@ -120,7 +120,7 @@ Add the script to your page:
       debug="[true|false (default false)]"
       autopilot="[true|false (default false)]" // automatically configures fallbackLng and supportedLngs
       load="[all|currentOnly|languageOnly (default all)]" // https://www.i18next.com/overview/configuration-options
-      cdnType="[standard|pro (default pro)]"
+      cdnType="[standard|pro (default standard)]"
 
       // others
       // you can define any other option below just use the lowercased name and for arrays use comma separated values, eg.:
@@ -136,7 +136,7 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://unpkg.com/locizify@^8.0.0"></script>
+    <script src="https://unpkg.com/locizify@^9.0.0"></script>
     <script>
       locizify.init({
         // required
@@ -151,7 +151,7 @@ Add the script to your page:
           allowedAddOrUpdateHosts: ['localhost']
           // alternatively, pass a function:
           allowedAddOrUpdateHosts: function(hostname) { return hostname.endsWith('staging.example.com') },
-          cdnType: 'standard' // default 'pro'
+          cdnType: 'pro' // default 'standard'
         },
 
         // defaults that are set

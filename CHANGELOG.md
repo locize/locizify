@@ -1,3 +1,8 @@
+### 9.0.0
+
+- update i18next-locize-backend
+- changed default cdnType to "standard" instead of "prod"
+
 ### 8.0.2
 
 - update i18next-locize-backend

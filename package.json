@@ -20,7 +20,7 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-locize-backend": "8.1.2",
+    "i18next-locize-backend": "9.0.0",
     "i18nextify": "4.0.0",
     "locize": "4.0.14"
   },
@@ -35,7 +35,7 @@
     "@babel/preset-env": "^7.28.5",
     "@babel/preset-react": "^7.28.5",
     "@babel/register": "^7.28.3",
-    "eslint": "9.39.1",
+    "eslint": "9.39.2",
     "eslint-plugin-import": "2.32.0",
     "html-to-vdom": "^0.7.0",
     "jest": "^30.2.0",
