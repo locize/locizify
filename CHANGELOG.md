@@ -1,3 +1,7 @@
+### 9.0.1
+
+- update i18nextify
+
 ### 9.0.0
 
 - update i18next-locize-backend
