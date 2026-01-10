@@ -12,7 +12,7 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  src="https://unpkg.com/locizify@^9.0.1"
+  src="https://unpkg.com/locizify@^9.0.2"
   autopilot="true"
   cdnType="standard"
 ></script>
@@ -22,7 +22,7 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  src="https://cdn.jsdelivr.net/npm/locizify@^9.0.1"
+  src="https://cdn.jsdelivr.net/npm/locizify@^9.0.2"
   autopilot="true"
   cdnType="standard"
 ></script>
@@ -71,7 +71,7 @@ Add the script to your page:
       id="locizify"
       projectid="[PROJECT_ID]"
       apikey="[API_KEY]"
-      src="https://unpkg.com/locizify@^9.0.1"
+      src="https://unpkg.com/locizify@^9.0.2"
       autopilot
       cdnType="standard"
     ></script>
@@ -105,7 +105,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^9.0.1"
+      src="https://unpkg.com/locizify@^9.0.2"
 
       // all custom attributes can also be prefixed with data-
       // data-projectid="[PROJECT_ID]"
@@ -136,7 +136,7 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://unpkg.com/locizify@^9.0.1"></script>
+    <script src="https://unpkg.com/locizify@^9.0.2"></script>
     <script>
       locizify.init({
         // required
