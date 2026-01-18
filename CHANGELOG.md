@@ -1,3 +1,7 @@
+### 9.0.3
+
+- update locize dep
+
 ### 9.0.2
 
 - update i18next-locize-backend

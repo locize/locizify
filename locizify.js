@@ -8667,7 +8667,7 @@
   }
   function getElementNamespace(el) {
     var found;
-    var find = function find(ele) {
+    var _find = function find(ele) {
       var opts = getAttribute$1(ele, 'i18next-options');
       if (!opts) opts = getAttribute$1(ele, 'data-i18next-options');
       if (!opts) opts = getAttribute$1(ele, 'i18n-options');
@@ -8683,9 +8683,9 @@
       if (!found) found = getAttribute$1(ele, 'data-i18next-ns');
       if (!found) found = getAttribute$1(ele, 'i18n-ns');
       if (!found) found = getAttribute$1(ele, 'data-i18n-ns');
-      if (!found && ele.parentElement) find(ele.parentElement);
+      if (!found && ele.parentElement) _find(ele.parentElement);
     };
-    find(el);
+    _find(el);
     return found;
   }
   function getQsParameterByName(name, url) {
@@ -9140,7 +9140,7 @@
     var popup = document.createElement('div');
     popup.setAttribute('id', popupId);
     popup.classList.add('i18next-editor-popup');
-    popup.style = "\n  background-color: transparent;\n  border: 1px solid rgba(200, 200, 200, 0.9);\n  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);\n  border-radius: 3px;\n  --i18next-editor-popup-height: 200px;\n  height: var(--i18next-editor-popup-height);\n  min-height: 150px;\n  min-width: 300px;\n  --i18next-editor-popup-width: 400px;\n  width: var(--i18next-editor-popup-width);\n  max-height: 800px;\n  max-width: 1000px;\n\n  position: fixed;\n  --i18next-editor-popup-position-top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  --i18next-editor-popup-position-left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n  left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n\n  overflow: visible;\n  z-index: 99999;\n  ";
+    popup.style = "\n  background-color: transparent;\n  border: 1px solid rgba(200, 200, 200, 0.9);\n  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);\n  border-radius: 3px;\n  --i18next-editor-popup-height: 200px;\n  height: var(--i18next-editor-popup-height);\n  min-height: 150px;\n  min-width: 300px;\n  --i18next-editor-popup-width: 400px;\n  width: var(--i18next-editor-popup-width);\n  max-height: 800px;\n  max-width: 1000px;\n\n  position: fixed;\n  --i18next-editor-popup-position-top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  top: calc(100vh - var(--i18next-editor-popup-height) - 10px);\n  --i18next-editor-popup-position-left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n  left: calc(100vw - var(--i18next-editor-popup-width) - 10px);\n\n  overflow: visible;\n  z-index: 100000;\n  ";
     popup.setAttribute('data-i18next-editor-element', 'true');
     var header = document.createElement('div');
     header.classList.add('i18next-editor-popup-header');
@@ -9359,7 +9359,7 @@
     var rect = ele.getBoundingClientRect();
     var box = document.createElement('div');
     box.classList.add('i18next-editor-highlight');
-    box.style = "position: absolute; z-index: 99999; pointer-events: none; top: ".concat(rect.top - 2 + window.scrollY, "px; left: ").concat(rect.left - 2 + window.scrollX, "px; height: ").concat(rect.height + 4, "px; width: ").concat(rect.width + 4, "px; border: 1px solid ").concat(borderColor, "; border-radius: 2px; ").concat(shadowColor ? "box-shadow: 0 0 20px 0 ".concat(shadowColor, ";") : '');
+    box.style = "position: absolute; z-index: 99999; pointer-events: none; top: ".concat(rect.top - 2 + window.scrollY, "px; left: ").concat(rect.left - 2 + window.scrollX, "px; height: ").concat(rect.height + 4, "px; width: ").concat(rect.width + 4, "px; border: ").concat(borderColor === 'none' ? 'none' : "1px solid ".concat(borderColor), "; border-radius: 15px; ").concat(shadowColor ? "box-shadow: inset 1px 1px 5px rgba(255, 255, 255, 0.1), inset -1px -1px 5px rgba(61, 67, 69, 0.3), 0 0 20px 0 ".concat(shadowColor, ";") : '');
     box.setAttribute('data-i18next-editor-element', 'true');
     return box;
   }
@@ -10765,7 +10765,7 @@
   function highlight(item, node, keys) {
     var rectEle = getOptimizedBoundingRectEle(node);
     if (!item.highlightBox) {
-      var box = HighlightBox(rectEle, colors.highlight);
+      var box = HighlightBox(rectEle, 'none', 'rgba(0,0,0,0.1)');
       document.body.appendChild(box);
       item.highlightBox = box;
     }
@@ -10832,7 +10832,7 @@
     var id = item.id;
     var rectEle = getOptimizedBoundingRectEle(node);
     if (!item.highlightBox) {
-      var box = HighlightBox(rectEle, colors.highlight, colors.gray);
+      var box = HighlightBox(rectEle, 'none', colors.gray);
       document.body.appendChild(box);
       item.highlightBox = box;
     }
@@ -11261,7 +11261,7 @@
     var popups = document.getElementsByClassName('i18next-editor-popup');
     var elmnt = null;
     var overlay = null;
-    var currentZIndex = 100;
+    var currentZIndex = 100000;
     for (var i = 0; i < popups.length; i++) {
       var popup = popups[i];
       var header = getHeader(popup);
