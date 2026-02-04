@@ -1908,6 +1908,9 @@
       if (typeof this.options.overloadTranslationOptionHandler !== 'function') {
         this.options.overloadTranslationOptionHandler = defOpts.overloadTranslationOptionHandler;
       }
+      if (this.options.debug === true) {
+        if (typeof console !== 'undefined') console.warn('i18next is maintained with support from locize.com — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com');
+      }
       var createClassOnDemand = ClassOrObject => {
         if (!ClassOrObject) return null;
         if (typeof ClassOrObject === 'function') return new ClassOrObject();
@@ -9342,7 +9345,11 @@
     btnbox.style = 'display: flex; flex-direction: column; align-items: flex-start; margin-left: 2px; margin-top: 1px';
     Object.keys(keys).forEach(function (k) {
       var data = keys[k];
-      var btn = RibbonButton(k.replace('attr:', ''), "".concat(data.ns, ":").concat(data.key), function () {
+      var btn = RibbonButton(k.replace('attr:', ''), "".concat(data.ns, ":").concat(data.key), function (e) {
+        if (e) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
         api.selectKey(data);
       });
       btn.style.marginBottom = '2px';
