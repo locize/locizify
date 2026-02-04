@@ -1,3 +1,7 @@
+### 9.0.5
+
+- update i18nextify
+
 ### 9.0.4
 
 - update i18next and locize deps
