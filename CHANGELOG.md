@@ -1,3 +1,7 @@
+### 9.0.7
+
+- update i18nextify
+
 ### 9.0.6
 
 - update i18nextify
