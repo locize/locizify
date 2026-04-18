@@ -1,3 +1,11 @@
+### 9.0.10
+
+Security release — includes upstream fixes from `i18next-locize-backend`, `i18nextify`, and `locize`.
+
+- security: emit a one-time `console.warn` when `?apikey=` or `?projectid=` is read from the URL query string on a non-local host (anything other than `localhost`, `127.0.0.1`, `::1`, `*.localhost`, `*.local`). The feature itself is preserved — an attacker-crafted link on a production host could otherwise silently redirect translations (and `saveMissing` writes) to an attacker-chosen locize project (CWE-522); the warning is there so maintainers notice when it happens and can decide to disable the URL-credential path in their deployment. Prefer configuring credentials via the `<script id="locizify" apikey="…" projectid="…">` attributes, which are not attacker-controllable.
+- chore: bump pinned deps (security releases): `i18next-locize-backend` 9.0.1 → **9.0.2** ([GHSA-mgcp-mfp8-3q45](https://github.com/locize/i18next-locize-backend/security/advisories/GHSA-mgcp-mfp8-3q45)), `i18nextify` 4.0.7 → **4.0.8** ([GHSA-6457-mxpq-4fqq](https://github.com/i18next/i18nextify/security/advisories/GHSA-6457-mxpq-4fqq)), `locize` 4.0.16 → **4.0.21** ([GHSA-w937-fg2h-xhq2](https://github.com/locize/locize/security/advisories/GHSA-w937-fg2h-xhq2)).
+- chore: ignore `.env*` and `*.pem`/`*.key` files in `.gitignore`.
+
 ### 9.0.9
 
 - update i18nextify

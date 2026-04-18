@@ -31,6 +31,43 @@ function getQsParameterByName (name, url) {
   return decodeURIComponent(results[2].replace(/\+/g, ' '))
 }
 
+// Reading credentials from the URL query string is convenient for local
+// development (run `?apikey=...&projectId=...` against a demo page) but is
+// dangerous on deployed sites: an attacker-crafted link would cause the
+// victim's page to send translation data (saveMissing) to the attacker's
+// locize project, or to run against an attacker-chosen backend.
+// The feature is preserved, but a warning is emitted when the URL
+// overrides credential values on hosts that don't look like a local dev
+// environment, so maintainers can notice and decide whether to disable it.
+function isLocalDevHost () {
+  if (typeof window === 'undefined' || !window.location) return false
+  const h = window.location.hostname
+  if (!h) return false
+  return (
+    h === 'localhost' ||
+    h === '127.0.0.1' ||
+    h === '::1' ||
+    h === '0.0.0.0' ||
+    h.endsWith('.localhost') ||
+    h.endsWith('.local')
+  )
+}
+
+let credentialWarningShown = false
+function warnIfCredentialFromUrlOnProdHost (attr) {
+  if (isLocalDevHost()) return
+  if (credentialWarningShown) return // only once per page
+  credentialWarningShown = true
+  if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+    console.warn(
+      'locizify: reading credential "' + attr + '" from URL query string on a non-local host. ' +
+      'An attacker-crafted link can replace your locize credentials, redirecting saveMissing writes ' +
+      'to an attacker-chosen project. Prefer configuring credentials via the ' +
+      '<script id="locizify" apikey="..." projectid="..."> attributes instead.'
+    )
+  }
+}
+
 const originalInit = i18next.init
 i18next.init = (options = {}, callback) => {
   options = { ...defaults, ...options, isLocizify: true }
@@ -100,11 +137,20 @@ i18next.init = (options = {}, callback) => {
       if (value !== undefined && value !== null) backend[attr] = value
 
       if (!value) {
-        value = getQsParameterByName(attr.toLowerCase())
+        const lc = attr.toLowerCase()
+        value = getQsParameterByName(lc)
         if (value === 'true') value = true
         if (value === 'false') value = false
-        if (attr.toLowerCase() === 'autopilot' && value === '') value = true
-        if (value !== undefined && value !== null) backend[attr] = value
+        if (lc === 'autopilot' && value === '') value = true
+        if (value !== undefined && value !== null) {
+          backend[attr] = value
+          // Credential-bearing attributes via URL on a non-local host is
+          // risky — attacker-crafted links can replace your credentials.
+          // Warn once per page load so maintainers notice.
+          if (lc === 'apikey' || lc === 'projectid') {
+            warnIfCredentialFromUrlOnProdHost(lc)
+          }
+        }
       }
     })
 
@@ -124,8 +170,13 @@ i18next.init = (options = {}, callback) => {
     callback(err, t)
   }
 
+  // Accept `?apikey=` from the URL query string as a fallback. On non-local
+  // hosts this is risky (attacker-crafted links can replace your credentials
+  // and redirect saveMissing writes to an attacker-chosen project), so warn
+  // once when it happens.
   if (!options.backend.apiKey && getQsParameterByName('apikey')) {
     options.backend.apiKey = getQsParameterByName('apikey')
+    warnIfCredentialFromUrlOnProdHost('apikey')
   }
 
   if (!options.backend.autoPilot || options.backend.autoPilot === 'false') {

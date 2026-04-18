@@ -408,6 +408,7 @@
     }
     forward(args, lvl, prefix, debugOnly) {
       if (debugOnly && !this.debug) return null;
+      args = args.map(a => isString(a) ? a.replace(/[\r\n\x00-\x1F\x7F]/g, ' ') : a);
       if (isString(args[0])) args[0] = "".concat(prefix).concat(this.prefix, " ").concat(args[0]);
       return this.logger[lvl](args);
     }
@@ -1300,8 +1301,8 @@
       this.prefix = prefix ? regexEscape(prefix) : prefixEscaped || '{{';
       this.suffix = suffix ? regexEscape(suffix) : suffixEscaped || '}}';
       this.formatSeparator = formatSeparator || ',';
-      this.unescapePrefix = unescapeSuffix ? '' : unescapePrefix || '-';
-      this.unescapeSuffix = this.unescapePrefix ? '' : unescapeSuffix || '';
+      this.unescapePrefix = unescapeSuffix ? '' : unescapePrefix ? regexEscape(unescapePrefix) : '-';
+      this.unescapeSuffix = this.unescapePrefix ? '' : unescapeSuffix ? regexEscape(unescapeSuffix) : '';
       this.nestingPrefix = nestingPrefix ? regexEscape(nestingPrefix) : nestingPrefixEscaped || regexEscape('$t(');
       this.nestingSuffix = nestingSuffix ? regexEscape(nestingSuffix) : nestingSuffixEscaped || regexEscape(')');
       this.nestingOptionsSeparator = nestingOptionsSeparator || ',';
@@ -1345,6 +1346,9 @@
         }));
       };
       this.resetRegExp();
+      if (!this.escapeValue && typeof str === 'string' && /\$t\([^)]*\{[^}]*\{\{/.test(str)) {
+        this.logger.warn('nesting options string contains interpolated variables with escapeValue: false — ' + 'if any of those values are attacker-controlled they can inject additional ' + 'nesting options (e.g. redirect lng/ns). Sanitise untrusted input before passing ' + 'it to t(), or keep escapeValue: true.');
+      }
       var missingInterpolationHandler = (options === null || options === void 0 ? void 0 : options.missingInterpolationHandler) || this.options.missingInterpolationHandler;
       var skipOnVariables = (options === null || options === void 0 || (_options$interpolatio2 = options.interpolation) === null || _options$interpolatio2 === void 0 ? void 0 : _options$interpolatio2.skipOnVariables) !== undefined ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables;
       var todos = [{
@@ -2021,7 +2025,7 @@
           deferred.resolve(t);
           callback(err, t);
         };
-        if (this.languages && !this.isInitialized) return finish(null, this.t.bind(this));
+        if ((this.languages || this.isLanguageChangingTo) && !this.isInitialized) return finish(null, this.t.bind(this));
         this.changeLanguage(this.options.lng, finish);
       };
       if (this.options.resources || !this.options.initAsync) {
@@ -2403,6 +2407,66 @@
   var loadNamespaces = instance.loadNamespaces;
   var loadLanguages = instance.loadLanguages;
 
+  function _createForOfIteratorHelper(r, e) {
+    var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
+    if (!t) {
+      if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) {
+        t && (r = t);
+        var _n = 0,
+          F = function F() {};
+        return {
+          s: F,
+          n: function n() {
+            return _n >= r.length ? {
+              done: !0
+            } : {
+              done: !1,
+              value: r[_n++]
+            };
+          },
+          e: function e(r) {
+            throw r;
+          },
+          f: F
+        };
+      }
+      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+    }
+    var o,
+      a = !0,
+      u = !1;
+    return {
+      s: function s() {
+        t = t.call(r);
+      },
+      n: function n() {
+        var r = t.next();
+        return a = r.done, r;
+      },
+      e: function e(r) {
+        u = !0, o = r;
+      },
+      f: function f() {
+        try {
+          a || null == t.return || t.return();
+        } finally {
+          if (u) throw o;
+        }
+      }
+    };
+  }
+  function _unsupportedIterableToArray(r, a) {
+    if (r) {
+      if ("string" == typeof r) return _arrayLikeToArray(r, a);
+      var t = {}.toString.call(r).slice(8, -1);
+      return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
+    }
+  }
+  function _arrayLikeToArray(r, a) {
+    (null == a || a > r.length) && (a = r.length);
+    for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
+    return n;
+  }
   function _typeof(o) {
     "@babel/helpers - typeof";
 
@@ -2411,6 +2475,35 @@
     } : function (o) {
       return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
     }, _typeof(o);
+  }
+  var UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'];
+  function isSafeUrlSegment(v) {
+    if (typeof v !== 'string') return false;
+    if (v.length === 0 || v.length > 128) return false;
+    if (UNSAFE_KEYS.indexOf(v) > -1) return false;
+    if (v.indexOf('..') > -1) return false;
+    if (v.indexOf('/') > -1 || v.indexOf('\\') > -1) return false;
+    if (/[?#%\s@]/.test(v)) return false;
+    if (/[\x00-\x1F\x7F]/.test(v)) return false;
+    return true;
+  }
+  function sanitizeLogValue(v) {
+    if (typeof v !== 'string') return v;
+    return v.replace(/[\r\n\x00-\x1F\x7F]/g, ' ');
+  }
+  function redactUrlCredentials(u) {
+    if (typeof u !== 'string' || u.length === 0) return u;
+    try {
+      var parsed = new URL(u);
+      if (parsed.username || parsed.password) {
+        parsed.username = '';
+        parsed.password = '';
+        return parsed.toString();
+      }
+      return u;
+    } catch (e) {
+      return u.replace(/(\/\/)[^/@\s]+@/g, '$1');
+    }
   }
   function hasXMLHttpRequest() {
     return typeof XMLHttpRequest === 'function' || (typeof XMLHttpRequest === "undefined" ? "undefined" : _typeof(XMLHttpRequest)) === 'object';
@@ -2425,11 +2518,32 @@
     return Promise.resolve(maybePromise);
   }
   var interpolationRegexp = /\{\{(.+?)\}\}/g;
-  function interpolate(str, data) {
-    return str.replace(interpolationRegexp, function (match, key) {
-      var value = data[key.trim()];
-      return value != null ? value : match;
+  function interpolateUrl(str, data) {
+    var unsafe = false;
+    var result = str.replace(interpolationRegexp, function (match, key) {
+      var k = key.trim();
+      if (UNSAFE_KEYS.indexOf(k) > -1) return match;
+      var value = data[k];
+      if (value == null) return match;
+      var segments = String(value).split('+');
+      var _iterator = _createForOfIteratorHelper(segments),
+        _step;
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var seg = _step.value;
+          if (!isSafeUrlSegment(seg)) {
+            unsafe = true;
+            return match;
+          }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+      return segments.join('+');
     });
+    return unsafe ? null : result;
   }
 
   function ownKeys$1(e, r) {
@@ -2514,10 +2628,13 @@
       }).catch(function () {});
     } catch (e) {}
   }
+  var UNSAFE_KEYS$1 = ['__proto__', 'constructor', 'prototype'];
   var addQueryString = function addQueryString(url, params) {
     if (params && _typeof$1(params) === 'object') {
       var queryString = '';
-      for (var paramName in params) {
+      for (var _i = 0, _Object$keys = Object.keys(params); _i < _Object$keys.length; _i++) {
+        var paramName = _Object$keys[_i];
+        if (UNSAFE_KEYS$1.indexOf(paramName) > -1) continue;
         queryString += '&' + encodeURIComponent(paramName) + '=' + encodeURIComponent(params[paramName]);
       }
       if (!queryString) return url;
@@ -2550,7 +2667,6 @@
       fetchApi(url, fetchOptions).then(resolver).catch(callback);
     }
   };
-  var omitFetchOptions = false;
   var requestWithFetch = function requestWithFetch(options, url, payload, callback) {
     if (options.queryStringParams) {
       url = addQueryString(url, options.queryStringParams);
@@ -2565,7 +2681,7 @@
       method: payload ? 'POST' : 'GET',
       body: payload ? options.stringify(payload) : undefined,
       headers: headers
-    }, omitFetchOptions ? {} : reqOptions);
+    }, options._omitFetchOptions ? {} : reqOptions);
     var altFetch = typeof options.alternateFetch === 'function' && options.alternateFetch.length >= 1 ? options.alternateFetch : undefined;
     try {
       fetchIt(url, fetchOptions, callback, altFetch);
@@ -2578,7 +2694,7 @@
           delete fetchOptions[opt];
         });
         fetchIt(url, fetchOptions, callback, altFetch);
-        omitFetchOptions = true;
+        options._omitFetchOptions = true;
       } catch (err) {
         callback(err);
       }
@@ -2607,7 +2723,9 @@
       var h = options.customHeaders;
       h = typeof h === 'function' ? h() : h;
       if (h) {
-        for (var i in h) {
+        for (var _i2 = 0, _Object$keys2 = Object.keys(h); _i2 < _Object$keys2.length; _i2++) {
+          var i = _Object$keys2[_i2];
+          if (UNSAFE_KEYS$1.indexOf(i) > -1) continue;
           x.setRequestHeader(i, h[i]);
         }
       }
@@ -2779,10 +2897,15 @@
         loadPath = makePromise(loadPath);
         loadPath.then(function (resolvedLoadPath) {
           if (!resolvedLoadPath) return callback(null, {});
-          var url = interpolate(resolvedLoadPath, {
+          var url = interpolateUrl(resolvedLoadPath, {
             lng: languages.join('+'),
             ns: namespaces.join('+')
           });
+          if (url == null) {
+            var safeLngs = languages.map(sanitizeLogValue).join(', ');
+            var safeNss = namespaces.map(sanitizeLogValue).join(', ');
+            return callback(new Error('i18next-http-backend: unsafe lng/ns value — refusing to build request URL for languages=[' + safeLngs + '] namespaces=[' + safeNss + ']'), false);
+          }
           _this2.loadUrl(url, callback, loadUrlLanguages, loadUrlNamespaces);
         });
       }
@@ -2793,16 +2916,17 @@
         var lng = typeof languages === 'string' ? [languages] : languages;
         var ns = typeof namespaces === 'string' ? [namespaces] : namespaces;
         var payload = this.options.parseLoadPayload(lng, ns);
+        var safeUrl = sanitizeLogValue(redactUrlCredentials(url));
         this.options.request(this.options, url, payload, function (err, res) {
-          if (res && (res.status >= 500 && res.status < 600 || !res.status)) return callback('failed loading ' + url + '; status code: ' + res.status, true);
-          if (res && res.status >= 400 && res.status < 500) return callback('failed loading ' + url + '; status code: ' + res.status, false);
+          if (res && (res.status >= 500 && res.status < 600 || !res.status)) return callback('failed loading ' + safeUrl + '; status code: ' + res.status, true);
+          if (res && res.status >= 400 && res.status < 500) return callback('failed loading ' + safeUrl + '; status code: ' + res.status, false);
           if (!res && err && err.message) {
             var errorMessage = err.message.toLowerCase();
             var isNetworkError = ['failed', 'fetch', 'network', 'load'].find(function (term) {
               return errorMessage.indexOf(term) > -1;
             });
             if (isNetworkError) {
-              return callback('failed loading ' + url + ': ' + err.message, true);
+              return callback('failed loading ' + safeUrl + ': ' + sanitizeLogValue(err.message), true);
             }
           }
           if (err) return callback(err, false);
@@ -2814,7 +2938,7 @@
               ret = res.data;
             }
           } catch (e) {
-            parseErr = 'failed parsing ' + url + ' to json';
+            parseErr = 'failed parsing ' + safeUrl + ' to json';
           }
           if (parseErr) return callback(parseErr, false);
           callback(null, ret);
@@ -2835,10 +2959,15 @@
           if (typeof _this4.options.addPath === 'function') {
             addPath = _this4.options.addPath(lng, namespace);
           }
-          var url = interpolate(addPath, {
+          var url = interpolateUrl(addPath, {
             lng: lng,
             ns: namespace
           });
+          if (url == null) {
+            finished += 1;
+            if (callback && finished === languages.length) callback(dataArray, resArray);
+            return;
+          }
           _this4.options.request(_this4.options, url, payload, function (data, res) {
             finished += 1;
             dataArray.push(data);
@@ -4656,8 +4785,12 @@
     return value;
   };
   DOMElement.prototype.removeAttributeNS = function _Element_removeAttributeNS(namespace, name) {
+    // Prevent prototype pollution by checking if namespace is a direct property
+    if (!Object.prototype.hasOwnProperty.call(this._attributes, namespace)) {
+      return;
+    }
     var attributes = this._attributes[namespace];
-    if (attributes) {
+    if (attributes && Object.prototype.hasOwnProperty.call(attributes, name)) {
       delete attributes[name];
     }
   };
@@ -6782,6 +6915,16 @@
   }
   var replaceInside = ['src', 'href'];
   var REGEXP = new RegExp('%7B%7B(.+?)%7D%7D', 'g'); // urlEncoded {{}}
+
+  // Reject URL schemes that execute script when used in href/src — regardless
+  // of whether the attacker-controlled value reaches the attribute via a
+  // compromised translation backend, a compromised translation file, or a
+  // local override. The list covers the concrete known-exploitable schemes;
+  // legitimate translation use cases never need them.
+  var DANGEROUS_URL_SCHEMES = /^\s*(javascript|data|vbscript|file)\s*:/i;
+  function isDangerousUrl(value) {
+    return typeof value === 'string' && DANGEROUS_URL_SCHEMES.test(value);
+  }
   function translateProps(node, props) {
     var tOptions = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     var overrideKey = arguments.length > 3 ? arguments[3] : undefined;
@@ -6831,7 +6974,13 @@
                 mem.splice(index - 1, 1);
               }
             }
-            mem.push(tr);
+            // Drop dangerous URL schemes (javascript:/data:/vbscript:/file:) —
+            // no legitimate translation needs them in src/href.
+            if (isDangerousUrl(tr)) {
+              mem.push('');
+            } else {
+              mem.push(tr);
+            }
           }
           return mem;
         }, arr);
@@ -6910,7 +7059,20 @@
         }
 
         // translate that's children and surround it again with a dummy node to parse to vdom
-        var translation = "<i18nextifydummy>".concat(translate(key, tOptions, overrideKey), "</i18nextifydummy>");
+        var translated = translate(key, tOptions, overrideKey);
+        // Optional sanitize hook — if the application has configured
+        // `i18next.options.sanitize` (e.g. wired to DOMPurify), run the raw
+        // translation through it before parsing into the virtual DOM.
+        // Default is pass-through because i18nextify's whole purpose is to
+        // render HTML from translations; sanitisation is only safe for apps
+        // where translation content may not be fully trusted.
+        if (typeof instance.options.sanitize === 'function') {
+          translated = instance.options.sanitize(translated, {
+            key: key,
+            attribute: null
+          });
+        }
+        var translation = "<i18nextifydummy>".concat(translated, "</i18nextifydummy>");
         var newNode = vdomParser((translation || '').trim());
 
         // replace children on passed in node
@@ -7088,8 +7250,24 @@
       cleanWhitespace: true,
       nsSeparator: '#||#',
       keySeparator: '#|#',
-      debug: window.location.search && window.location.search.indexOf('debug=true') > -1,
-      saveMissing: window.location.search && window.location.search.indexOf('saveMissing=true') > -1,
+      // Use URLSearchParams for exact parameter lookup — a previous substring
+      // match (`indexOf('debug=true')`) activated these modes for any URL that
+      // happened to contain the substring (`?nosaveMissing=true` enabled
+      // saveMissing; `?track_debug=true` enabled debug).
+      debug: function () {
+        try {
+          return new URLSearchParams(window.location.search).get('debug') === 'true';
+        } catch (e) {
+          return false;
+        }
+      }(),
+      saveMissing: function () {
+        try {
+          return new URLSearchParams(window.location.search).get('saveMissing') === 'true';
+        } catch (e) {
+          return false;
+        }
+      }(),
       namespace: scriptEle && scriptEle.getAttribute('namespace') || false,
       namespaceFromPath: scriptEle && (scriptEle.getAttribute('namespacefrompath') || scriptEle.getAttribute('namespaceFromPath')) || false,
       missingKeyHandler: missingHandler,
@@ -7226,18 +7404,95 @@
     forceRerender: forceRerender
   };
 
+  function _createForOfIteratorHelper$1(r, e) {
+    var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
+    if (!t) {
+      if (Array.isArray(r) || (t = _unsupportedIterableToArray$1(r)) || e && r && "number" == typeof r.length) {
+        t && (r = t);
+        var _n = 0,
+          F = function F() {};
+        return {
+          s: F,
+          n: function n() {
+            return _n >= r.length ? {
+              done: !0
+            } : {
+              done: !1,
+              value: r[_n++]
+            };
+          },
+          e: function e(r) {
+            throw r;
+          },
+          f: F
+        };
+      }
+      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+    }
+    var o,
+      a = !0,
+      u = !1;
+    return {
+      s: function s() {
+        t = t.call(r);
+      },
+      n: function n() {
+        var r = t.next();
+        return a = r.done, r;
+      },
+      e: function e(r) {
+        u = !0, o = r;
+      },
+      f: function f() {
+        try {
+          a || null == t.return || t.return();
+        } finally {
+          if (u) throw o;
+        }
+      }
+    };
+  }
+  function _unsupportedIterableToArray$1(r, a) {
+    if (r) {
+      if ("string" == typeof r) return _arrayLikeToArray$1(r, a);
+      var t = {}.toString.call(r).slice(8, -1);
+      return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0;
+    }
+  }
+  function _arrayLikeToArray$1(r, a) {
+    (null == a || a > r.length) && (a = r.length);
+    for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
+    return n;
+  }
   var arr = [];
   var each = arr.forEach;
   var slice$2 = arr.slice;
+  var UNSAFE_KEYS$2 = ['__proto__', 'constructor', 'prototype'];
   function defaults$1(obj) {
     each.call(slice$2.call(arguments, 1), function (source) {
       if (source) {
-        for (var prop in source) {
+        for (var _i = 0, _Object$keys = Object.keys(source); _i < _Object$keys.length; _i++) {
+          var prop = _Object$keys[_i];
+          if (UNSAFE_KEYS$2.indexOf(prop) > -1) continue;
           if (obj[prop] === undefined) obj[prop] = source[prop];
         }
       }
     });
     return obj;
+  }
+  function isSafeUrlSegment$1(v) {
+    if (typeof v !== 'string') return false;
+    if (v.length === 0 || v.length > 128) return false;
+    if (UNSAFE_KEYS$2.indexOf(v) > -1) return false;
+    if (v.indexOf('..') > -1) return false;
+    if (v.indexOf('/') > -1 || v.indexOf('\\') > -1) return false;
+    if (/[?#%\s@]/.test(v)) return false;
+    if (/[\x00-\x1F\x7F]/.test(v)) return false;
+    return true;
+  }
+  function sanitizeLogValue$1(v) {
+    if (typeof v !== 'string') return v;
+    return v.replace(/[\r\n\x00-\x1F\x7F]/g, ' ');
   }
   function debounce$1(func, wait, immediate) {
     var timeout;
@@ -7297,20 +7552,47 @@
     if (object == null) return '';
     return '' + object;
   }
-  function interpolate$1(str, data, lng) {
-    var match, value;
-    function regexSafe(val) {
-      return val.replace(/\$/g, '$$$$');
-    }
+  function interpolateUrl$1(str, data) {
+    var match;
+    var unsafe = false;
     while (match = regexp.exec(str)) {
-      value = match[1].trim();
-      if (typeof value !== 'string') value = makeString$1(value);
-      if (!value) value = '';
-      value = regexSafe(value);
-      str = str.replace(match[0], data[value] || value);
+      var key = match[1].trim();
+      if (UNSAFE_KEYS$2.indexOf(key) > -1) {
+        regexp.lastIndex = 0;
+        continue;
+      }
+      var raw = data[key];
+      if (raw == null) {
+        regexp.lastIndex = 0;
+        continue;
+      }
+      var value = makeString$1(raw);
+      var segments = value.split('+');
+      var segmentsOk = true;
+      var _iterator = _createForOfIteratorHelper$1(segments),
+        _step;
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var seg = _step.value;
+          if (!isSafeUrlSegment$1(seg)) {
+            segmentsOk = false;
+            break;
+          }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+      if (!segmentsOk) {
+        unsafe = true;
+        break;
+      }
+      str = str.replace(match[0], segments.join('+'));
       regexp.lastIndex = 0;
     }
-    return str;
+    regexp.lastIndex = 0;
+    return unsafe ? null : str;
   }
   function isMissingOption(obj, props) {
     return props.reduce(function (mem, p) {
@@ -7793,14 +8075,18 @@
           callback(new Error(isMissing));
           return deferred;
         }
-        var url = interpolate$1(this.options.getLanguagesPath, {
+        var url = interpolateUrl$1(this.options.getLanguagesPath, {
           projectId: this.options.projectId
         });
+        if (url == null) {
+          callback(new Error('i18next-locize-backend: unsafe projectId — refusing to build request URL for projectId=' + sanitizeLogValue$1(String(this.options.projectId))));
+          return deferred;
+        }
         if (!this.isProjectNotExisting && this.storage.isProjectNotExisting(this.options.projectId)) {
           this.isProjectNotExisting = true;
         }
         if (this.isProjectNotExisting) {
-          callback(new Error(this.isProjectNotExistingErrorMessage || "locize project ".concat(this.options.projectId, " does not exist!")));
+          callback(new Error(this.isProjectNotExistingErrorMessage || "Locize project ".concat(this.options.projectId, " does not exist!")));
           return deferred;
         }
         this.getLanguagesCalls = this.getLanguagesCalls || [];
@@ -7809,16 +8095,17 @@
         this.loadUrl({}, url, function (err, ret, info) {
           if (!_this3.somethingLoaded && info && info.resourceNotExisting) {
             _this3.isProjectNotExisting = true;
-            var errMsg = "locize project ".concat(_this3.options.projectId, " does not exist!");
+            var errMsg = "Locize project ".concat(_this3.options.projectId, " does not exist!");
             _this3.isProjectNotExistingErrorMessage = errMsg;
             var cdnTypeAlt = _this3.options.cdnType === 'standard' ? 'pro' : 'standard';
             var otherEndpointApiPaths = getApiPaths(cdnTypeAlt);
-            var urlAlt = interpolate$1(otherEndpointApiPaths.getLanguagesPath, {
+            var urlAlt = interpolateUrl$1(otherEndpointApiPaths.getLanguagesPath, {
               projectId: _this3.options.projectId
             });
+            if (urlAlt == null) return;
             _this3.loadUrl({}, urlAlt, function (errAlt, retAlt, infoAlt) {
               if (!errAlt && retAlt && (!infoAlt || !infoAlt.resourceNotExisting)) {
-                errMsg += " It seems you're using the wrong cdnType. Your locize project is configured to use \"".concat(cdnTypeAlt, "\" but here you've configured \"").concat(_this3.options.cdnType, "\".");
+                errMsg += " It seems you're using the wrong cdnType. Your Locize project is configured to use \"".concat(cdnTypeAlt, "\" but here you've configured \"").concat(_this3.options.cdnType, "\".");
                 _this3.isProjectNotExistingErrorMessage = errMsg;
               } else if (!_this3.somethingLoaded && infoAlt && infoAlt.resourceNotExisting) {
                 _this3.isProjectNotExisting = true;
@@ -7948,7 +8235,7 @@
         if (this.options.private) {
           var isMissing = isMissingOption(this.options, ['projectId', 'version', 'apiKey']);
           if (isMissing) return callback(new Error(isMissing), false);
-          url = interpolate$1(this.options.privatePath, {
+          url = interpolateUrl$1(this.options.privatePath, {
             lng: language,
             ns: namespace,
             projectId: this.options.projectId,
@@ -7960,24 +8247,27 @@
         } else {
           var _isMissing = isMissingOption(this.options, ['projectId', 'version']);
           if (_isMissing) return callback(new Error(_isMissing), false);
-          url = interpolate$1(this.options.loadPath, {
+          url = interpolateUrl$1(this.options.loadPath, {
             lng: language,
             ns: namespace,
             projectId: this.options.projectId,
             version: this.options.version
           });
         }
+        if (url == null) {
+          return callback(new Error('i18next-locize-backend: unsafe lng/ns/projectId/version — refusing to build request URL for lng=' + sanitizeLogValue$1(String(language)) + ' ns=' + sanitizeLogValue$1(String(namespace))), false);
+        }
         if (!this.isProjectNotExisting && this.storage.isProjectNotExisting(this.options.projectId)) {
           this.isProjectNotExisting = true;
         }
         if (this.isProjectNotExisting) {
-          var err = new Error(this.isProjectNotExistingErrorMessage || "locize project ".concat(this.options.projectId, " does not exist!"));
+          var err = new Error(this.isProjectNotExistingErrorMessage || "Locize project ".concat(this.options.projectId, " does not exist!"));
           if (logger) logger.error(err.message);
           if (callback) callback(err);
           return;
         }
         if (this.warnedLanguages && this.warnedLanguages.indexOf(language) > -1) {
-          var _err = new Error("Will not continue to load language \"".concat(language, "\" since it is not available in locize project ").concat(this.options.projectId, "!"));
+          var _err = new Error("Will not continue to load language \"".concat(language, "\" since it is not available in Locize project ").concat(this.options.projectId, "!"));
           if (logger) logger.error(_err.message);
           if (callback) callback(_err);
           return;
@@ -7996,7 +8286,7 @@
                 if (_this6.warnedLanguages && _this6.warnedLanguages.indexOf(language) > -1) return;
                 _this6.warnedLanguages || (_this6.warnedLanguages = []);
                 _this6.warnedLanguages.push(language);
-                if (logger) logger.error("Language \"".concat(language, "\" is not available in locize project ").concat(_this6.options.projectId, "!"));
+                if (logger) logger.error("Language \"".concat(language, "\" is not available in Locize project ").concat(_this6.options.projectId, "!"));
               });
             }, randomizeTimeout(_this6.options.checkForProjectTimeout));
           }
@@ -8125,18 +8415,24 @@
     }, {
       key: "writePage",
       value: function writePage(lng, namespace, missings, callback) {
-        var missingUrl = interpolate$1(this.options.addPath, {
+        var missingUrl = interpolateUrl$1(this.options.addPath, {
           lng: lng,
           ns: namespace,
           projectId: this.options.projectId,
           version: this.options.version
         });
-        var updatesUrl = interpolate$1(this.options.updatePath, {
+        var updatesUrl = interpolateUrl$1(this.options.updatePath, {
           lng: lng,
           ns: namespace,
           projectId: this.options.projectId,
           version: this.options.version
         });
+        if (missingUrl == null || updatesUrl == null) {
+          if (typeof callback === 'function') {
+            callback(new Error('i18next-locize-backend: unsafe lng/ns/projectId/version — refusing to persist missing keys for lng=' + sanitizeLogValue$1(String(lng)) + ' ns=' + sanitizeLogValue$1(String(namespace))));
+          }
+          return;
+        }
         var hasMissing = false;
         var hasUpdates = false;
         var payloadMissing = {};
@@ -8589,17 +8885,17 @@
     }
   }
 
-  function _arrayLikeToArray(r, a) {
+  function _arrayLikeToArray$2(r, a) {
     (null == a || a > r.length) && (a = r.length);
     for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
     return n;
   }
 
-  function _unsupportedIterableToArray(r, a) {
+  function _unsupportedIterableToArray$2(r, a) {
     if (r) {
-      if ("string" == typeof r) return _arrayLikeToArray(r, a);
+      if ("string" == typeof r) return _arrayLikeToArray$2(r, a);
       var t = {}.toString.call(r).slice(8, -1);
-      return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
+      return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$2(r, a) : void 0;
     }
   }
 
@@ -8608,7 +8904,7 @@
   }
 
   function _slicedToArray$1(r, e) {
-    return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest();
+    return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray$2(r, e) || _nonIterableRest();
   }
 
   function debounce$2(func, wait, immediate) {
@@ -8865,8 +9161,17 @@
       sendMessage('added', msg);
     }
   };
+  var getExpectedIframeOrigin = function getExpectedIframeOrigin() {
+    try {
+      return new URL(getIframeUrl()).origin;
+    } catch (err) {
+      return null;
+    }
+  };
   if (typeof window !== 'undefined') {
     window.addEventListener('message', function (e) {
+      var expectedOrigin = getExpectedIframeOrigin();
+      if (!expectedOrigin || e.origin !== expectedOrigin) return;
       var _e$data = e.data,
         sender = _e$data.sender,
         action = _e$data.action,
@@ -8887,6 +9192,45 @@
     });
   }
 
+  var DANGEROUS_ATTR_NAMES = /^(on\w+|style)$/i;
+  var URL_ATTR_NAMES = /^(href|src|action|formaction|xlink:href)$/i;
+  var DANGEROUS_URL_SCHEMES$1 = /^\s*(javascript|data|vbscript|file)\s*:/i;
+  function isSafeAttributeWrite(attr, value) {
+    if (typeof attr !== 'string') return false;
+    if (DANGEROUS_ATTR_NAMES.test(attr)) return false;
+    if (URL_ATTR_NAMES.test(attr) && typeof value === 'string' && DANGEROUS_URL_SCHEMES$1.test(value)) return false;
+    return true;
+  }
+  function sanitizeTranslationHtml(html) {
+    if (typeof html !== 'string') return html;
+    if (typeof DOMParser === 'undefined') return html;
+    try {
+      var doc = new DOMParser().parseFromString("<body>".concat(html, "</body>"), 'text/html');
+      var disallowedTags = ['SCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'BASE', 'STYLE'];
+      disallowedTags.forEach(function (tag) {
+        doc.body.querySelectorAll(tag.toLowerCase()).forEach(function (n) {
+          return n.remove();
+        });
+      });
+      doc.body.querySelectorAll('*').forEach(function (n) {
+        var attrs = Array.from(n.attributes);
+        attrs.forEach(function (a) {
+          var name = a.name;
+          var val = a.value;
+          if (/^on/i.test(name)) {
+            n.removeAttribute(name);
+            return;
+          }
+          if (URL_ATTR_NAMES.test(name) && DANGEROUS_URL_SCHEMES$1.test(val)) {
+            n.removeAttribute(name);
+          }
+        });
+      });
+      return doc.body.innerHTML;
+    } catch (e) {
+      return html;
+    }
+  }
   function setValueOnNode(meta, value) {
     var item = store.get(meta.eleUniqueID);
     if (!item || !item.keys[meta.textType]) return;
@@ -8895,6 +9239,7 @@
       item.node.textContent = txtWithHiddenMeta;
     } else if (meta.textType.indexOf('attr:') === 0) {
       var attr = meta.textType.replace('attr:', '');
+      if (!isSafeAttributeWrite(attr, txtWithHiddenMeta)) return;
       item.node.setAttribute(attr, txtWithHiddenMeta);
     } else if (meta.textType === 'html') {
       var id = "".concat(meta.textType, "-").concat(meta.children);
@@ -8905,13 +9250,14 @@
         });
         item.originalChildNodes = clones;
       }
+      var sanitisedHtml = sanitizeTranslationHtml(txtWithHiddenMeta);
       if (item.children[id].length === item.node.childNodes.length) {
-        item.node.innerHTML = txtWithHiddenMeta;
+        item.node.innerHTML = sanitisedHtml;
       } else {
         var children = item.children[id];
         var first = children[0].child;
         var dummy = document.createElement('div');
-        dummy.innerHTML = txtWithHiddenMeta;
+        dummy.innerHTML = sanitisedHtml;
         var nodes = [];
         dummy.childNodes.forEach(function (c) {
           nodes.push(c);
@@ -8954,7 +9300,7 @@
   api.addHandler('commitKey', handler$1);
 
   function _arrayWithoutHoles(r) {
-    if (Array.isArray(r)) return _arrayLikeToArray(r);
+    if (Array.isArray(r)) return _arrayLikeToArray$2(r);
   }
 
   function _iterableToArray(r) {
@@ -8966,7 +9312,7 @@
   }
 
   function _toConsumableArray(r) {
-    return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread();
+    return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray$2(r) || _nonIterableSpread();
   }
 
   function handler$2(payload) {
@@ -9067,9 +9413,23 @@
     return refEle;
   }
 
+  function isOccluded(node) {
+    var rect = node.getBoundingClientRect();
+    if (!rect.width || !rect.height) return true;
+    var x = rect.left + rect.width / 2;
+    var y = rect.top + rect.height / 2;
+    var topEl = document.elementFromPoint(x, y);
+    if (!topEl) return true;
+    if (topEl.dataset && topEl.dataset.i18nextEditorElement === 'true') return false;
+    return !node.contains(topEl) && !topEl.contains(node);
+  }
   var debouncedUpdateDistance = debounce$2(function (e, observer) {
     Object.values(store.data).forEach(function (item) {
       if (!isInViewport(item.node)) return;
+      if (isOccluded(item.node)) {
+        resetHighlight(item, item.node, item.keys);
+        return;
+      }
       var distance = mouseDistanceFromElement(e, item.node);
       if (distance < 5) {
         highlight(item, item.node, item.keys);
@@ -9080,6 +9440,10 @@
     });
     Object.values(uninstrumentedStore.data).forEach(function (item) {
       if (!isInViewport(item.node)) return;
+      if (isOccluded(item.node)) {
+        resetHighlight(item, item.node, item.keys);
+        return;
+      }
       var distance = mouseDistanceFromElement(e, item.node);
       if (distance < 10) {
         highlightUninstrumented(item, item.node, item.keys);
@@ -9195,6 +9559,10 @@
     return popup;
   }
 
+  var CSS_LENGTH_RE = /^\d+(?:\.\d+)?(?:px|%|em|rem|vh|vw|ch|ex)$/i;
+  function isSafeCssLength(v) {
+    return typeof v === 'string' && CSS_LENGTH_RE.test(v);
+  }
   function handler$4(payload) {
     var containerStyle = payload.containerStyle;
     if (containerStyle) {
@@ -9208,6 +9576,12 @@
         containerStyle.height = storedSize.height + 'px';
         containerStyle.width = storedSize.width + 'px';
       }
+      if (containerStyle.height && !isSafeCssLength(containerStyle.height)) {
+        delete containerStyle.height;
+      }
+      if (containerStyle.width && !isSafeCssLength(containerStyle.width)) {
+        delete containerStyle.width;
+      }
       if (containerStyle.height) {
         var diff = "calc(".concat(containerStyle.height, " - ").concat(popup.style.height, ")");
         popup.style.setProperty('top', "calc(".concat(popup.style.top, " - ").concat(diff, ")"));
@@ -9218,10 +9592,10 @@
         popup.style.setProperty('left', "calc(".concat(popup.style.left, " - ").concat(_diff, ")"));
         popup.style.setProperty('width', containerStyle.width);
       }
-      if (storedPos && storedPos.top && storedPos.top < window.innerHeight - containerStyle.height.replace('px', '')) {
+      if (storedPos && storedPos.top && containerStyle.height && storedPos.top < window.innerHeight - containerStyle.height.replace('px', '')) {
         popup.style.setProperty('top', storedPos.top + 'px');
       }
-      if (storedPos && storedPos.left && storedPos.left < window.innerWidth - containerStyle.width.replace('px', '')) {
+      if (storedPos && storedPos.left && containerStyle.width && storedPos.left < window.innerWidth - containerStyle.width.replace('px', '')) {
         popup.style.setProperty('left', storedPos.left + 'px');
       }
     }
@@ -9404,10 +9778,6 @@
     bottom: 'top',
     top: 'bottom'
   };
-  var oppositeAlignmentMap = {
-    start: 'end',
-    end: 'start'
-  };
   function clamp(start, value, end) {
     return max(start, min(value, end));
   }
@@ -9427,7 +9797,8 @@
     return axis === 'y' ? 'height' : 'width';
   }
   function getSideAxis(placement) {
-    return ['top', 'bottom'].includes(getSide(placement)) ? 'y' : 'x';
+    var firstChar = placement[0];
+    return firstChar === 't' || firstChar === 'b' ? 'y' : 'x';
   }
   function getAlignmentAxis(placement) {
     return getOppositeAxis(getSideAxis(placement));
@@ -9450,21 +9821,21 @@
     return [getOppositeAlignmentPlacement(placement), oppositePlacement, getOppositeAlignmentPlacement(oppositePlacement)];
   }
   function getOppositeAlignmentPlacement(placement) {
-    return placement.replace(/start|end/g, alignment => oppositeAlignmentMap[alignment]);
+    return placement.includes('start') ? placement.replace('start', 'end') : placement.replace('end', 'start');
   }
+  var lrPlacement = ['left', 'right'];
+  var rlPlacement = ['right', 'left'];
+  var tbPlacement = ['top', 'bottom'];
+  var btPlacement = ['bottom', 'top'];
   function getSideList(side, isStart, rtl) {
-    var lr = ['left', 'right'];
-    var rl = ['right', 'left'];
-    var tb = ['top', 'bottom'];
-    var bt = ['bottom', 'top'];
     switch (side) {
       case 'top':
       case 'bottom':
-        if (rtl) return isStart ? rl : lr;
-        return isStart ? lr : rl;
+        if (rtl) return isStart ? rlPlacement : lrPlacement;
+        return isStart ? lrPlacement : rlPlacement;
       case 'left':
       case 'right':
-        return isStart ? tb : bt;
+        return isStart ? tbPlacement : btPlacement;
       default:
         return [];
     }
@@ -9481,7 +9852,8 @@
     return list;
   }
   function getOppositePlacement(placement) {
-    return placement.replace(/left|right|bottom|top/g, side => oppositeSideMap[side]);
+    var side = getSide(placement);
+    return oppositeSideMap[side] + placement.slice(side.length);
   }
   function expandPaddingObject(padding) {
     return _objectSpread2({
@@ -9577,98 +9949,6 @@
   }
 
   /**
-   * Computes the `x` and `y` coordinates that will place the floating element
-   * next to a given reference element.
-   *
-   * This export does not have any `platform` interface logic. You will need to
-   * write one for the platform you are using Floating UI with.
-   */
-  var computePosition = /*#__PURE__*/function () {
-    var _ref2 = _asyncToGenerator(function* (reference, floating, config) {
-      var {
-        placement = 'bottom',
-        strategy = 'absolute',
-        middleware = [],
-        platform
-      } = config;
-      var validMiddleware = middleware.filter(Boolean);
-      var rtl = yield platform.isRTL == null ? void 0 : platform.isRTL(floating);
-      var rects = yield platform.getElementRects({
-        reference,
-        floating,
-        strategy
-      });
-      var {
-        x,
-        y
-      } = computeCoordsFromPlacement(rects, placement, rtl);
-      var statefulPlacement = placement;
-      var middlewareData = {};
-      var resetCount = 0;
-      for (var i = 0; i < validMiddleware.length; i++) {
-        var {
-          name,
-          fn
-        } = validMiddleware[i];
-        var {
-          x: nextX,
-          y: nextY,
-          data,
-          reset
-        } = yield fn({
-          x,
-          y,
-          initialPlacement: placement,
-          placement: statefulPlacement,
-          strategy,
-          middlewareData,
-          rects,
-          platform,
-          elements: {
-            reference,
-            floating
-          }
-        });
-        x = nextX != null ? nextX : x;
-        y = nextY != null ? nextY : y;
-        middlewareData = _objectSpread2(_objectSpread2({}, middlewareData), {}, {
-          [name]: _objectSpread2(_objectSpread2({}, middlewareData[name]), data)
-        });
-        if (reset && resetCount <= 50) {
-          resetCount++;
-          if (typeof reset === 'object') {
-            if (reset.placement) {
-              statefulPlacement = reset.placement;
-            }
-            if (reset.rects) {
-              rects = reset.rects === true ? yield platform.getElementRects({
-                reference,
-                floating,
-                strategy
-              }) : reset.rects;
-            }
-            ({
-              x,
-              y
-            } = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
-          }
-          i = -1;
-        }
-      }
-      return {
-        x,
-        y,
-        placement: statefulPlacement,
-        strategy,
-        middlewareData
-      };
-    });
-    return function computePosition(_x, _x2, _x3) {
-      return _ref2.apply(this, arguments);
-    };
-  }();
-
-  /**
    * Resolves with an object of overflow side offsets that determine how much the
    * element is overflowing a given clipping boundary on each side.
    * - positive = overflowing the boundary by that number of pixels
@@ -9676,14 +9956,9 @@
    * - 0 = lies flush with the boundary
    * @see https://floating-ui.com/docs/detectOverflow
    */
-  function detectOverflow(_x4, _x5) {
+  function detectOverflow(_x, _x2) {
     return _detectOverflow.apply(this, arguments);
-  }
-  /**
-   * Provides data to position an inner element of the floating element so that it
-   * appears centered to the reference element.
-   * @see https://floating-ui.com/docs/arrow
-   */
+  } // Maximum number of resets that can occur before bailing to avoid infinite reset loops.
   function _detectOverflow() {
     _detectOverflow = _asyncToGenerator(function* (state, options) {
       var _await$platform$isEle;
@@ -9743,6 +10018,109 @@
     });
     return _detectOverflow.apply(this, arguments);
   }
+  var MAX_RESET_COUNT = 50;
+
+  /**
+   * Computes the `x` and `y` coordinates that will place the floating element
+   * next to a given reference element.
+   *
+   * This export does not have any `platform` interface logic. You will need to
+   * write one for the platform you are using Floating UI with.
+   */
+  var computePosition = /*#__PURE__*/function () {
+    var _ref2 = _asyncToGenerator(function* (reference, floating, config) {
+      var {
+        placement = 'bottom',
+        strategy = 'absolute',
+        middleware = [],
+        platform
+      } = config;
+      var platformWithDetectOverflow = platform.detectOverflow ? platform : _objectSpread2(_objectSpread2({}, platform), {}, {
+        detectOverflow
+      });
+      var rtl = yield platform.isRTL == null ? void 0 : platform.isRTL(floating);
+      var rects = yield platform.getElementRects({
+        reference,
+        floating,
+        strategy
+      });
+      var {
+        x,
+        y
+      } = computeCoordsFromPlacement(rects, placement, rtl);
+      var statefulPlacement = placement;
+      var resetCount = 0;
+      var middlewareData = {};
+      for (var i = 0; i < middleware.length; i++) {
+        var currentMiddleware = middleware[i];
+        if (!currentMiddleware) {
+          continue;
+        }
+        var {
+          name,
+          fn
+        } = currentMiddleware;
+        var {
+          x: nextX,
+          y: nextY,
+          data,
+          reset
+        } = yield fn({
+          x,
+          y,
+          initialPlacement: placement,
+          placement: statefulPlacement,
+          strategy,
+          middlewareData,
+          rects,
+          platform: platformWithDetectOverflow,
+          elements: {
+            reference,
+            floating
+          }
+        });
+        x = nextX != null ? nextX : x;
+        y = nextY != null ? nextY : y;
+        middlewareData[name] = _objectSpread2(_objectSpread2({}, middlewareData[name]), data);
+        if (reset && resetCount < MAX_RESET_COUNT) {
+          resetCount++;
+          if (typeof reset === 'object') {
+            if (reset.placement) {
+              statefulPlacement = reset.placement;
+            }
+            if (reset.rects) {
+              rects = reset.rects === true ? yield platform.getElementRects({
+                reference,
+                floating,
+                strategy
+              }) : reset.rects;
+            }
+            ({
+              x,
+              y
+            } = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
+          }
+          i = -1;
+        }
+      }
+      return {
+        x,
+        y,
+        placement: statefulPlacement,
+        strategy,
+        middlewareData
+      };
+    });
+    return function computePosition(_x3, _x4, _x5) {
+      return _ref2.apply(this, arguments);
+    };
+  }();
+
+  /**
+   * Provides data to position an inner element of the floating element so that it
+   * appears centered to the reference element.
+   * @see https://floating-ui.com/docs/arrow
+   */
   var arrow = options => ({
     name: 'arrow',
     options,
@@ -9873,7 +10251,7 @@
             fallbackPlacements.push(...getOppositeAxisPlacements(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
           }
           var placements = [initialPlacement, ...fallbackPlacements];
-          var overflow = yield detectOverflow(state, detectOverflowOptions);
+          var overflow = yield platform.detectOverflow(state, detectOverflowOptions);
           var overflows = [];
           var overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
           if (checkMainAxis) {
@@ -9894,16 +10272,22 @@
             var nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
             var nextPlacement = placements[nextIndex];
             if (nextPlacement) {
-              // Try next placement and re-run the lifecycle.
-              return {
-                data: {
-                  index: nextIndex,
-                  overflows: overflowsData
-                },
-                reset: {
-                  placement: nextPlacement
-                }
-              };
+              var ignoreCrossAxisOverflow = checkCrossAxis === 'alignment' ? initialSideAxis !== getSideAxis(nextPlacement) : false;
+              if (!ignoreCrossAxisOverflow ||
+              // We leave the current main axis only if every placement on that axis
+              // overflows the main axis.
+              overflowsData.every(d => getSideAxis(d.placement) === initialSideAxis ? d.overflows[0] > 0 : true)) {
+                // Try next placement and re-run the lifecycle.
+                return {
+                  data: {
+                    index: nextIndex,
+                    overflows: overflowsData
+                  },
+                  reset: {
+                    placement: nextPlacement
+                  }
+                };
+              }
             }
 
             // First, find the candidates that fit on the mainAxis side of overflow,
@@ -9949,6 +10333,7 @@
       }
     };
   };
+  var originSides = /*#__PURE__*/new Set(['left', 'top']);
 
   // For type backwards-compatibility, the `OffsetOptions` type was also
   // Derivable.
@@ -9973,7 +10358,7 @@
       var side = getSide(placement);
       var alignment = getAlignment(placement);
       var isVertical = getSideAxis(placement) === 'y';
-      var mainAxisMulti = ['left', 'top'].includes(side) ? -1 : 1;
+      var mainAxisMulti = originSides.has(side) ? -1 : 1;
       var crossAxisMulti = rtl && isVertical ? -1 : 1;
       var rawValue = evaluate(options, state);
 
@@ -10056,7 +10441,8 @@
           var {
             x,
             y,
-            placement
+            placement,
+            platform
           } = state;
           var _evaluate4 = evaluate(options, state),
             {
@@ -10080,7 +10466,7 @@
             x,
             y
           };
-          var overflow = yield detectOverflow(state, detectOverflowOptions);
+          var overflow = yield platform.detectOverflow(state, detectOverflowOptions);
           var crossAxis = getSideAxis(getSide(placement));
           var mainAxis = getOppositeAxis(crossAxis);
           var mainAxisCoord = coords[mainAxis];
@@ -10168,28 +10554,36 @@
       overflowX,
       overflowY,
       display
-    } = getComputedStyle(element);
-    return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && !['inline', 'contents'].includes(display);
+    } = getComputedStyle$1(element);
+    return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && display !== 'inline' && display !== 'contents';
   }
   function isTableElement(element) {
-    return ['table', 'td', 'th'].includes(getNodeName(element));
+    return /^(table|td|th)$/.test(getNodeName(element));
   }
   function isTopLayer(element) {
-    return [':popover-open', ':modal'].some(selector => {
-      try {
-        return element.matches(selector);
-      } catch (e) {
-        return false;
+    try {
+      if (element.matches(':popover-open')) {
+        return true;
       }
-    });
+    } catch (_e) {
+      // no-op
+    }
+    try {
+      return element.matches(':modal');
+    } catch (_e) {
+      return false;
+    }
   }
+  var willChangeRe = /transform|translate|scale|rotate|perspective|filter/;
+  var containRe = /paint|layout|strict|content/;
+  var isNotNone = value => !!value && value !== 'none';
+  var isWebKitValue;
   function isContainingBlock(elementOrCss) {
-    var webkit = isWebKit();
-    var css = isElement(elementOrCss) ? getComputedStyle(elementOrCss) : elementOrCss;
+    var css = isElement(elementOrCss) ? getComputedStyle$1(elementOrCss) : elementOrCss;
 
     // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
     // https://drafts.csswg.org/css-transforms-2/#individual-transforms
-    return ['transform', 'translate', 'scale', 'rotate', 'perspective'].some(value => css[value] ? css[value] !== 'none' : false) || (css.containerType ? css.containerType !== 'normal' : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== 'none' : false) || !webkit && (css.filter ? css.filter !== 'none' : false) || ['transform', 'translate', 'scale', 'rotate', 'perspective', 'filter'].some(value => (css.willChange || '').includes(value)) || ['paint', 'layout', 'strict', 'content'].some(value => (css.contain || '').includes(value));
+    return isNotNone(css.transform) || isNotNone(css.translate) || isNotNone(css.scale) || isNotNone(css.rotate) || isNotNone(css.perspective) || !isWebKit() && (isNotNone(css.backdropFilter) || isNotNone(css.filter)) || willChangeRe.test(css.willChange || '') || containRe.test(css.contain || '');
   }
   function getContainingBlock(element) {
     var currentNode = getParentNode(element);
@@ -10204,13 +10598,15 @@
     return null;
   }
   function isWebKit() {
-    if (typeof CSS === 'undefined' || !CSS.supports) return false;
-    return CSS.supports('-webkit-backdrop-filter', 'none');
+    if (isWebKitValue == null) {
+      isWebKitValue = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('-webkit-backdrop-filter', 'none');
+    }
+    return isWebKitValue;
   }
   function isLastTraversableNode(node) {
-    return ['html', 'body', '#document'].includes(getNodeName(node));
+    return /^(html|body|#document)$/.test(getNodeName(node));
   }
-  function getComputedStyle(element) {
+  function getComputedStyle$1(element) {
     return getWindow(element).getComputedStyle(element);
   }
   function getNodeScroll(element) {
@@ -10264,15 +10660,16 @@
     if (isBody) {
       var frameElement = getFrameElement(win);
       return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], frameElement && traverseIframes ? getOverflowAncestors(frameElement) : []);
+    } else {
+      return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
     }
-    return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
   }
   function getFrameElement(win) {
     return win.parent && Object.getPrototypeOf(win.parent) ? win.frameElement : null;
   }
 
   function getCssDimensions(element) {
-    var css = getComputedStyle(element);
+    var css = getComputedStyle$1(element);
     // In testing environments, the `width` and `height` properties are empty
     // strings for SVG elements, returning NaN. Fallback to `0` in this case.
     var width = parseFloat(css.width) || 0;
@@ -10373,7 +10770,7 @@
       while (currentIFrame && offsetParent && offsetWin !== currentWin) {
         var iframeScale = getScale(currentIFrame);
         var iframeRect = currentIFrame.getBoundingClientRect();
-        var css = getComputedStyle(currentIFrame);
+        var css = getComputedStyle$1(currentIFrame);
         var left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
         var top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
         x *= iframeScale.x;
@@ -10403,14 +10800,9 @@
     }
     return rect.left + leftScroll;
   }
-  function getHTMLOffset(documentElement, scroll, ignoreScrollbarX) {
-    if (ignoreScrollbarX === void 0) {
-      ignoreScrollbarX = false;
-    }
+  function getHTMLOffset(documentElement, scroll) {
     var htmlRect = documentElement.getBoundingClientRect();
-    var x = htmlRect.left + scroll.scrollLeft - (ignoreScrollbarX ? 0 :
-    // RTL <body> scrollbar.
-    getWindowScrollBarX(documentElement, htmlRect));
+    var x = htmlRect.left + scroll.scrollLeft - getWindowScrollBarX(documentElement, htmlRect);
     var y = htmlRect.top + scroll.scrollTop;
     return {
       x,
@@ -10441,14 +10833,14 @@
       if (getNodeName(offsetParent) !== 'body' || isOverflowElement(documentElement)) {
         scroll = getNodeScroll(offsetParent);
       }
-      if (isHTMLElement(offsetParent)) {
+      if (isOffsetParentAnElement) {
         var offsetRect = getBoundingClientRect(offsetParent);
         scale = getScale(offsetParent);
         offsets.x = offsetRect.x + offsetParent.clientLeft;
         offsets.y = offsetRect.y + offsetParent.clientTop;
       }
     }
-    var htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll, true) : createCoords(0);
+    var htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
     return {
       width: rect.width * scale.x,
       height: rect.height * scale.y,
@@ -10470,7 +10862,7 @@
     var height = max(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
     var x = -scroll.scrollLeft + getWindowScrollBarX(element);
     var y = -scroll.scrollTop;
-    if (getComputedStyle(body).direction === 'rtl') {
+    if (getComputedStyle$1(body).direction === 'rtl') {
       x += max(html.clientWidth, body.clientWidth) - width;
     }
     return {
@@ -10480,6 +10872,11 @@
       y
     };
   }
+
+  // Safety check: ensure the scrollbar space is reasonable in case this
+  // calculation is affected by unusual styles.
+  // Most scrollbars leave 15-18px of space.
+  var SCROLLBAR_MAX = 25;
   function getViewportRect(element, strategy) {
     var win = getWindow(element);
     var html = getDocumentElement(element);
@@ -10496,6 +10893,24 @@
         x = visualViewport.offsetLeft;
         y = visualViewport.offsetTop;
       }
+    }
+    var windowScrollbarX = getWindowScrollBarX(html);
+    // <html> `overflow: hidden` + `scrollbar-gutter: stable` reduces the
+    // visual width of the <html> but this is not considered in the size
+    // of `html.clientWidth`.
+    if (windowScrollbarX <= 0) {
+      var doc = html.ownerDocument;
+      var body = doc.body;
+      var bodyStyles = getComputedStyle(body);
+      var bodyMarginInline = doc.compatMode === 'CSS1Compat' ? parseFloat(bodyStyles.marginLeft) + parseFloat(bodyStyles.marginRight) || 0 : 0;
+      var clippingStableScrollbarWidth = Math.abs(html.clientWidth - body.clientWidth - bodyMarginInline);
+      if (clippingStableScrollbarWidth <= SCROLLBAR_MAX) {
+        width -= clippingStableScrollbarWidth;
+      }
+    } else if (windowScrollbarX <= SCROLLBAR_MAX) {
+      // If the <body> scrollbar is on the left, the width needs to be extended
+      // by the scrollbar amount so there isn't extra space on the right.
+      width += windowScrollbarX;
     }
     return {
       width,
@@ -10546,7 +10961,7 @@
     if (parentNode === stopNode || !isElement(parentNode) || isLastTraversableNode(parentNode)) {
       return false;
     }
-    return getComputedStyle(parentNode).position === 'fixed' || hasFixedPositionAncestor(parentNode, stopNode);
+    return getComputedStyle$1(parentNode).position === 'fixed' || hasFixedPositionAncestor(parentNode, stopNode);
   }
 
   // A "clipping ancestor" is an `overflow` element with the characteristic of
@@ -10559,17 +10974,17 @@
     }
     var result = getOverflowAncestors(element, [], false).filter(el => isElement(el) && getNodeName(el) !== 'body');
     var currentContainingBlockComputedStyle = null;
-    var elementIsFixed = getComputedStyle(element).position === 'fixed';
+    var elementIsFixed = getComputedStyle$1(element).position === 'fixed';
     var currentNode = elementIsFixed ? getParentNode(element) : element;
 
     // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
     while (isElement(currentNode) && !isLastTraversableNode(currentNode)) {
-      var computedStyle = getComputedStyle(currentNode);
+      var computedStyle = getComputedStyle$1(currentNode);
       var currentNodeIsContaining = isContainingBlock(currentNode);
       if (!currentNodeIsContaining && computedStyle.position === 'fixed') {
         currentContainingBlockComputedStyle = null;
       }
-      var shouldDropCurrentNode = elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === 'static' && !!currentContainingBlockComputedStyle && ['absolute', 'fixed'].includes(currentContainingBlockComputedStyle.position) || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element, currentNode);
+      var shouldDropCurrentNode = elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === 'static' && !!currentContainingBlockComputedStyle && (currentContainingBlockComputedStyle.position === 'absolute' || currentContainingBlockComputedStyle.position === 'fixed') || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element, currentNode);
       if (shouldDropCurrentNode) {
         // Drop non-containing blocks.
         result = result.filter(ancestor => ancestor !== currentNode);
@@ -10594,20 +11009,23 @@
     } = _ref;
     var elementClippingAncestors = boundary === 'clippingAncestors' ? isTopLayer(element) ? [] : getClippingElementAncestors(element, this._c) : [].concat(boundary);
     var clippingAncestors = [...elementClippingAncestors, rootBoundary];
-    var firstClippingAncestor = clippingAncestors[0];
-    var clippingRect = clippingAncestors.reduce((accRect, clippingAncestor) => {
-      var rect = getClientRectFromClippingAncestor(element, clippingAncestor, strategy);
-      accRect.top = max(rect.top, accRect.top);
-      accRect.right = min(rect.right, accRect.right);
-      accRect.bottom = min(rect.bottom, accRect.bottom);
-      accRect.left = max(rect.left, accRect.left);
-      return accRect;
-    }, getClientRectFromClippingAncestor(element, firstClippingAncestor, strategy));
+    var firstRect = getClientRectFromClippingAncestor(element, clippingAncestors[0], strategy);
+    var top = firstRect.top;
+    var right = firstRect.right;
+    var bottom = firstRect.bottom;
+    var left = firstRect.left;
+    for (var i = 1; i < clippingAncestors.length; i++) {
+      var rect = getClientRectFromClippingAncestor(element, clippingAncestors[i], strategy);
+      top = max(rect.top, top);
+      right = min(rect.right, right);
+      bottom = min(rect.bottom, bottom);
+      left = max(rect.left, left);
+    }
     return {
-      width: clippingRect.right - clippingRect.left,
-      height: clippingRect.bottom - clippingRect.top,
-      x: clippingRect.left,
-      y: clippingRect.top
+      width: right - left,
+      height: bottom - top,
+      x: left,
+      y: top
     };
   }
   function getDimensions(element) {
@@ -10630,6 +11048,12 @@
       scrollTop: 0
     };
     var offsets = createCoords(0);
+
+    // If the <body> scrollbar appears on the left (e.g. RTL systems). Use
+    // Firefox with layout.scrollbar.side = 3 in about:config to test this.
+    function setLeftRTLScrollbarOffset() {
+      offsets.x = getWindowScrollBarX(documentElement);
+    }
     if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
       if (getNodeName(offsetParent) !== 'body' || isOverflowElement(documentElement)) {
         scroll = getNodeScroll(offsetParent);
@@ -10639,10 +11063,11 @@
         offsets.x = offsetRect.x + offsetParent.clientLeft;
         offsets.y = offsetRect.y + offsetParent.clientTop;
       } else if (documentElement) {
-        // If the <body> scrollbar appears on the left (e.g. RTL systems). Use
-        // Firefox with layout.scrollbar.side = 3 in about:config to test this.
-        offsets.x = getWindowScrollBarX(documentElement);
+        setLeftRTLScrollbarOffset();
       }
+    }
+    if (isFixed && !isOffsetParentAnElement && documentElement) {
+      setLeftRTLScrollbarOffset();
     }
     var htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
     var x = rect.left + scroll.scrollLeft - offsets.x - htmlOffset.x;
@@ -10655,10 +11080,10 @@
     };
   }
   function isStaticPositioned(element) {
-    return getComputedStyle(element).position === 'static';
+    return getComputedStyle$1(element).position === 'static';
   }
   function getTrueOffsetParent(element, polyfill) {
-    if (!isHTMLElement(element) || getComputedStyle(element).position === 'fixed') {
+    if (!isHTMLElement(element) || getComputedStyle$1(element).position === 'fixed') {
       return null;
     }
     if (polyfill) {
@@ -10722,7 +11147,7 @@
     };
   }();
   function isRTL(element) {
-    return getComputedStyle(element).direction === 'rtl';
+    return getComputedStyle$1(element).direction === 'rtl';
   }
   var platform = {
     convertOffsetParentRelativeRectToViewportRelativeRect,
@@ -11092,11 +11517,12 @@
         if (child.nodeName !== '#text') return;
         var txt = child.textContent;
         if (containsOnlySpaces(txt)) return;
-        var hasHiddenMeta = containsHiddenMeta(txt);
-        var hasHiddenStartMarker = containsHiddenStartMarker(txt);
+        var trimmedTxt = txt.trim();
+        var hasHiddenMeta = containsHiddenMeta(trimmedTxt);
+        var hasHiddenStartMarker = containsHiddenStartMarker(trimmedTxt);
         if (hasHiddenMeta) usedSubliminalForText = true;
         if (hasHiddenStartMarker && hasHiddenMeta) {
-          var meta = unwrap(txt);
+          var meta = unwrap(trimmedTxt);
           uninstrumentedStore.remove(node.uniqueID, node);
           store.save(node.uniqueID, meta.invisibleMeta, 'text', extractHiddenMeta(node.uniqueID, 'text', meta), node);
         } else if (hasHiddenStartMarker) {
@@ -11219,6 +11645,8 @@
         if (mutation.type === 'attributes' && !validAttributes.includes(mutation.attributeName)) {
           return;
         }
+        var target = mutation.target.nodeType === 3 ? mutation.target.parentElement : mutation.target;
+        if (!target) return;
         Object.keys(mutationTriggeringElements).forEach(function (k) {
           var info = mutationTriggeringElements[k];
           if (info.lastTriggerDate + 60000 < Date.now()) {
@@ -11227,7 +11655,7 @@
         });
         if (mutation.type === 'childList') {
           var notOurs = 0;
-          if (!ignoreMutation(mutation.target)) {
+          if (!ignoreMutation(target)) {
             mutation.addedNodes.forEach(function (n) {
               if (ignoreMutation(n)) return;
               notOurs = notOurs + 1;
@@ -11240,25 +11668,25 @@
           if (notOurs === 0) return;
         }
         triggerMutation = true;
-        if (mutation.target && mutation.target.uniqueID) {
-          var info = mutationTriggeringElements[mutation.target.uniqueID] || {
+        if (target.uniqueID) {
+          var info = mutationTriggeringElements[target.uniqueID] || {
             triggered: 0
           };
           info.triggered = info.triggered + 1;
           info.lastTriggerDate = Date.now();
-          mutationTriggeringElements[mutation.target.uniqueID] = info;
+          mutationTriggeringElements[target.uniqueID] = info;
         }
         var includedAlready = targetEles.reduce(function (mem, element) {
-          if (mem || element.contains(mutation.target) || !mutation.target.parentElement) {
+          if (mem || element.contains(target) || !target.parentElement) {
             return true;
           }
           return false;
         }, false);
         if (!includedAlready) {
           targetEles = targetEles.filter(function (element) {
-            return !mutation.target.contains(element);
+            return !target.contains(element);
           });
-          targetEles.push(mutation.target);
+          targetEles.push(target);
         }
       });
       if (triggerMutation) debouncedHandler();
@@ -11676,6 +12104,30 @@
     if (!results[2]) return '';
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
   }
+
+  // Reading credentials from the URL query string is convenient for local
+  // development (run `?apikey=...&projectId=...` against a demo page) but is
+  // dangerous on deployed sites: an attacker-crafted link would cause the
+  // victim's page to send translation data (saveMissing) to the attacker's
+  // locize project, or to run against an attacker-chosen backend.
+  // The feature is preserved, but a warning is emitted when the URL
+  // overrides credential values on hosts that don't look like a local dev
+  // environment, so maintainers can notice and decide whether to disable it.
+  function isLocalDevHost() {
+    if (typeof window === 'undefined' || !window.location) return false;
+    var h = window.location.hostname;
+    if (!h) return false;
+    return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '0.0.0.0' || h.endsWith('.localhost') || h.endsWith('.local');
+  }
+  var credentialWarningShown = false;
+  function warnIfCredentialFromUrlOnProdHost(attr) {
+    if (isLocalDevHost()) return;
+    if (credentialWarningShown) return; // only once per page
+    credentialWarningShown = true;
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn('locizify: reading credential "' + attr + '" from URL query string on a non-local host. ' + 'An attacker-crafted link can replace your locize credentials, redirecting saveMissing writes ' + 'to an attacker-chosen project. Prefer configuring credentials via the ' + '<script id="locizify" apikey="..." projectid="..."> attributes instead.');
+    }
+  }
   var originalInit = i18next$1.init;
   i18next$1.init = function () {
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -11709,11 +12161,20 @@
         if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
         if (value !== undefined && value !== null) backend[attr] = value;
         if (!value) {
-          value = getQsParameterByName$1(attr.toLowerCase());
+          var lc = attr.toLowerCase();
+          value = getQsParameterByName$1(lc);
           if (value === 'true') value = true;
           if (value === 'false') value = false;
-          if (attr.toLowerCase() === 'autopilot' && value === '') value = true;
-          if (value !== undefined && value !== null) backend[attr] = value;
+          if (lc === 'autopilot' && value === '') value = true;
+          if (value !== undefined && value !== null) {
+            backend[attr] = value;
+            // Credential-bearing attributes via URL on a non-local host is
+            // risky — attacker-crafted links can replace your credentials.
+            // Warn once per page load so maintainers notice.
+            if (lc === 'apikey' || lc === 'projectid') {
+              warnIfCredentialFromUrlOnProdHost(lc);
+            }
+          }
         }
       });
       if (backend.allowedAddOrUpdateHost) {
@@ -11729,8 +12190,14 @@
       // call orginal callback
       callback(err, t);
     }
+
+    // Accept `?apikey=` from the URL query string as a fallback. On non-local
+    // hosts this is risky (attacker-crafted links can replace your credentials
+    // and redirect saveMissing writes to an attacker-chosen project), so warn
+    // once when it happens.
     if (!options.backend.apiKey && getQsParameterByName$1('apikey')) {
       options.backend.apiKey = getQsParameterByName$1('apikey');
+      warnIfCredentialFromUrlOnProdHost('apikey');
     }
     if (!options.backend.autoPilot || options.backend.autoPilot === 'false') {
       return originalInit.call(i18next$1, _objectSpread2(_objectSpread2({}, options), enforce), handleI18nextInitialized);
