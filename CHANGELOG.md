@@ -1,3 +1,7 @@
+### 9.0.11
+
+- update locize dep
+
 ### 9.0.10
 
 Security release — includes upstream fixes from `i18next-locize-backend`, `i18nextify`, and `locize`.
