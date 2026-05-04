@@ -1,7 +1,7 @@
-const neostandard = require('neostandard')
-const importPlugin = require('eslint-plugin-import')
+import neostandard from 'neostandard'
+import importPlugin from 'eslint-plugin-import'
 
-module.exports = [
+export default [
   // — your neostandard base —
   ...neostandard({
     // ts: true,

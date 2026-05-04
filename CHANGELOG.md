@@ -1,3 +1,17 @@
+### 10.0.0
+
+- BREAKING: bumped `i18next-locize-backend` to v10 and `i18nextify` to v5. Both dropped their `cross-fetch` dependency, so locizify no longer ships the `cross-fetch` / `node-fetch` fallback in its bundle. Native `fetch` is now required (Node ≥ 18, modern browsers, Deno, Bun — all of which ship it). For runtimes without native `fetch`, supply a ponyfill yourself before loading this script, or stay on v9.
+- BREAKING: minimum Node version is now 18 (`engines.node = ">=18"`), inherited from the upstream bumps.
+- BREAKING: dropped the AMD output format. The `build:amd` script had been silently emitting UMD anyway (typo: `--format umd --uglify` instead of `--format amd --uglify`), so no real consumers existed. Major bump covers the formal removal.
+- build: replaced babel + rollup 1 + terser with [`tsdown`](https://tsdown.dev) (rolldown + oxc). One config produces ESM, CJS, and IIFE bundles. Output layout collapsed from `dist/{commonjs,es,umd,amd}/` to `dist/{cjs,esm}/`. The root `locizify.js` / `locizify.min.js` are emitted directly by tsdown, no `cp` step needed. `package.json#exports` map added.
+- build: minified browser bundle: 245 KB → 219 KB (−11%); unminified 495 KB → 402 KB (−19%).
+- chore: declared `"type": "module"` and `"sideEffects": false`.
+- chore: dropped 13 dev dependencies (`@babel/*` × 10 including the deprecated `@babel/polyfill`, `rollup-plugin-*` × 5, `mkdirp`, `rimraf`, `yargs`). Net devDeps: 17 → 4. Vulnerabilities: down to 0.
+- chore: ESLint config converted from CommonJS (`eslint.config.js` with `require`) to ESM (`eslint.config.mjs` with `import`) since the package is now `"type": "module"`. neostandard rules unchanged.
+- chore: tightened `.npmignore` — `example/` (with all its built assets / fonts / images) was leaking into the published tarball; added `example`, `.vscode`, plus the new `tsdown.config.ts`. Tarball: 4.7 MB → 175 KB (−96%); files: 567 → 8.
+- chore: added `.github/workflows/node.yml` — first CI workflow for this repo. Runs lint + build on Node 20 / 22 / 24.
+- docs: bumped CDN script-tag pins in README from `@^9.0.3` to `@^10`. Added v10 migration callout.
+
 ### 9.0.11
 
 - update locize dep

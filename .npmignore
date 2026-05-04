@@ -1,16 +1,17 @@
-test/
-src/
-coverage/
-bin/
-.babelrc
-.editorconfig
-.eslintignore
-.eslintrc
-.gitignore
+.*
+.github
+.vscode
+test
+src
+coverage
+bin
+example
+package-lock.json
 bower.json
 gulpfile.js
 karma.conf.js
-eslilnt.config.js
+eslint.config.mjs
+tsdown.config.ts
 
 # Deployment
 deployment/

@@ -2,9 +2,24 @@
   "name": "locizify",
   "version": "9.0.11",
   "description": "main script for using locize service in frontend",
-  "main": "dist/commonjs/index.js",
-  "jsnext:main": "dist/es/index.js",
-  "browser": "locizify.min.js",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "browser": "./locizify.min.js",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./cjs": "./dist/cjs/index.js",
+    "./esm": "./dist/esm/index.js"
+  },
   "keywords": [
     "locizify",
     "locize",
@@ -20,49 +35,21 @@
     "url": "git://github.com/locize/locizify.git"
   },
   "dependencies": {
-    "i18next-locize-backend": "9.0.2",
-    "i18nextify": "4.0.8",
+    "i18next-locize-backend": "10.0.0",
+    "i18nextify": "5.0.0",
     "locize": "4.0.22"
   },
   "devDependencies": {
-    "@babel/cli": "^7.28.6",
-    "@babel/core": "^7.29.0",
-    "@babel/plugin-proposal-async-generator-functions": "^7.19.1",
-    "@babel/plugin-proposal-object-rest-spread": "^7.18.9",
-    "@babel/plugin-transform-modules-commonjs": "^7.28.6",
-    "@babel/plugin-transform-runtime": "^7.29.0",
-    "@babel/polyfill": "^7.2.5",
-    "@babel/preset-env": "^7.29.2",
-    "@babel/preset-react": "^7.28.5",
-    "@babel/register": "^7.28.6",
     "eslint": "9.39.2",
     "eslint-plugin-import": "2.32.0",
-    "html-to-vdom": "^0.7.0",
-    "jest": "^30.3.0",
-    "jest-cli": "^30.3.0",
-    "mkdirp": "3.0.1",
     "neostandard": "0.13.0",
-    "rimraf": "6.1.3",
-    "rollup": "1.27.8",
-    "rollup-plugin-babel": "^4.3.2",
-    "rollup-plugin-commonjs": "^10.0.2",
-    "rollup-plugin-node-resolve": "5.2.0",
-    "rollup-plugin-replace": "^2.1.0",
-    "rollup-plugin-terser": "^5.1.1",
-    "yargs": "18.0.0"
+    "tsdown": "0.21.10"
   },
   "scripts": {
     "lint": "eslint .",
-    "test": "npm run lint",
-    "clean": "rimraf dist && mkdirp dist",
-    "copy": "cp ./dist/umd/locizify.min.js ./locizify.min.js && cp ./dist/umd/locizify.js ./locizify.js",
-    "build:es": "BABEL_ENV=jsnext babel src --out-dir dist/es",
-    "build:cjs": "babel src --out-dir dist/commonjs",
-    "build:umd": "rollup -c rollup.config.js --format umd && rollup -c rollup.config.js --format umd --uglify",
-    "build:amd": "rollup -c rollup.config.js --format amd && rollup -c rollup.config.js --format umd --uglify",
-    "build:iife": "rollup -c rollup.config.js --format iife && rollup -c rollup.config.js --format iife --uglify",
-    "build": "npm run clean && npm run build:cjs && npm run build:es && npm run build:umd && npm run copy",
-    "preversion": "npm run build && git push",
+    "build": "tsdown",
+    "test": "npm run lint && npm run build",
+    "preversion": "npm run test && git push",
     "postversion": "git push && git push --tags"
   },
   "author": "Jan Mühlemann <jan.muehlemann@gmail.com> (https://github.com/jamuhl)",

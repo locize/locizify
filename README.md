@@ -12,7 +12,7 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  src="https://unpkg.com/locizify@^9.0.3"
+  src="https://unpkg.com/locizify@^10"
   autopilot="true"
   cdnType="standard"
 ></script>
@@ -22,12 +22,14 @@ Just drop the following line to your header to deliver your content in any langu
   id="locizify"
   projectid="[PROJECT_ID]"
   apikey="[API_KEY]"
-  src="https://cdn.jsdelivr.net/npm/locizify@^9.0.3"
+  src="https://cdn.jsdelivr.net/npm/locizify@^10"
   autopilot="true"
   cdnType="standard"
 ></script>
 
 ```
+
+> **v10 requires native `fetch`.** Node ≥ 18, all modern browsers, Deno, and Bun ship `fetch` by default — no extra setup needed for the script-tag use case above. v10 dropped the bundled `cross-fetch` fallback that v9 carried via `i18next-locize-backend@9` and `i18nextify@4`. For runtimes without native `fetch`, install a ponyfill yourself before loading this script, or stay on v9.
 
 Checkout this [video](https://youtu.be/f0ukRI0LMfo?t=180) to see locizify in action.
 
@@ -71,7 +73,7 @@ Add the script to your page:
       id="locizify"
       projectid="[PROJECT_ID]"
       apikey="[API_KEY]"
-      src="https://unpkg.com/locizify@^9.0.3"
+      src="https://unpkg.com/locizify@^10"
       autopilot
       cdnType="standard"
     ></script>
@@ -105,7 +107,7 @@ Add the script to your page:
       apikey="[API_KEY]"
       referencelng="[LNG]"
       fallbacklng="[LNG]"
-      src="https://unpkg.com/locizify@^9.0.3"
+      src="https://unpkg.com/locizify@^10"
 
       // all custom attributes can also be prefixed with data-
       // data-projectid="[PROJECT_ID]"
@@ -136,7 +138,7 @@ Add the script to your page:
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://unpkg.com/locizify@^9.0.3"></script>
+    <script src="https://unpkg.com/locizify@^10"></script>
     <script>
       locizify.init({
         // required
