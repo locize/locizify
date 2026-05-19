@@ -1,3 +1,7 @@
+### 10.0.1
+
+- update locize dep
+
 ### 10.0.0
 
 - BREAKING: bumped `i18next-locize-backend` to v10 and `i18nextify` to v5. Both dropped their `cross-fetch` dependency, so locizify no longer ships the `cross-fetch` / `node-fetch` fallback in its bundle. Native `fetch` is now required (Node ≥ 18, modern browsers, Deno, Bun — all of which ship it). For runtimes without native `fetch`, supply a ponyfill yourself before loading this script, or stay on v9.

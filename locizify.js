@@ -7120,10 +7120,12 @@ var locizify = (function() {
 		if (!results[2]) return "";
 		return decodeURIComponent(results[2].replace(/\+/g, " "));
 	}
-	var _isInIframe = typeof window !== "undefined";
-	try {
+	var _isInIframe = false;
+	if (typeof window !== "undefined") try {
 		_isInIframe = self !== top;
-	} catch (e) {}
+	} catch (e) {
+		_isInIframe = true;
+	}
 	var isInIframe = _isInIframe;
 	//#endregion
 	//#region node_modules/locize/dist/esm/api/postMessage.js
@@ -7159,9 +7161,11 @@ var locizify = (function() {
 	var pendingMsgs = [];
 	var allowedActionsBeforeInit = ["locizeIsEnabled", "requestInitialize"];
 	function sendMessage(action, payload) {
-		if (!api.source) {
-			var _document$getElementB;
-			api.source = (_document$getElementB = document.getElementById("i18next-editor-iframe")) === null || _document$getElementB === void 0 ? void 0 : _document$getElementB.contentWindow;
+		var _document$getElementB;
+		var currentSource = (_document$getElementB = document.getElementById("i18next-editor-iframe")) === null || _document$getElementB === void 0 ? void 0 : _document$getElementB.contentWindow;
+		if (currentSource) {
+			if (api.source && api.source !== currentSource) api.initialized = false;
+			api.source = currentSource;
 		}
 		if (!api.origin) api.origin = getIframeUrl();
 		if (!api.source || !api.source.postMessage || !api.initialized && allowedActionsBeforeInit.indexOf(action) < 0) {
@@ -7212,6 +7216,7 @@ var locizify = (function() {
 		requestInitialize: function requestInitialize(payload) {
 			sendMessage("requestInitialize", payload);
 			if (api.initInterval) return;
+			repeat = 5;
 			api.initInterval = setInterval(function() {
 				repeat = repeat - 1;
 				api.requestInitialize(payload);
@@ -9510,11 +9515,40 @@ var locizify = (function() {
 			observer.start();
 			startMouseTracking(observer);
 			if (!isInIframe && !document.getElementById("i18next-editor-popup")) {
-				document.body.append(Popup(getIframeUrl(), function() {
+				var popupEl = Popup(getIframeUrl(), function() {
+					var _document$getElementB;
+					api.source = (_document$getElementB = document.getElementById("i18next-editor-iframe")) === null || _document$getElementB === void 0 ? void 0 : _document$getElementB.contentWindow;
+					api.initialized = false;
+					if (api.initInterval) {
+						clearInterval(api.initInterval);
+						delete api.initInterval;
+					}
 					api.requestInitialize(config);
-				}));
+				});
+				document.documentElement.append(popupEl);
 				initDragElement();
 				initResizeElement();
+				if (typeof MutationObserver === "function") {
+					var MAX_REATTACHMENTS = 5;
+					var WATCH_DURATION_MS = 1e4;
+					var reattachments = 0;
+					var watcher = new MutationObserver(function() {
+						if (document.getElementById("i18next-editor-popup")) return;
+						if (reattachments >= MAX_REATTACHMENTS) {
+							watcher.disconnect();
+							return;
+						}
+						reattachments++;
+						document.documentElement.append(popupEl);
+					});
+					watcher.observe(document.documentElement, {
+						childList: true,
+						subtree: true
+					});
+					setTimeout(function() {
+						return watcher.disconnect();
+					}, WATCH_DURATION_MS);
+				}
 			}
 			if (typeof window !== "undefined") {
 				var oldHref = window.document.location.href;
@@ -9535,7 +9569,7 @@ var locizify = (function() {
 		}
 		if (document.body) return continueToStart();
 		if (typeof window !== "undefined") window.addEventListener("load", function() {
-			return continueToStart();
+			continueToStart();
 		});
 	}
 	//#endregion
@@ -9597,7 +9631,7 @@ var locizify = (function() {
 			},
 			getLocizeDetails: function getLocizeDetails() {
 				var backendName;
-				if (i18n.services.backendConnector.backend && i18n.services.backendConnector.backend.options && i18n.services.backendConnector.backend.options.loadPath && i18n.services.backendConnector.backend.options.loadPath.indexOf(".locize.") > 0) backendName = "I18nextLocizeBackend";
+				if (i18n.services.backendConnector.backend && i18n.services.backendConnector.backend.options && i18n.services.backendConnector.backend.options.loadPath && i18n.services.backendConnector.backend.options.loadPath.indexOf(".locize.") > 0) backendName = "I18NextLocizeBackend";
 				else backendName = i18n.services.backendConnector.backend ? i18n.services.backendConnector.backend.constructor.name : "options.resources";
 				var opts = {
 					backendName,
