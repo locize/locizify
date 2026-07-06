@@ -9713,7 +9713,7 @@ var locizify = (function() {
 					})
 				};
 				if (!i18n.options.backend && !i18n.options.editor) return opts;
-				var pickFrom = i18n.options.editor || i18n.options.backend;
+				var pickFrom = _objectSpread(_objectSpread({}, i18n.options.backend), i18n.options.editor);
 				return _objectSpread(_objectSpread({}, opts), {}, {
 					projectId: pickFrom.projectId,
 					version: pickFrom.version

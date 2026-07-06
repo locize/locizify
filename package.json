@@ -37,7 +37,7 @@
   "dependencies": {
     "i18next-locize-backend": "10.0.1",
     "i18nextify": "5.0.0",
-    "locize": "4.2.1"
+    "locize": "4.2.2"
   },
   "devDependencies": {
     "eslint": "9.39.2",
