@@ -1,3 +1,7 @@
+### 10.0.4
+
+- update locize dep
+
 ### 10.0.3
 
 - update locize dep

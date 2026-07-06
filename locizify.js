@@ -7592,8 +7592,17 @@ var locizify = (function() {
 		ribbon.setAttribute("data-i18next-editor-element", "true");
 		ribbon.classList.add("locize-incontext-ribbon");
 		if (ribbonPosition === "bottom-left") ribbon.classList.add("locize-incontext-ribbon-left");
+		ribbon.setAttribute("role", "button");
+		ribbon.setAttribute("tabindex", "0");
+		ribbon.setAttribute("aria-label", "Open Locize editor");
 		ribbon.onclick = function() {
 			onMaximize();
+		};
+		ribbon.onkeydown = function(e) {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				onMaximize();
+			}
 		};
 		var image = document.createElement("img");
 		image.src = locizeIconUrl;
@@ -7607,6 +7616,16 @@ var locizify = (function() {
 		image.src = minimizeIconUrl;
 		image.style.width = "24px";
 		image.style.cursor = "pointer";
+		image.setAttribute("role", "button");
+		image.setAttribute("tabindex", "0");
+		image.setAttribute("alt", "");
+		image.setAttribute("aria-label", "Minimize Locize editor");
+		image.onkeydown = function(e) {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				image.onclick();
+			}
+		};
 		image.onclick = function() {
 			popupEle.style.setProperty("--i18next-editor-popup-position-top", popupEle.style.top);
 			popupEle.style.setProperty("--i18next-editor-popup-position-left", popupEle.style.left);
@@ -7640,7 +7659,7 @@ var locizify = (function() {
 		header.appendChild(Minimize(popup, function() {
 			var ribbon = Ribbon(popup, function() {
 				popup.style.animation = "i18next-editor-animate-top 1s";
-				startMouseTracking();
+				if (api.editingEnabled !== false) startMouseTracking();
 				setTimeout(function() {
 					document.body.removeChild(ribbon);
 				}, 1e3);
@@ -7650,6 +7669,7 @@ var locizify = (function() {
 		}));
 		var iframe = document.createElement("iframe");
 		iframe.setAttribute("id", "i18next-editor-iframe");
+		iframe.setAttribute("title", "Locize editor");
 		iframe.setAttribute("data-i18next-editor-element", "true");
 		iframe.style = "\n    z-index: 100;\n    width: 100%;\n    height: calc(100% - 32px);\n    border: none;\n    background: #fff;\n  ";
 		iframe.setAttribute("src", url);
@@ -7783,6 +7803,14 @@ var locizify = (function() {
 		matchingItems.forEach(function(item) {
 			selectedHighlight(item, item.node, item.keys);
 		});
+		if (matchingItems.length && !isInViewport(matchingItems[0].node)) try {
+			matchingItems[0].node.scrollIntoView({
+				behavior: "smooth",
+				block: "center"
+			});
+		} catch (e) {
+			matchingItems[0].node.scrollIntoView();
+		}
 		previousMatches = matchingItems;
 	}
 	api.addHandler("selectedKeys", handler$2);
@@ -7811,6 +7839,31 @@ var locizify = (function() {
 		api.sendCurrentParsedContent();
 	}
 	api.addHandler("sendMatchedUninstrumented", handler);
+	//#endregion
+	//#region node_modules/locize/dist/esm/api/handleTurnOnOff.js
+	api.editingEnabled = true;
+	api.turnOn = function() {
+		if (api.editingEnabled) return;
+		api.editingEnabled = true;
+		startMouseTracking();
+	};
+	api.turnOff = function() {
+		if (!api.editingEnabled) return;
+		api.editingEnabled = false;
+		stopMouseTracking();
+		Object.values(store.data).forEach(function(item) {
+			resetHighlight(item, item.node, item.keys, false);
+		});
+		Object.values(uninstrumentedStore.data).forEach(function(item) {
+			resetHighlight(item, item.node, item.keys, false);
+		});
+	};
+	api.addHandler("turnOn", function() {
+		return api.turnOn();
+	});
+	api.addHandler("turnOff", function() {
+		return api.turnOff();
+	});
 	//#endregion
 	//#region node_modules/locize/dist/esm/ui/elements/ribbonBox.js
 	if (sheet) sheet.insertRule(".i18next-editor-button:hover { background-color: rgba(21, 65, 154, 1) !important; }");
@@ -9304,7 +9357,21 @@ var locizify = (function() {
 			}, 200);
 		};
 		var targetEles = [];
+		var windowStart = 0;
+		var runsInWindow = 0;
+		var lastRun = 0;
 		var debouncedHandler = debounce(function h() {
+			var now = Date.now();
+			if (now - windowStart > 1e4) {
+				windowStart = now;
+				runsInWindow = 0;
+			}
+			if (runsInWindow > 10 && now - lastRun < 1e3) {
+				debouncedHandler();
+				return;
+			}
+			runsInWindow = runsInWindow + 1;
+			lastRun = now;
 			handle(targetEles);
 			targetEles = [];
 		}, 100);
@@ -9396,7 +9463,8 @@ var locizify = (function() {
 			var header = getHeader(popup);
 			if (header) {
 				header.parentPopup = popup;
-				header.onmousedown = dragMouseDown;
+				header.style.touchAction = "none";
+				header.onpointerdown = dragMouseDown;
 			}
 		}
 		function dragMouseDown(e) {
@@ -9407,8 +9475,8 @@ var locizify = (function() {
 			e = e || window.event;
 			pos3 = e.clientX;
 			pos4 = e.clientY;
-			document.onmouseup = closeDragElement;
-			document.onmousemove = elementDrag;
+			document.onpointerup = closeDragElement;
+			document.onpointermove = elementDrag;
 		}
 		function elementDrag(e) {
 			if (!elmnt) return;
@@ -9428,8 +9496,8 @@ var locizify = (function() {
 				top: parseInt(document.defaultView.getComputedStyle(ele).top, 10),
 				left: parseInt(document.defaultView.getComputedStyle(ele).left, 10)
 			}));
-			document.onmouseup = null;
-			document.onmousemove = null;
+			document.onpointerup = null;
+			document.onpointermove = null;
 		}
 		function getHeader(element) {
 			var headerItems = element.getElementsByClassName("i18next-editor-popup-header");
@@ -9446,18 +9514,21 @@ var locizify = (function() {
 			var p = popups[i];
 			var right = document.createElement("div");
 			right.className = "resizer-right";
+			right.style.touchAction = "none";
 			p.appendChild(right);
-			right.addEventListener("mousedown", initDrag, false);
+			right.addEventListener("pointerdown", initDrag, false);
 			right.parentPopup = p;
 			var bottom = document.createElement("div");
 			bottom.className = "resizer-bottom";
+			bottom.style.touchAction = "none";
 			p.appendChild(bottom);
-			bottom.addEventListener("mousedown", initDrag, false);
+			bottom.addEventListener("pointerdown", initDrag, false);
 			bottom.parentPopup = p;
 			var both = document.createElement("div");
 			both.className = "resizer-both";
+			both.style.touchAction = "none";
 			p.appendChild(both);
-			both.addEventListener("mousedown", initDrag, false);
+			both.addEventListener("pointerdown", initDrag, false);
 			both.parentPopup = p;
 		}
 		function initDrag(e) {
@@ -9469,8 +9540,8 @@ var locizify = (function() {
 			startY = e.clientY;
 			startWidth = parseInt(document.defaultView.getComputedStyle(element).width, 10);
 			startHeight = parseInt(document.defaultView.getComputedStyle(element).height, 10);
-			document.documentElement.addEventListener("mousemove", doDrag, false);
-			document.documentElement.addEventListener("mouseup", stopDrag, false);
+			document.documentElement.addEventListener("pointermove", doDrag, false);
+			document.documentElement.addEventListener("pointerup", stopDrag, false);
 		}
 		function doDrag(e) {
 			element.style.width = startWidth + e.clientX - startX + "px";
@@ -9484,8 +9555,8 @@ var locizify = (function() {
 				width: parseInt(document.defaultView.getComputedStyle(ele).width, 10),
 				height: parseInt(document.defaultView.getComputedStyle(ele).height, 10)
 			}));
-			document.documentElement.removeEventListener("mousemove", doDrag, false);
-			document.documentElement.removeEventListener("mouseup", stopDrag, false);
+			document.documentElement.removeEventListener("pointermove", doDrag, false);
+			document.documentElement.removeEventListener("pointerup", stopDrag, false);
 		}
 	}
 	//#endregion
