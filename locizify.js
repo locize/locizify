@@ -98,7 +98,7 @@ var locizify = (function() {
 		return getPath$2(defaultData, key);
 	};
 	const deepExtend = (target, source, overwrite) => {
-		for (const prop in source) if (prop !== "__proto__" && prop !== "constructor") if (prop in target) if (isString(target[prop]) || target[prop] instanceof String || isString(source[prop]) || source[prop] instanceof String) {
+		for (const prop in source) if (prop !== "__proto__" && prop !== "constructor") if (Object.prototype.hasOwnProperty.call(target, prop)) if (isString(target[prop]) || target[prop] instanceof String || isString(source[prop]) || source[prop] instanceof String) {
 			if (overwrite) target[prop] = source[prop];
 		} else deepExtend(target[prop], source[prop], overwrite);
 		else target[prop] = source[prop];
@@ -407,10 +407,13 @@ var locizify = (function() {
 		const { [PATH_KEY]: path } = selector(createProxy());
 		const keySeparator = opts?.keySeparator ?? ".";
 		const nsSeparator = opts?.nsSeparator ?? ":";
+		const strict = opts?.enableSelector === "strict";
 		if (path.length > 1 && nsSeparator) {
 			const ns = opts?.ns;
-			const nsArray = Array.isArray(ns) ? ns : null;
-			if (nsArray && nsArray.length > 1 && nsArray.slice(1).includes(path[0])) return `${path[0]}${nsSeparator}${path.slice(1).join(keySeparator)}`;
+			const nsList = strict ? Array.isArray(ns) ? ns : ns ? [ns] : null : Array.isArray(ns) ? ns : null;
+			if (nsList) {
+				if ((strict ? nsList : nsList.length > 1 ? nsList.slice(1) : []).includes(path[0])) return `${path[0]}${nsSeparator}${path.slice(1).join(keySeparator)}`;
+			}
 		}
 		return path.join(keySeparator);
 	}
@@ -584,7 +587,7 @@ var locizify = (function() {
 				const resForMissing = (opt.missingKeyNoValueFallbackToKey || this.options.missingKeyNoValueFallbackToKey) && usedKey ? void 0 : res;
 				const updateMissing = hasDefaultValue && defaultValue !== res && this.options.updateMissing;
 				if (usedKey || usedDefault || updateMissing) {
-					this.logger.log(updateMissing ? "updateKey" : "missingKey", lng, namespace, key, updateMissing ? defaultValue : res);
+					this.logger.log(updateMissing ? "updateKey" : "missingKey", lng, namespace, needsPluralHandling && !updateMissing ? `${key}${this.pluralResolver.getSuffix(lng, opt.count, opt)}` : key, updateMissing ? defaultValue : res);
 					if (keySeparator) {
 						const fk = this.resolve(key, {
 							...opt,
@@ -771,7 +774,10 @@ var locizify = (function() {
 			];
 			const useOptionsReplaceForData = options.replace && !isString(options.replace);
 			let data = useOptionsReplaceForData ? options.replace : options;
-			if (useOptionsReplaceForData && typeof options.count !== "undefined") data.count = options.count;
+			if (useOptionsReplaceForData && typeof options.count !== "undefined") data = {
+				...data,
+				count: options.count
+			};
 			if (this.options.interpolation.defaultVariables) data = {
 				...this.options.interpolation.defaultVariables,
 				...data
@@ -1027,10 +1033,10 @@ var locizify = (function() {
 			const skipOnVariables = options?.interpolation?.skipOnVariables !== void 0 ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables;
 			[{
 				regex: this.regexpUnescape,
-				safeValue: (val) => regexSafe(val)
+				safeValue: (val) => val
 			}, {
 				regex: this.regexp,
-				safeValue: (val) => this.escapeValue ? regexSafe(this.escape(val)) : regexSafe(val)
+				safeValue: (val) => this.escapeValue ? this.escape(val) : val
 			}].forEach((todo) => {
 				replaces = 0;
 				while (match = todo.regex.exec(str)) {
@@ -1049,9 +1055,9 @@ var locizify = (function() {
 					}
 					else if (!isString(value) && !this.useRawValueToEscape) value = makeString$1(value);
 					const safeValue = todo.safeValue(value);
-					str = str.replace(match[0], safeValue);
+					str = str.replace(match[0], regexSafe(safeValue));
 					if (skipOnVariables) {
-						todo.regex.lastIndex += value.length;
+						todo.regex.lastIndex += safeValue.length;
 						todo.regex.lastIndex -= match[0].length;
 					} else todo.regex.lastIndex = 0;
 					replaces++;
@@ -1093,7 +1099,7 @@ var locizify = (function() {
 				clonedOptions = clonedOptions.replace && !isString(clonedOptions.replace) ? clonedOptions.replace : clonedOptions;
 				clonedOptions.applyPostProcessor = false;
 				delete clonedOptions.defaultValue;
-				const keyEndIndex = /{.*}/.test(match[1]) ? match[1].lastIndexOf("}") + 1 : match[1].indexOf(this.formatSeparator);
+				const keyEndIndex = /{.*}/s.test(match[1]) ? match[1].lastIndexOf("}") + 1 : match[1].indexOf(this.formatSeparator);
 				if (keyEndIndex !== -1) {
 					formatters = match[1].slice(keyEndIndex).split(this.formatSeparator).map((elem) => elem.trim()).filter(Boolean);
 					match[1] = match[1].slice(0, keyEndIndex);
@@ -1205,10 +1211,12 @@ var locizify = (function() {
 		format(value, format, lng, options = {}) {
 			if (!format) return value;
 			if (value == null) return value;
-			const formats = format.split(this.formatSeparator);
-			if (formats.length > 1 && formats[0].indexOf("(") > 1 && !formats[0].includes(")") && formats.find((f) => f.includes(")"))) {
-				const lastIndex = formats.findIndex((f) => f.includes(")"));
-				formats[0] = [formats[0], ...formats.splice(1, lastIndex)].join(this.formatSeparator);
+			const rawFormats = format.split(this.formatSeparator);
+			const formats = [];
+			for (let i = 0; i < rawFormats.length; i++) {
+				let f = rawFormats[i];
+				while (f.indexOf("(") > -1 && !f.includes(")") && i + 1 < rawFormats.length) f = `${f}${this.formatSeparator}${rawFormats[++i]}`;
+				formats.push(f);
 			}
 			return formats.reduce((mem, f) => {
 				const { formatName, formatOptions } = parseFormatStr(f);
@@ -1436,6 +1444,7 @@ var locizify = (function() {
 		nsSeparator: ":",
 		pluralSeparator: "_",
 		contextSeparator: "_",
+		enableSelector: false,
 		partialBundledLanguages: false,
 		saveMissing: false,
 		updateMissing: false,
@@ -1736,19 +1745,22 @@ var locizify = (function() {
 			else setLng(lng);
 			return deferred;
 		}
-		getFixedT(lng, ns, keyPrefix) {
+		getFixedT(lng, ns, keyPrefix, fixedOpts) {
+			const scopeNs = fixedOpts?.scopeNs;
 			const fixedT = (key, opts, ...rest) => {
 				let o;
 				if (typeof opts !== "object") o = this.options.overloadTranslationOptionHandler([key, opts].concat(rest));
 				else o = { ...opts };
 				o.lng = o.lng || fixedT.lng;
 				o.lngs = o.lngs || fixedT.lngs;
+				const explicitCallNs = o.ns !== void 0 && o.ns !== null;
 				o.ns = o.ns || fixedT.ns;
 				if (o.keyPrefix !== "") o.keyPrefix = o.keyPrefix || keyPrefix || fixedT.keyPrefix;
 				const selectorOpts = {
 					...this.options,
 					...o
 				};
+				if (Array.isArray(scopeNs) && !explicitCallNs) selectorOpts.ns = scopeNs;
 				if (typeof o.keyPrefix === "function") o.keyPrefix = keysFromSelector(o.keyPrefix, selectorOpts);
 				const keySeparator = this.options.keySeparator || ".";
 				let resultKey;
@@ -2009,13 +2021,13 @@ var locizify = (function() {
 		if (UNSAFE_KEYS$1.indexOf(v) > -1) return false;
 		if (v.indexOf("..") > -1) return false;
 		if (v.indexOf("\\") > -1) return false;
-		if (/[?#%\s@]/.test(v)) return false;
+		if (/[?#%\s]/.test(v)) return false;
 		if (/[\x00-\x1F\x7F]/.test(v)) return false;
 		return true;
 	}
 	function isSafeLangUrlSegment(v) {
 		if (!isSafeUrlSegmentBase(v)) return false;
-		if (v.indexOf("/") > -1) return false;
+		if (v.indexOf("/") > -1 || v.indexOf("@") > -1) return false;
 		return true;
 	}
 	function isSafeNsUrlSegment(v) {
@@ -2029,7 +2041,7 @@ var locizify = (function() {
 		if (typeof v !== "string") return v;
 		return v.replace(/[\r\n\x00-\x1F\x7F]/g, " ");
 	}
-	function redactUrlCredentials(u) {
+	function redactUrlCredentials$1(u) {
 		if (typeof u !== "string" || u.length === 0) return u;
 		try {
 			const parsed = new URL(u);
@@ -2264,7 +2276,7 @@ var locizify = (function() {
 			const lng = typeof languages === "string" ? [languages] : languages;
 			const ns = typeof namespaces === "string" ? [namespaces] : namespaces;
 			const payload = this.options.parseLoadPayload(lng, ns);
-			const safeUrl = sanitizeLogValue$1(redactUrlCredentials(url));
+			const safeUrl = sanitizeLogValue$1(redactUrlCredentials$1(url));
 			this.options.request(this.options, url, payload, (err, res) => {
 				if (res && (res.status >= 500 && res.status < 600 || !res.status)) return callback("failed loading " + safeUrl + "; status code: " + res.status, true);
 				if (res && res.status >= 400 && res.status < 500) return callback("failed loading " + safeUrl + "; status code: " + res.status, false);
@@ -5906,6 +5918,20 @@ var locizify = (function() {
 		if (typeof v !== "string") return v;
 		return v.replace(/[\r\n\x00-\x1F\x7F]/g, " ");
 	}
+	function redactUrlCredentials(u) {
+		if (typeof u !== "string" || u.length === 0) return u;
+		try {
+			const parsed = new URL(u);
+			if (parsed.username || parsed.password) {
+				parsed.username = "";
+				parsed.password = "";
+				return parsed.toString();
+			}
+			return u;
+		} catch (e) {
+			return u.replace(/(\/\/)[^/@\s]+@/g, "$1");
+		}
+	}
 	function debounce$1(func, wait, immediate) {
 		let timeout;
 		return function() {
@@ -6506,11 +6532,12 @@ var locizify = (function() {
 				payload = void 0;
 			}
 			callback = callback || (() => {});
+			const safeUrl = sanitizeLogValue(redactUrlCredentials(url));
 			const clb = (err, res) => {
 				const resourceNotExisting = res && res.resourceNotExisting;
-				if (res && (res.status === 408 || res.status === 400)) return callback("failed loading " + url, true, { resourceNotExisting });
-				if (res && (res.status >= 500 && res.status < 600 || !res.status)) return callback("failed loading " + url, true, { resourceNotExisting });
-				if (res && res.status >= 400 && res.status < 500) return callback("failed loading " + url, false, { resourceNotExisting });
+				if (res && (res.status === 408 || res.status === 400)) return callback("failed loading " + safeUrl, true, { resourceNotExisting });
+				if (res && (res.status >= 500 && res.status < 600 || !res.status)) return callback("failed loading " + safeUrl, true, { resourceNotExisting });
+				if (res && res.status >= 400 && res.status < 500) return callback("failed loading " + safeUrl, false, { resourceNotExisting });
 				if (!res && err && err.message) {
 					const errorMessage = err.message.toLowerCase();
 					if ([
@@ -6518,7 +6545,7 @@ var locizify = (function() {
 						"fetch",
 						"network",
 						"load"
-					].find((term) => errorMessage.indexOf(term) > -1)) return callback("failed loading " + url + ": " + err.message, true, { resourceNotExisting });
+					].find((term) => errorMessage.indexOf(term) > -1)) return callback("failed loading " + safeUrl + ": " + sanitizeLogValue(err.message), true, { resourceNotExisting });
 				}
 				if (err) return callback(err, false);
 				let ret, parseErr;
@@ -6526,10 +6553,10 @@ var locizify = (function() {
 					if (typeof res.data === "string") ret = JSON.parse(res.data);
 					else ret = res.data;
 				} catch (e) {
-					parseErr = "failed parsing " + url + " to json";
+					parseErr = "failed parsing " + safeUrl + " to json";
 				}
 				if (parseErr) return callback(parseErr, false);
-				if (this.options.failLoadingOnEmptyJSON && !Object.keys(ret).length) return callback("loaded result empty for " + url, false, { resourceNotExisting });
+				if (this.options.failLoadingOnEmptyJSON && !Object.keys(ret).length) return callback("loaded result empty for " + safeUrl, false, { resourceNotExisting });
 				callback(null, ret, { resourceNotExisting });
 			};
 			if (!this.options.request || url.indexOf(`/languages/${options.projectId}`) > 0) return request(options, url, payload, clb);

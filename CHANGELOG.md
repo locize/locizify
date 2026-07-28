@@ -1,3 +1,7 @@
+### 10.0.5
+
+- update i18next and locize deps
+
 ### 10.0.4
 
 - update locize dep
