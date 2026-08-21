@@ -6947,71 +6947,6 @@ var locizify = (function() {
 		return style.sheet;
 	}();
 	//#endregion
-	//#region node_modules/locize/dist/esm/uninstrumentedStore.js
-	function ownKeys$6(e, r) {
-		var t = Object.keys(e);
-		if (Object.getOwnPropertySymbols) {
-			var o = Object.getOwnPropertySymbols(e);
-			r && (o = o.filter(function(r) {
-				return Object.getOwnPropertyDescriptor(e, r).enumerable;
-			})), t.push.apply(t, o);
-		}
-		return t;
-	}
-	function _objectSpread$6(e) {
-		for (var r = 1; r < arguments.length; r++) {
-			var t = null != arguments[r] ? arguments[r] : {};
-			r % 2 ? ownKeys$6(Object(t), !0).forEach(function(r) {
-				_defineProperty(e, r, t[r]);
-			}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$6(Object(t)).forEach(function(r) {
-				Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
-			});
-		}
-		return e;
-	}
-	var data$1 = {};
-	function clean$1() {
-		Object.values(data$1).forEach(function(item) {
-			if (!document.body.contains(item.node)) {
-				resetHighlight(item.id, item.node);
-				delete data$1[item.id];
-			}
-		});
-	}
-	function save$1(id, type, node, txt) {
-		if (!id || !type || !node) return;
-		if (!data$1[id]) data$1[id] = {
-			id,
-			node
-		};
-		data$1[id].keys = _objectSpread$6(_objectSpread$6({}, data$1[id].keys), {}, _defineProperty({}, "".concat(type), {
-			value: txt,
-			eleUniqueID: id,
-			textType: type
-		}));
-	}
-	function remove(id, node) {
-		resetHighlight(id, node);
-		delete data$1[id];
-	}
-	function removeKey(id, key, node) {
-		var item = get$1(id);
-		if (!item) return;
-		delete item.keys["".concat(key)];
-		if (!Object.keys(item.keys).length) remove(id, node);
-	}
-	function get$1(id) {
-		return data$1[id];
-	}
-	var uninstrumentedStore = {
-		save: save$1,
-		remove,
-		removeKey,
-		clean: clean$1,
-		get: get$1,
-		data: data$1
-	};
-	//#endregion
 	//#region node_modules/@babel/runtime/helpers/esm/arrayWithHoles.js
 	function _arrayWithHoles(r) {
 		if (Array.isArray(r)) return r;
@@ -7183,6 +7118,134 @@ var locizify = (function() {
 		_isInIframe = true;
 	}
 	var isInIframe = _isInIframe;
+	//#endregion
+	//#region node_modules/locize/dist/esm/shadowRoots.js
+	var HOOK_FLAG = "__locizeAttachShadowHooked";
+	var observers = [];
+	var enabled = false;
+	function setShadowDOMEnabled(value) {
+		enabled = !!value;
+	}
+	function isShadowDOMEnabled() {
+		return enabled;
+	}
+	function isNodeStillInDocument(node) {
+		if (!node) return false;
+		return enabled ? !!node.isConnected : document.body.contains(node);
+	}
+	function eachShadowRoot(root, fn) {
+		var elements;
+		try {
+			elements = root.querySelectorAll("*");
+		} catch (err) {
+			debugLog("could not query for shadow roots in", root, err);
+			return;
+		}
+		for (var i = 0; i < elements.length; i++) {
+			var shadowRoot = elements[i].shadowRoot;
+			if (!shadowRoot) continue;
+			fn(shadowRoot);
+			eachShadowRoot(shadowRoot, fn);
+		}
+	}
+	function notify(shadowRoot) {
+		observers.forEach(function(observer) {
+			try {
+				observer.observeRoot(shadowRoot);
+			} catch (err) {
+				debugLog("failed to observe shadow root", shadowRoot, err);
+			}
+		});
+	}
+	function hookAttachShadow() {
+		if (typeof Element === "undefined") return;
+		if (!Element.prototype || !Element.prototype.attachShadow) return;
+		if (Element.prototype[HOOK_FLAG]) return;
+		var nativeAttachShadow = Element.prototype.attachShadow;
+		Element.prototype.attachShadow = function attachShadow() {
+			var shadowRoot = nativeAttachShadow.apply(this, arguments);
+			notify(shadowRoot);
+			return shadowRoot;
+		};
+		Object.defineProperty(Element.prototype, HOOK_FLAG, {
+			value: true,
+			enumerable: false,
+			configurable: true
+		});
+	}
+	function observeShadowRoots(observer) {
+		if (!enabled) return;
+		if (typeof document === "undefined") return;
+		if (observers.indexOf(observer) < 0) observers.push(observer);
+		eachShadowRoot(document, notify);
+		hookAttachShadow();
+	}
+	//#endregion
+	//#region node_modules/locize/dist/esm/uninstrumentedStore.js
+	function ownKeys$6(e, r) {
+		var t = Object.keys(e);
+		if (Object.getOwnPropertySymbols) {
+			var o = Object.getOwnPropertySymbols(e);
+			r && (o = o.filter(function(r) {
+				return Object.getOwnPropertyDescriptor(e, r).enumerable;
+			})), t.push.apply(t, o);
+		}
+		return t;
+	}
+	function _objectSpread$6(e) {
+		for (var r = 1; r < arguments.length; r++) {
+			var t = null != arguments[r] ? arguments[r] : {};
+			r % 2 ? ownKeys$6(Object(t), !0).forEach(function(r) {
+				_defineProperty(e, r, t[r]);
+			}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$6(Object(t)).forEach(function(r) {
+				Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+			});
+		}
+		return e;
+	}
+	var data$1 = {};
+	function clean$1() {
+		Object.values(data$1).forEach(function(item) {
+			if (!isNodeStillInDocument(item.node)) {
+				resetHighlight(item, item.node, item.keys, false);
+				delete data$1[item.id];
+			}
+		});
+	}
+	function save$1(id, type, node, txt) {
+		if (!id || !type || !node) return;
+		if (!data$1[id]) data$1[id] = {
+			id,
+			node
+		};
+		data$1[id].keys = _objectSpread$6(_objectSpread$6({}, data$1[id].keys), {}, _defineProperty({}, "".concat(type), {
+			value: txt,
+			eleUniqueID: id,
+			textType: type
+		}));
+	}
+	function remove(id) {
+		var item = get$1(id);
+		if (item) resetHighlight(item, item.node, item.keys, false);
+		delete data$1[id];
+	}
+	function removeKey(id, key) {
+		var item = get$1(id);
+		if (!item) return;
+		delete item.keys["".concat(key)];
+		if (!Object.keys(item.keys).length) remove(id);
+	}
+	function get$1(id) {
+		return data$1[id];
+	}
+	var uninstrumentedStore = {
+		save: save$1,
+		remove,
+		removeKey,
+		clean: clean$1,
+		get: get$1,
+		data: data$1
+	};
 	//#endregion
 	//#region node_modules/locize/dist/esm/api/postMessage.js
 	function ownKeys$5(e, r) {
@@ -7541,20 +7604,56 @@ var locizify = (function() {
 	}
 	//#endregion
 	//#region node_modules/locize/dist/esm/ui/mouseDistance.js
-	function isOccluded(node) {
-		var rect = node.getBoundingClientRect();
-		if (!rect.width || !rect.height) return true;
-		var x = rect.left + rect.width / 2;
-		var y = rect.top + rect.height / 2;
-		var topEl = document.elementFromPoint(x, y);
+	function deepElementFromPoint(x, y) {
+		var el = document.elementFromPoint(x, y);
+		if (!isShadowDOMEnabled()) return el;
+		while (el && el.shadowRoot) {
+			var inner = el.shadowRoot.elementFromPoint(x, y);
+			if (!inner || inner === el) break;
+			el = inner;
+		}
+		return el;
+	}
+	var ownOverlaySelector = ".i18next-editor-highlight, .i18next-editor-button-container, .i18next-editor-button";
+	var editorChromeSelector = "#i18next-editor-popup, .locize-incontext-ribbon";
+	function coveredAt(node, x, y) {
+		var topEl = deepElementFromPoint(x, y);
 		if (!topEl) return true;
-		if (topEl.dataset && topEl.dataset.i18nextEditorElement === "true") return false;
+		if (topEl.closest && topEl.closest(ownOverlaySelector)) return false;
+		if (topEl.closest && topEl.closest(editorChromeSelector)) return true;
 		return !node.contains(topEl) && !topEl.contains(node);
 	}
+	function isOccluded(node, e) {
+		var rect = node.getBoundingClientRect();
+		if (!rect.width || !rect.height) return true;
+		if (!coveredAt(node, rect.left + rect.width / 2, rect.top + rect.height / 2)) return false;
+		if (e && typeof e.clientX === "number" && e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) return coveredAt(node, e.clientX, e.clientY);
+		return true;
+	}
+	function hasOverlay(item) {
+		return !!(item.highlightBox || item.ribbonBox);
+	}
+	function cursorOverEditorChrome(e) {
+		if (!e || typeof e.clientX !== "number") return false;
+		var topEl = deepElementFromPoint(e.clientX, e.clientY);
+		if (!topEl || !topEl.closest) return false;
+		if (topEl.closest(ownOverlaySelector)) return false;
+		return !!topEl.closest(editorChromeSelector);
+	}
 	var debouncedUpdateDistance = debounce(function(e, observer) {
+		if (cursorOverEditorChrome(e)) {
+			Object.values(store.data).concat(Object.values(uninstrumentedStore.data)).forEach(function(item) {
+				if (hasOverlay(item)) resetHighlight(item, item.node, item.keys);
+			});
+			return;
+		}
 		Object.values(store.data).forEach(function(item) {
-			if (!isInViewport(item.node)) return;
-			if (isOccluded(item.node)) {
+			if (item.highlightBox) repositionOverlays(item, item.node);
+			if (!isInViewport(item.node)) {
+				if (hasOverlay(item)) resetHighlight(item, item.node, item.keys);
+				return;
+			}
+			if (isOccluded(item.node, e)) {
 				resetHighlight(item, item.node, item.keys);
 				return;
 			}
@@ -7565,8 +7664,12 @@ var locizify = (function() {
 			}
 		});
 		Object.values(uninstrumentedStore.data).forEach(function(item) {
-			if (!isInViewport(item.node)) return;
-			if (isOccluded(item.node)) {
+			if (item.highlightBox) repositionOverlays(item, item.node);
+			if (!isInViewport(item.node)) {
+				if (hasOverlay(item)) resetHighlight(item, item.node, item.keys);
+				return;
+			}
+			if (isOccluded(item.node, e)) {
 				resetHighlight(item, item.node, item.keys);
 				return;
 			}
@@ -7576,14 +7679,41 @@ var locizify = (function() {
 		});
 	}, 50);
 	var currentFC;
+	var scrollFC;
+	var overFC;
+	var lastClientX = 0;
+	var lastClientY = 0;
+	var hasLastMouse = false;
 	function startMouseTracking(observer) {
+		stopMouseTracking();
 		currentFC = function handle(e) {
+			lastClientX = e.clientX;
+			lastClientY = e.clientY;
+			hasLastMouse = true;
 			debouncedUpdateDistance(e, observer);
 		};
 		document.addEventListener("mousemove", currentFC);
+		scrollFC = function handleScroll() {
+			if (!hasLastMouse) return;
+			var scrollX = window.scrollX || 0;
+			var scrollY = window.scrollY || 0;
+			debouncedUpdateDistance({
+				pageX: lastClientX + scrollX,
+				pageY: lastClientY + scrollY,
+				clientX: lastClientX,
+				clientY: lastClientY
+			}, observer);
+		};
+		window.addEventListener("scroll", scrollFC, true);
+		overFC = function handleOver(e) {
+			if (cursorOverEditorChrome(e)) debouncedUpdateDistance(e, observer);
+		};
+		document.addEventListener("mouseover", overFC, true);
 	}
 	function stopMouseTracking() {
 		document.removeEventListener("mousemove", currentFC);
+		if (scrollFC) window.removeEventListener("scroll", scrollFC, true);
+		if (overFC) document.removeEventListener("mouseover", overFC, true);
 	}
 	//#endregion
 	//#region node_modules/locize/dist/esm/ui/elements/icons.js
@@ -7861,7 +7991,7 @@ var locizify = (function() {
 				key: item.key
 			}), item.value), uni === null || uni === void 0 ? void 0 : uni.node);
 			if (uni && uni.keys) delete uni.keys["".concat(item.textType)];
-			if (uni && uni.keys && !Object.keys(uni.keys).length) uninstrumentedStore.remove(item.eleUniqueID, uni.node);
+			if (uni && uni.keys && !Object.keys(uni.keys).length) uninstrumentedStore.remove(item.eleUniqueID);
 		});
 		api.sendCurrentParsedContent();
 	}
@@ -7941,11 +8071,18 @@ var locizify = (function() {
 	}
 	//#endregion
 	//#region node_modules/locize/dist/esm/ui/elements/highlightBox.js
-	function HighlightBox(ele, borderColor, shadowColor) {
+	function positionHighlightBox(box, ele) {
 		var rect = ele.getBoundingClientRect();
+		box.style.top = "".concat(rect.top - 2 + window.scrollY, "px");
+		box.style.left = "".concat(rect.left - 2 + window.scrollX, "px");
+		box.style.height = "".concat(rect.height + 4, "px");
+		box.style.width = "".concat(rect.width + 4, "px");
+	}
+	function HighlightBox(ele, borderColor, shadowColor) {
 		var box = document.createElement("div");
 		box.classList.add("i18next-editor-highlight");
-		box.style = "position: absolute; z-index: 99999; pointer-events: none; top: ".concat(rect.top - 2 + window.scrollY, "px; left: ").concat(rect.left - 2 + window.scrollX, "px; height: ").concat(rect.height + 4, "px; width: ").concat(rect.width + 4, "px; border: ").concat(borderColor === "none" ? "none" : "1px solid ".concat(borderColor), "; border-radius: 15px; ").concat(shadowColor ? "box-shadow: inset 1px 1px 5px rgba(255, 255, 255, 0.1), inset -1px -1px 5px rgba(61, 67, 69, 0.3), 0 0 20px 0 ".concat(shadowColor, ";") : "");
+		box.style = "position: absolute; z-index: 99999; pointer-events: none; border: ".concat(borderColor === "none" ? "none" : "1px solid ".concat(borderColor), "; border-radius: 15px; ").concat(shadowColor ? "box-shadow: inset 1px 1px 5px rgba(255, 255, 255, 0.1), inset -1px -1px 5px rgba(61, 67, 69, 0.3), 0 0 20px 0 ".concat(shadowColor, ";") : "");
+		positionHighlightBox(box, ele);
 		box.setAttribute("data-i18next-editor-element", "true");
 		return box;
 	}
@@ -8993,6 +9130,60 @@ var locizify = (function() {
 	//#endregion
 	//#region node_modules/locize/dist/esm/ui/highlightNode.js
 	var selected = {};
+	function positionRibbonBox(rectEle, actions, arrowEle) {
+		return computePosition(rectEle, actions, {
+			placement: "right",
+			middleware: [
+				flip({ fallbackPlacements: ["left", "bottom"] }),
+				shift(),
+				offset(function(_ref) {
+					var placement = _ref.placement, rects = _ref.rects;
+					if (placement === "bottom") return -rects.reference.height / 2 - rects.floating.height / 2;
+					return 35;
+				}),
+				arrow({ element: arrowEle })
+			]
+		}).then(function(_ref2) {
+			var x = _ref2.x, y = _ref2.y, middlewareData = _ref2.middlewareData, placement = _ref2.placement;
+			Object.assign(actions.style, {
+				left: "".concat(x, "px"),
+				top: "".concat(y, "px"),
+				display: "inline-flex"
+			});
+			var side = placement.split("-")[0];
+			var staticSide = {
+				top: "bottom",
+				right: "left",
+				bottom: "top",
+				left: "right"
+			}[side];
+			if (middlewareData.arrow) {
+				var _middlewareData$arrow = middlewareData.arrow, _x = _middlewareData$arrow.x, _y = _middlewareData$arrow.y;
+				Object.assign(arrowEle.style, _defineProperty(_defineProperty({
+					left: _x != null ? "".concat(_x, "px") : "",
+					top: _y != null ? "".concat(_y, "px") : "",
+					right: "",
+					bottom: ""
+				}, staticSide, "".concat(side === "bottom" ? -18 : -25, "px")), "transform", side === "bottom" ? "rotate(90deg)" : side === "left" ? "rotate(180deg)" : ""));
+			}
+		});
+	}
+	function repositionOverlays(item, node) {
+		if (!item.highlightBox || !node) return;
+		var rectEle = getOptimizedBoundingRectEle(node);
+		var rect = rectEle.getBoundingClientRect();
+		var style = item.highlightBox.style;
+		var drifted = Math.abs(parseFloat(style.top) - (rect.top - 2 + window.scrollY)) > 1 || Math.abs(parseFloat(style.left) - (rect.left - 2 + window.scrollX)) > 1 || Math.abs(parseFloat(style.height) - (rect.height + 4)) > 1 || Math.abs(parseFloat(style.width) - (rect.width + 4)) > 1;
+		var ribbonHidden = item.ribbonBox && item.ribbonBox.style.display === "none";
+		if (item.ribbonBox && !isInViewport(node)) {
+			item.ribbonBox.style.display = "none";
+			if (drifted) positionHighlightBox(item.highlightBox, rectEle);
+			return;
+		}
+		if (!drifted && !ribbonHidden) return;
+		positionHighlightBox(item.highlightBox, rectEle);
+		if (item.ribbonBox && item.ribbonArrow) positionRibbonBox(rectEle, item.ribbonBox, item.ribbonArrow);
+	}
 	function highlight(item, node, keys) {
 		var rectEle = getOptimizedBoundingRectEle(node);
 		if (!item.highlightBox) {
@@ -9003,43 +9194,9 @@ var locizify = (function() {
 		if (!item.ribbonBox) {
 			var _RibbonBox = RibbonBox(keys), actions = _RibbonBox.box, arrowEle = _RibbonBox.arrow;
 			document.body.appendChild(actions);
-			computePosition(rectEle, actions, {
-				placement: "right",
-				middleware: [
-					flip({ fallbackPlacements: ["left", "bottom"] }),
-					shift(),
-					offset(function(_ref) {
-						var placement = _ref.placement, rects = _ref.rects;
-						if (placement === "bottom") return -rects.reference.height / 2 - rects.floating.height / 2;
-						return 35;
-					}),
-					arrow({ element: arrowEle })
-				]
-			}).then(function(_ref2) {
-				var x = _ref2.x, y = _ref2.y, middlewareData = _ref2.middlewareData, placement = _ref2.placement;
-				Object.assign(actions.style, {
-					left: "".concat(x, "px"),
-					top: "".concat(y, "px"),
-					display: "inline-flex"
-				});
-				var side = placement.split("-")[0];
-				var staticSide = {
-					top: "bottom",
-					right: "left",
-					bottom: "top",
-					left: "right"
-				}[side];
-				if (middlewareData.arrow) {
-					var _middlewareData$arrow = middlewareData.arrow, _x = _middlewareData$arrow.x, _y = _middlewareData$arrow.y;
-					Object.assign(arrowEle.style, _defineProperty(_defineProperty({
-						left: _x != null ? "".concat(_x, "px") : "",
-						top: _y != null ? "".concat(_y, "px") : "",
-						right: "",
-						bottom: ""
-					}, staticSide, "".concat(side === "bottom" ? -18 : -25, "px")), "transform", side === "bottom" ? "rotate(90deg)" : side === "left" ? "rotate(180deg)" : ""));
-				}
-			});
+			positionRibbonBox(rectEle, actions, arrowEle);
 			item.ribbonBox = actions;
+			item.ribbonArrow = arrowEle;
 		}
 	}
 	function highlightUninstrumented(item, node, keys) {
@@ -9077,6 +9234,7 @@ var locizify = (function() {
 		if (item.ribbonBox) {
 			document.body.removeChild(item.ribbonBox);
 			delete item.ribbonBox;
+			delete item.ribbonArrow;
 		}
 		delete selected[id];
 	}
@@ -9106,8 +9264,8 @@ var locizify = (function() {
 	var data = {};
 	function clean() {
 		Object.values(data).forEach(function(item) {
-			if (!document.body.contains(item.node)) {
-				resetHighlight(item.id, item.node);
+			if (!isNodeStillInDocument(item.node)) {
+				resetHighlight(item, item.node, item.keys, false);
 				delete data[item.id];
 			}
 		});
@@ -9198,11 +9356,11 @@ var locizify = (function() {
 		var uninstr = uninstrumentedStore.get(node.uniqueID);
 		if (instr || uninstr) {
 			var _node$parentElement;
-			var id = (_node$parentElement = node.parentElement) === null || _node$parentElement === void 0 ? void 0 : _node$parentElement.uniqueID;
-			uninstrumentedStore.remove(id, node.parentElement);
+			uninstrumentedStore.remove((_node$parentElement = node.parentElement) === null || _node$parentElement === void 0 ? void 0 : _node$parentElement.uniqueID);
 		}
 		var children = node.childNodes;
 		for (var i = 0; i < children.length; i++) walk(children[i], func);
+		if (isShadowDOMEnabled() && node.shadowRoot) walk(node.shadowRoot, func);
 	}
 	function extractHiddenMeta(id, type, meta, children) {
 		var _i18n, _i18n2, _i18n3;
@@ -9260,7 +9418,7 @@ var locizify = (function() {
 		var meta = extractNodeMeta(id, type, nodeI18nMeta, txt, children);
 		if (meta.qualifiedKey) {
 			store.save(id, null, type, meta, node, children);
-			uninstrumentedStore.removeKey(id, type, node);
+			uninstrumentedStore.removeKey(id, type);
 		} else uninstrumentedStore.save(id, type, node, txt);
 	}
 	function handleNode(node) {
@@ -9286,11 +9444,11 @@ var locizify = (function() {
 				if (hasHiddenMeta) usedSubliminalForText = true;
 				if (hasHiddenStartMarker && hasHiddenMeta) {
 					var meta = unwrap(trimmedTxt);
-					uninstrumentedStore.remove(node.uniqueID, node);
+					uninstrumentedStore.remove(node.uniqueID);
 					store.save(node.uniqueID, meta.invisibleMeta, "text", extractHiddenMeta(node.uniqueID, "text", meta), node);
 				} else if (hasHiddenMeta && !merge.length) {
 					var _meta = unwrap(trimmedTxt);
-					uninstrumentedStore.remove(node.uniqueID, node);
+					uninstrumentedStore.remove(node.uniqueID);
 					store.save(node.uniqueID, _meta.invisibleMeta, "text", extractHiddenMeta(node.uniqueID, "text", _meta), node);
 				} else if (hasHiddenStartMarker) merge.push({
 					childIndex: i,
@@ -9311,7 +9469,7 @@ var locizify = (function() {
 					var _meta2 = unwrap(merge.reduce(function(mem, item) {
 						return mem + item.text;
 					}, ""));
-					uninstrumentedStore.removeKey(node.uniqueID, "html", node, txt);
+					uninstrumentedStore.removeKey(node.uniqueID, "html");
 					store.save(node.uniqueID, _meta2.invisibleMeta, "html", extractHiddenMeta(node.uniqueID, "html", _meta2, merge), node, merge);
 					merge = [];
 				}
@@ -9343,7 +9501,7 @@ var locizify = (function() {
 			var txt = node.getAttribute(attr);
 			if (containsHiddenMeta(txt)) {
 				var meta = unwrap(txt);
-				uninstrumentedStore.removeKey(node.uniqueID, attr, node);
+				uninstrumentedStore.removeKey(node.uniqueID, attr);
 				store.save(node.uniqueID, meta.invisibleMeta, attr, extractHiddenMeta(node.uniqueID, "".concat(attr), meta), node);
 			} else if (txt) if (nodeI18nMeta && nodeI18nMeta[attr]) storeIfQualifiedKey(node.uniqueID, null, attr, nodeI18nMeta, node, void 0, txt);
 			else uninstrumentedStore.save(node.uniqueID, attr, node, txt);
@@ -9353,11 +9511,18 @@ var locizify = (function() {
 		currentSourceLng = void 0;
 		walk(node, handleNode);
 		store.clean();
+		uninstrumentedStore.clean();
 		ignoreMergedEleUniqueIds = [];
 		return store.data;
 	}
 	//#endregion
 	//#region node_modules/locize/dist/esm/observer.js
+	var defaultObserverConfig = {
+		attributes: true,
+		childList: true,
+		characterData: true,
+		subtree: true
+	};
 	var mutationTriggeringElements = {};
 	function ignoreMutation(ele) {
 		if (ele.uniqueID) {
@@ -9448,16 +9613,22 @@ var locizify = (function() {
 			});
 			if (triggerMutation) debouncedHandler();
 		});
+		var activeConfig = defaultObserverConfig;
 		return {
 			start: function start() {
-				var observerConfig = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {
-					attributes: true,
-					childList: true,
-					characterData: true,
-					subtree: true
-				};
+				var observerConfig = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : defaultObserverConfig;
+				activeConfig = observerConfig;
 				handle([ele]);
 				observer.observe(ele, observerConfig);
+			},
+			observeRoot: function observeRoot(root) {
+				if (!root) return;
+				try {
+					handle([root]);
+				} catch (err) {
+					debugLog("failed to parse additional root", root, err);
+				}
+				observer.observe(root, activeConfig);
 			},
 			skipNext: function skipNext() {
 				internalChange = true;
@@ -9645,7 +9816,8 @@ var locizify = (function() {
 		[
 			"projectId",
 			"version",
-			"ribbonPosition"
+			"ribbonPosition",
+			"shadowDOM"
 		].forEach(function(attr) {
 			if (!scriptEle) return;
 			var value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute("data-" + attr.toLowerCase());
@@ -9657,6 +9829,7 @@ var locizify = (function() {
 		api.config = config;
 		api.init(implementation);
 		setImplementation(implementation);
+		setShadowDOMEnabled(config.shadowDOM);
 		implementation === null || implementation === void 0 || implementation.bindLanguageChange(function(lng) {
 			api.sendCurrentTargetLanguage(implementation.getLng());
 		});
@@ -9669,6 +9842,7 @@ var locizify = (function() {
 				api.sendCurrentParsedContent();
 			});
 			observer.start();
+			observeShadowRoots(observer);
 			startMouseTracking(observer);
 			if (!isInIframe && !document.getElementById("i18next-editor-popup")) {
 				debugLog("starting InContext popup with config", config, "iframe:", getIframeUrl());
