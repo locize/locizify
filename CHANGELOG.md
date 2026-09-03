@@ -1,3 +1,7 @@
+### 10.0.8
+
+- update i18nextify dep
+
 ### 10.0.7
 
 - update i18next-locize-backend dep
