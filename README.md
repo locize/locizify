@@ -497,6 +497,17 @@ locizify.forceRerender();
 
 Pass `?incontext=true` in your url to show the locize InContext editor.
 
+If your team signs in to locize through SAML SSO, pass your SSO identifier (the `<id>` of your `https://www.locize.app/login/<id>` link). When the editor finds no locize session, its sign-in then goes straight to your identity provider instead of asking for the email first:
+
+```js
+locizify.init({
+  // ...
+  editor: {
+    ssoIdentifier: 'your-sso-id'
+  }
+});
+```
+
 
 https://github.com/locize/locize
 

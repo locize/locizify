@@ -1,3 +1,7 @@
+### 10.0.9
+
+- update locize dep to 4.5.1: teams that sign in to locize through SAML SSO can pass `editor: { ssoIdentifier: 'your-sso-id' }`, so the InContext editor's sign-in goes straight to their identity provider instead of asking for the email first
+
 ### 10.0.8
 
 - update i18nextify dep

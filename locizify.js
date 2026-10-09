@@ -9836,7 +9836,8 @@ var locizify = (function() {
 			"projectId",
 			"version",
 			"ribbonPosition",
-			"shadowDOM"
+			"shadowDOM",
+			"ssoIdentifier"
 		].forEach(function(attr) {
 			if (!scriptEle) return;
 			var value = scriptEle.getAttribute(attr.toLowerCase()) || scriptEle.getAttribute("data-" + attr.toLowerCase());
@@ -9871,7 +9872,7 @@ var locizify = (function() {
 					console.error("[locize] InContext editor did not connect within 15s. Likely causes: you are not logged in at locize (open https://www.locize.app in another tab and log in), the page CSP blocks frame-src " + getIframeUrl() + ", or an adblocker blocked the iframe. Enable diagnostics via localStorage.setItem('locize-debug', 'true').");
 					showPopupError("Could not connect to the locize editor. Are you logged in at locize.app? See the browser console for details.");
 				}, 15e3);
-				var popupEl = Popup(getIframeUrl(), function() {
+				var popupEl = Popup(getIframeUrl() + (config.ssoIdentifier ? "?sso=".concat(encodeURIComponent(config.ssoIdentifier)) : ""), function() {
 					var _document$getElementB;
 					api.source = (_document$getElementB = document.getElementById("i18next-editor-iframe")) === null || _document$getElementB === void 0 ? void 0 : _document$getElementB.contentWindow;
 					api.initialized = false;
@@ -10007,7 +10008,8 @@ var locizify = (function() {
 				var pickFrom = _objectSpread(_objectSpread({}, i18n.options.backend), i18n.options.editor);
 				return _objectSpread(_objectSpread({}, opts), {}, {
 					projectId: pickFrom.projectId,
-					version: pickFrom.version
+					version: pickFrom.version,
+					ssoIdentifier: pickFrom.ssoIdentifier
 				});
 			},
 			bindLanguageChange: function bindLanguageChange(cb) {
