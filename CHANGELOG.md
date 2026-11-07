@@ -1,3 +1,10 @@
+### 11.0.0
+
+- BREAKING: uses i18nextify 6, which bundles i18next 27, and i18next-locize-backend 10.0.6. Sites that load `https://unpkg.com/locizify@^10` stay on 10.x and are not affected; switch the URL to `@^11` to update.
+- BREAKING: an empty translation (`""`, for example from a project that publishes empty strings) now shows the page's own text, like a missing one, instead of an empty element (i18next 27 defaults `returnEmptyString` to `false`). To keep empty translations blank, pass `returnEmptyString: true` to `locizify.init()`.
+- BREAKING: minimum Node version is now 22 (`engines.node = ">=22"`), as for i18next 27.
+- i18next 27 also refuses language codes that look like markup or paths, for example from a `?lng=` parameter, unless they are listed in `supportedLngs`. The [i18next migration guide](https://www.i18next.com/misc/migration-guide#v26.x.x-to-v27.0.0) lists every change.
+
 ### 10.0.10
 
 - update i18next and locize deps
