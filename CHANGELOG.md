@@ -1,3 +1,7 @@
+### 11.0.1
+
+- fix: update locize to 4.5.2: a text that falls back to the page text because its translation is empty is no longer marked as a translation for the InContext editor (i18next-subliminal 1.0.2).
+
 ### 11.0.0
 
 - BREAKING: uses i18nextify 6, which bundles i18next 27, and i18next-locize-backend 10.0.6. Sites that load `https://unpkg.com/locizify@^10` stay on 10.x and are not affected; switch the URL to `@^11` to update.

@@ -7025,8 +7025,8 @@ var locizify = (function() {
 				key = options.i18nResolved.exactUsedKey;
 				ns = options.i18nResolved.usedNS;
 				lng = options.i18nResolved.usedLng;
-				if (options.i18nResolved.res === void 0) if (key !== value) source = "default";
-				else source = "key";
+				var res = options.i18nResolved.res;
+				if (res === void 0 || res === null || res === "" && value !== "" || _typeof(res) === "object" && !Array.isArray(res)) source = key !== value ? "default" : "key";
 				else source = "translation";
 			} else {
 				var _ref, _opt$keySeparator, _translator$options, _ref2, _namespaces$, _translator$options2;
