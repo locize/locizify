@@ -1,3 +1,8 @@
+### 11.0.2
+
+- fix: uses i18nextify 6.0.1, which bundles i18next 27.2.3. A value passed on through the options of a nested translation (`$t(key, { "name": "{{name}}" })`) is now escaped once instead of twice, so `Tom & Jerry` no longer turns into `Tom &amp;amp; Jerry`. i18nextify 6.0.1 also brings i18next-browser-languagedetector 8.3.1 and i18next-http-backend 4.1.0.
+- fix: update i18next-locize-backend to 10.1.0: a callback that throws (for example a `loaded` listener) is no longer called a second time with its own error, which marked the namespace that had just loaded as failed and read it again.
+
 ### 11.0.1
 
 - fix: update locize to 4.5.2: a text that falls back to the page text because its translation is empty is no longer marked as a translation for the InContext editor (i18next-subliminal 1.0.2).
