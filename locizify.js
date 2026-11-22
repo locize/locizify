@@ -7338,11 +7338,41 @@ var locizify = (function() {
 	function getQsParameterByName$1(name, url) {
 		if (typeof window === "undefined") return null;
 		if (!url) url = window.location.href.toLowerCase();
-		name = name.replace(/[\[\]]/g, "\\$&");
+		name = name.toLowerCase().replace(/[\[\]]/g, "\\$&");
 		var results = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)").exec(url);
 		if (!results) return null;
 		if (!results[2]) return "";
 		return decodeURIComponent(results[2].replace(/\+/g, " "));
+	}
+	function isInContextRequested() {
+		var qsProp = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "incontext";
+		if (typeof window === "undefined") return false;
+		var qs = getQsParameterByName$1(qsProp);
+		var storageKey = "locize-".concat(qsProp);
+		try {
+			if (qs === "true") window.sessionStorage.setItem(storageKey, "true");
+			if (qs === "false") {
+				window.sessionStorage.removeItem(storageKey);
+				rememberMinimized(false);
+			}
+			return qs === "true" || window.sessionStorage.getItem(storageKey) === "true";
+		} catch (e) {
+			return qs === "true";
+		}
+	}
+	var minimizedKey = "locize-incontext-minimized";
+	function rememberMinimized(minimized) {
+		try {
+			if (minimized) window.sessionStorage.setItem(minimizedKey, "true");
+			else window.sessionStorage.removeItem(minimizedKey);
+		} catch (e) {}
+	}
+	function wasMinimized() {
+		try {
+			return window.sessionStorage.getItem(minimizedKey) === "true";
+		} catch (e) {
+			return false;
+		}
 	}
 	var isDebug = function() {
 		if (typeof window === "undefined") return false;
@@ -8059,17 +8089,24 @@ var locizify = (function() {
 		header.classList.add("i18next-editor-popup-header");
 		header.style = "\n  padding: 2px 10px;\n  cursor: move;\n  z-index: 10;\n  backdrop-filter: blur(3px);\n  background-color: rgba(200, 200, 200, 0.5);\n  background: linear-gradient(0deg, rgba(200, 200, 200, 0.6), rgba(200, 200, 200, 0.5));\n  color: #fff;\n  text-align: right;\n  ";
 		popup.appendChild(header);
-		header.appendChild(Minimize(popup, function() {
+		var minimize = Minimize(popup, function() {
+			rememberMinimized(true);
 			var ribbon = Ribbon(popup, function() {
+				rememberMinimized(false);
+				popup.ribbon = null;
+				popup.style.setProperty("--i18next-editor-popup-position-top", popup.style.top);
+				popup.style.setProperty("--i18next-editor-popup-position-left", popup.style.left);
 				popup.style.animation = "i18next-editor-animate-top 1s";
 				if (api.editingEnabled !== false) startMouseTracking();
 				setTimeout(function() {
-					document.body.removeChild(ribbon);
+					ribbon.remove();
 				}, 1e3);
 			}, opt.ribbonPosition);
-			document.body.appendChild(ribbon);
+			popup.ribbon = ribbon;
+			document.documentElement.append(ribbon);
 			stopMouseTracking();
-		}));
+		});
+		header.appendChild(minimize);
 		var iframe = document.createElement("iframe");
 		iframe.setAttribute("id", "i18next-editor-iframe");
 		iframe.setAttribute("title", "Locize editor");
@@ -8083,6 +8120,10 @@ var locizify = (function() {
 		overlay.setAttribute("data-i18next-editor-element", "true");
 		overlay.style = "\n  display: none;\n  position: absolute;\n  top: 32px;\n  z-index: 101;\n  width: 100%;\n  height: calc(100% - 32px);\n  background-color: rgba(200, 200, 200, 0.5);\n  background: linear-gradient(0deg, rgba(240, 240, 240, 0.6), rgba(255, 255, 255, 0.5));\n  backdrop-filter: blur(2px);\n";
 		popup.appendChild(overlay);
+		if (wasMinimized()) {
+			minimize.onclick();
+			popup.style.animation = "i18next-editor-animate-bottom 0s forwards";
+		}
 		return popup;
 	}
 	//#endregion
@@ -10056,7 +10097,7 @@ var locizify = (function() {
 			qsProp: "incontext"
 		};
 		if (typeof document === "undefined") return;
-		var showInContext = opt.show || getQsParameterByName$1(opt.qsProp || "incontext") === "true";
+		var showInContext = opt.show || isInContextRequested(opt.qsProp || "incontext");
 		var scriptEle = document.getElementById("locize");
 		var config = {};
 		[
@@ -10117,13 +10158,15 @@ var locizify = (function() {
 					var WATCH_DURATION_MS = 1e4;
 					var reattachments = 0;
 					var watcher = new MutationObserver(function() {
-						if (document.getElementById("i18next-editor-popup")) return;
+						var ribbonGone = popupEl.ribbon && !popupEl.ribbon.isConnected;
+						if (document.getElementById("i18next-editor-popup") && !ribbonGone) return;
 						if (reattachments >= MAX_REATTACHMENTS) {
 							watcher.disconnect();
 							return;
 						}
 						reattachments++;
-						document.documentElement.append(popupEl);
+						if (!document.getElementById("i18next-editor-popup")) document.documentElement.append(popupEl);
+						if (ribbonGone) document.documentElement.append(popupEl.ribbon);
 					});
 					watcher.observe(document.documentElement, {
 						childList: true,
@@ -10272,7 +10315,7 @@ var locizify = (function() {
 				var options = i18n.options;
 				i18next$1 = i18n;
 				var impl = getImplementation(i18n);
-				var showInContext = opt.show || getQsParameterByName$1(opt.qsProp) === "true";
+				var showInContext = opt.show || isInContextRequested(opt.qsProp);
 				if (isInIframe || showInContext) configurePostProcessor(i18next$1, options);
 				start(impl, opt);
 			}

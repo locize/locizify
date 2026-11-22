@@ -495,7 +495,7 @@ locizify.forceRerender();
 
 ## access to locize script (locize InContext editor)
 
-Pass `?incontext=true` in your url to show the locize InContext editor.
+Pass `?incontext=true` in your url to show the locize InContext editor. It then stays on in that browser tab, also on the pages a link leads to, and a minimized editor stays minimized; `?incontext=false` switches it off again.
 
 If your team signs in to locize through SAML SSO, pass your SSO identifier (the `<id>` of your `https://www.locize.app/login/<id>` link). When the editor finds no locize session, its sign-in then goes straight to your identity provider instead of asking for the email first:
 

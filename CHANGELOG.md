@@ -1,3 +1,7 @@
+### 11.1.0
+
+- feat: update locize to 4.6.0: the InContext editor stays open when you follow a link on your site. `?incontext=true` is remembered for the browser tab, so the next page in the same tab opens the editor again, and a minimized editor stays minimized; `?incontext=false` switches it off. Before, every link loaded a page without the parameter and the editor was gone.
+
 ### 11.0.2
 
 - fix: uses i18nextify 6.0.1, which bundles i18next 27.2.3. A value passed on through the options of a nested translation (`$t(key, { "name": "{{name}}" })`) is now escaped once instead of twice, so `Tom & Jerry` no longer turns into `Tom &amp;amp; Jerry`. i18nextify 6.0.1 also brings i18next-browser-languagedetector 8.3.1 and i18next-http-backend 4.1.0.
