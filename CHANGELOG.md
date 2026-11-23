@@ -1,3 +1,7 @@
+### 11.1.1
+
+- fix: update locize to 4.7.1: with `fallbackLng` as an object with a string under `default`, such as `fallbackLng: { default: 'en' }`, the InContext editor took the whole object as the source language instead of `'en'`, so the source language was listed among the target languages, "Add project" in the InContext view could not use it, and the source text of the keys shown was looked up under `[object Object]`.
+
 ### 11.1.0
 
 - feat: update locize to 4.6.0: the InContext editor stays open when you follow a link on your site. `?incontext=true` is remembered for the browser tab, so the next page in the same tab opens the editor again, and a minimized editor stays minimized; `?incontext=false` switches it off. Before, every link loaded a page without the parameter and the editor was gone.
