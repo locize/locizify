@@ -1,3 +1,10 @@
+### 11.2.0
+
+- feat: update locize to 4.8.0: every translation in an element is its own key in the InContext editor. Several translations in one element, or joined into one text node, could only be picked one at a time (the last one); now each shows in the ribbon, and a live edit replaces only the edited translation instead of the element's whole text, so a link or a second translation next to it stays. A translation followed by plain text in its text node is found, and attribute translations (`title`, `placeholder`, `alt`) show on the page while editing. The invisible markers in edit mode are about a fifth as long (i18next-subliminal 2.0) and allow no line break.
+- fix: update i18next-locize-backend to 10.2.0: missing keys are saved one request at a time per namespace instead of all pages at once, a 429, a 5xx or no answer is tried again, and what still fails is logged as a warning instead of being dropped silently. A write answered 404 no longer counts as saved.
+- fix: uses i18nextify 6.0.2, which bundles i18next 27.2.9 (a language code in other casing, like `?lng=EN`, matches `en-US` in `supportedLngs` again, and `dir()` returns `rtl` for `AR`) and i18next-http-backend 4.1.2.
+- chore: CI on Node 22, 24 and 26.
+
 ### 11.1.1
 
 - fix: update locize to 4.7.1: with `fallbackLng` as an object with a string under `default`, such as `fallbackLng: { default: 'en' }`, the InContext editor took the whole object as the source language instead of `'en'`, so the source language was listed among the target languages, "Add project" in the InContext view could not use it, and the source text of the keys shown was looked up under `[object Object]`.

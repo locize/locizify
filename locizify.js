@@ -52,7 +52,7 @@ var locizify = (function() {
 	};
 	const lastOfPathSeparatorRegExp = /###/g;
 	const cleanKey = (key) => key && key.includes("###") ? key.replace(lastOfPathSeparatorRegExp, ".") : key;
-	const canNotTraverseDeeper = (object) => !object || isString(object);
+	const canNotTraverseDeeper = (object) => !object || typeof object !== "object" && typeof object !== "function";
 	const getLastOfPath$2 = (object, path, Empty) => {
 		const stack = !isString(path) ? path : path.split(".");
 		let stackIndex = 0;
@@ -72,7 +72,7 @@ var locizify = (function() {
 	};
 	const setPath$2 = (object, path, newValue) => {
 		const { obj, k } = getLastOfPath$2(object, path, Object);
-		if (obj !== void 0 || path.length === 1) {
+		if (obj !== void 0 && !(Array.isArray(obj) && k === "length") || path.length === 1) {
 			obj[k] = newValue;
 			return;
 		}
@@ -425,6 +425,7 @@ var locizify = (function() {
 		}
 		return path.join(keySeparator);
 	}
+	const isZeroCount = (count) => count === 0 || typeof count === "bigint" && !count;
 	const shouldHandleAsObject = (res) => !isString(res) && typeof res !== "boolean" && typeof res !== "number";
 	var Translator = class Translator extends EventEmitter$1 {
 		constructor(services, options = {}) {
@@ -538,9 +539,11 @@ var locizify = (function() {
 			const hasDefaultValue = Translator.hasDefaultValue(opt);
 			const defaultValueSuffix = needsPluralHandling ? this.pluralResolver.getSuffix(lng, opt.count, opt) : "";
 			const defaultValueSuffixOrdinalFallback = opt.ordinal && needsPluralHandling ? this.pluralResolver.getSuffix(lng, opt.count, { ordinal: false }) : "";
-			const needsZeroSuffixLookup = needsPluralHandling && !opt.ordinal && opt.count === 0;
+			const needsZeroSuffixLookup = needsPluralHandling && !opt.ordinal && isZeroCount(opt.count);
 			const sep = this.options.pluralSeparator;
-			const defaultValue = needsZeroSuffixLookup && opt[`defaultValue${sep}zero`] || opt[`defaultValue${defaultValueSuffix}`] || opt[`defaultValue${defaultValueSuffixOrdinalFallback}`] || (opt.defaultValue ?? (needsPluralHandling ? opt[`defaultValue${opt.ordinal ? `${sep}ordinal${sep}` : sep}other`] : void 0));
+			const otherDefaultValue = opt.defaultValue ?? (needsPluralHandling ? opt[`defaultValue${opt.ordinal ? `${sep}ordinal${sep}` : sep}other`] : void 0);
+			const countDefaultValue = opt[`defaultValue${defaultValueSuffix}`] ?? opt[`defaultValue${defaultValueSuffixOrdinalFallback}`] ?? otherDefaultValue;
+			const defaultValue = (needsZeroSuffixLookup ? opt[`defaultValue${sep}zero`] : void 0) ?? countDefaultValue;
 			let resForObjHndl = res;
 			if (handleAsObjectInI18nFormat && !res && hasDefaultValue) resForObjHndl = defaultValue;
 			const handleAsObject = shouldHandleAsObject(resForObjHndl);
@@ -621,9 +624,10 @@ var locizify = (function() {
 					};
 					if (this.options.saveMissing) if (this.options.saveMissingPlurals && needsPluralHandling) lngs.forEach((language) => {
 						const suffixes = this.pluralResolver.getSuffixes(language, opt);
-						if (needsZeroSuffixLookup && opt[`defaultValue${this.options.pluralSeparator}zero`] && !suffixes.includes(`${this.options.pluralSeparator}zero`)) suffixes.push(`${this.options.pluralSeparator}zero`);
+						const zeroDefaultValue = opt[`defaultValue${sep}zero`];
+						if (needsZeroSuffixLookup && zeroDefaultValue !== void 0 && zeroDefaultValue !== null && !suffixes.includes(`${sep}zero`)) suffixes.push(`${sep}zero`);
 						suffixes.forEach((suffix) => {
-							send([language], key + suffix, opt[`defaultValue${suffix}`] || defaultValue);
+							send([language], key + suffix, opt[`defaultValue${suffix}`] ?? (suffix === defaultValueSuffix ? countDefaultValue : otherDefaultValue) ?? defaultValue);
 						});
 					});
 					else send(lngs, key, defaultValue);
@@ -719,7 +723,7 @@ var locizify = (function() {
 				let namespaces = extracted.namespaces;
 				if (this.options.fallbackNS) namespaces = namespaces.concat(this.options.fallbackNS);
 				const needsPluralHandling = opt.count !== void 0 && !isString(opt.count);
-				const needsZeroSuffixLookup = needsPluralHandling && !opt.ordinal && opt.count === 0;
+				const needsZeroSuffixLookup = needsPluralHandling && !opt.ordinal && isZeroCount(opt.count);
 				const needsContextHandling = opt.context !== void 0 && (isString(opt.context) || typeof opt.context === "number") && opt.context !== "";
 				const codes = opt.lngs ? opt.lngs : this.languageUtils.toResolveHierarchy(opt.lng || this.language, opt.fallbackLng);
 				namespaces.forEach((ns) => {
@@ -847,7 +851,8 @@ var locizify = (function() {
 		}
 		getLanguagePartFromCode(code) {
 			code = getCleanedCode(code);
-			if (!code || !code.includes("-")) return code;
+			if (!code) return code;
+			if (!code.includes("-")) return this.formatLanguageCode(code);
 			const p = code.split("-");
 			return this.formatLanguageCode(p[0]);
 		}
@@ -1025,7 +1030,10 @@ var locizify = (function() {
 		}
 		getSuffix(code, count, options = {}) {
 			const rule = this.getRule(code, options);
-			if (rule) return `${this.options.prepend}${options.ordinal ? `ordinal${this.options.prepend}` : ""}${rule.select(count)}`;
+			if (rule) {
+				const n = typeof count === "bigint" ? Number(count) : count;
+				return `${this.options.prepend}${options.ordinal ? `ordinal${this.options.prepend}` : ""}${rule.select(n)}`;
+			}
 			this.logger.warn(`no plural rule found for: ${code}`);
 			return this.getSuffix("dev", count, options);
 		}
@@ -2163,7 +2171,7 @@ var locizify = (function() {
 			];
 			const languageUtils = this.services?.languageUtils || new LanguageUtil(get$2());
 			if (lng.toLowerCase().indexOf("-latn") > 1) return "ltr";
-			return rtlLngs.includes(languageUtils.getLanguagePartFromCode(lng)) || lng.toLowerCase().indexOf("-arab") > 1 ? "rtl" : "ltr";
+			return rtlLngs.includes(languageUtils.getLanguagePartFromCode(lng)?.toLowerCase()) || lng.toLowerCase().indexOf("-arab") > 1 ? "rtl" : "ltr";
 		}
 		static createInstance(options = {}, callback) {
 			const instance = new I18n(options, callback);
@@ -2494,6 +2502,15 @@ var locizify = (function() {
 			}
 		};
 	};
+	function startReloadTimer$1(ref, ms) {
+		const interval = setInterval(() => {
+			const backend = ref.deref();
+			if (backend) backend.reload();
+			else clearInterval(interval);
+		}, ms);
+		if (typeof interval === "object" && typeof interval.unref === "function") interval.unref();
+		return interval;
+	}
 	var Backend = class {
 		constructor(services, options = {}, allOptions = {}) {
 			this.services = services;
@@ -2510,10 +2527,9 @@ var locizify = (function() {
 				...options
 			};
 			this.allOptions = allOptions;
-			if (this.services && this.options.reloadInterval) {
-				const timer = setInterval(() => this.reload(), this.options.reloadInterval);
-				if (typeof timer === "object" && typeof timer.unref === "function") timer.unref();
-			}
+			if (this.interval) clearInterval(this.interval);
+			this.interval = void 0;
+			if (this.services && this.options.reloadInterval) this.interval = startReloadTimer$1(typeof WeakRef === "function" ? new WeakRef(this) : { deref: () => this }, this.options.reloadInterval);
 		}
 		readMulti(languages, namespaces, callback) {
 			this._readAny(languages, languages, namespaces, namespaces, callback);
@@ -6303,7 +6319,7 @@ var locizify = (function() {
 		if (payload || options.setContentTypeJSON) headers["Content-Type"] = "application/json";
 		const resolver = (response) => {
 			let resourceNotExisting = response.headers && response.headers.get("x-cache") === "Error from cloudfront";
-			if (options.cdnType === "standard" && response.status === 404 && (!response.headers || !response.headers.get("x-cache"))) {
+			if (options.cdnType === "standard" && !payload && response.status === 404 && (!response.headers || !response.headers.get("x-cache"))) {
 				resourceNotExisting = true;
 				return callback(null, {
 					status: 200,
@@ -6313,7 +6329,8 @@ var locizify = (function() {
 			}
 			if (!response.ok) return callback(response.statusText || "Error", {
 				status: response.status,
-				resourceNotExisting
+				resourceNotExisting,
+				retryAfter: response.headers && response.headers.get("retry-after")
 			});
 			const cacheControl = response.headers && response.headers.get("cache-control");
 			response.text().then((data) => {
@@ -6336,7 +6353,13 @@ var locizify = (function() {
 			headers
 		}).then(resolver).catch(callback);
 	};
-	const requestWithXmlHttpRequest = (options, url, payload, callback) => {
+	const requestWithXmlHttpRequest = (options, url, payload, cb) => {
+		let completed = false;
+		const callback = (err, res) => {
+			if (completed) return;
+			completed = true;
+			cb(err, res);
+		};
 		try {
 			const x = XmlHttpRequestApi ? new XmlHttpRequestApi() : new ActiveXObjectApi("MSXML2.XMLHTTP.3.0");
 			x.open(payload ? "POST" : "GET", url, 1);
@@ -6345,7 +6368,7 @@ var locizify = (function() {
 			if (payload || options.setContentTypeJSON) x.setRequestHeader("Content-Type", "application/json");
 			x.onreadystatechange = () => {
 				let resourceNotExisting = x.getResponseHeader("x-cache") === "Error from cloudfront";
-				if (options.cdnType === "standard" && x.status === 404 && !x.getResponseHeader("x-cache")) {
+				if (options.cdnType === "standard" && !payload && x.status === 404 && !x.getResponseHeader("x-cache")) {
 					resourceNotExisting = true;
 					return x.readyState > 3 && callback(null, {
 						status: 200,
@@ -6358,12 +6381,13 @@ var locizify = (function() {
 					status: x.status,
 					data: x.responseText,
 					resourceNotExisting,
-					cacheControl
+					cacheControl,
+					retryAfter: x.getResponseHeader("Retry-After")
 				});
 			};
 			x.send(JSON.stringify(payload));
 		} catch (e) {
-			console && console.log(e);
+			callback(e);
 		}
 	};
 	const request = (options, url, payload, callback) => {
@@ -6505,6 +6529,19 @@ var locizify = (function() {
 		const max = base + variance;
 		return Math.floor(min + Math.random() * (max - min));
 	}
+	function startReloadTimer(ref, ms) {
+		const interval = setInterval(() => {
+			const backend = ref.deref();
+			if (backend) backend.reload();
+			else clearInterval(interval);
+		}, ms);
+		if (typeof interval === "object" && typeof interval.unref === "function") interval.unref();
+		return interval;
+	}
+	function warnAndCallBack(backend, callback, message) {
+		(backend.services && backend.services.logger || console).warn(message);
+		if (typeof callback === "function") callback(new Error(message));
+	}
 	var I18NextLocizeBackend = class {
 		constructor(services, options = {}, allOptions = {}, callback) {
 			this.services = services;
@@ -6551,10 +6588,7 @@ var locizify = (function() {
 			this.queuedWrites = { pending: {} };
 			this.debouncedProcess = debounce$1(this.process, this.options.writeDebounce);
 			if (this.interval) clearInterval(this.interval);
-			if (this.options.reloadInterval && this.options.projectId) {
-				this.interval = setInterval(() => this.reload(), this.options.reloadInterval);
-				if (typeof this.interval === "object" && typeof this.interval.unref === "function") this.interval.unref();
-			}
+			if (this.options.reloadInterval && this.options.projectId) this.interval = startReloadTimer(typeof WeakRef === "function" ? new WeakRef(this) : { deref: () => this }, this.options.reloadInterval);
 		}
 		reload() {
 			const { backendConnector, languageUtils, logger, utils } = this.services || { logger: console };
@@ -6860,10 +6894,7 @@ var locizify = (function() {
 				projectId: this.options.projectId,
 				version: this.options.version
 			});
-			if (missingUrl == null || updatesUrl == null) {
-				if (typeof callback === "function") callback(/* @__PURE__ */ new Error("i18next-locize-backend: unsafe lng/ns/projectId/version — refusing to persist missing keys for lng=" + sanitizeLogValue(String(lng)) + " ns=" + sanitizeLogValue(String(namespace))));
-				return;
-			}
+			if (missingUrl == null || updatesUrl == null) return warnAndCallBack(this, callback, "i18next-locize-backend: unsafe lng/ns/projectId/version — refusing to persist missing keys for lng=" + sanitizeLogValue(String(lng)) + " ns=" + sanitizeLogValue(String(namespace)));
 			let hasMissing = false;
 			let hasUpdates = false;
 			const payloadMissing = {};
@@ -6881,24 +6912,34 @@ var locizify = (function() {
 					payloadMissing[item.key] = value;
 				}
 			});
-			let todo = 0;
-			if (hasMissing) todo++;
-			if (hasUpdates) todo++;
-			const doneOne = (err) => {
-				todo--;
-				if (!todo) callback(err);
+			const requests = [];
+			if (hasMissing) requests.push([missingUrl, payloadMissing]);
+			if (hasUpdates) requests.push([updatesUrl, payloadUpdate]);
+			let firstError;
+			const next = (err) => {
+				if (err && !firstError) firstError = err;
+				const [url, payload] = requests.shift() || [];
+				if (!url) return callback(firstError);
+				this.post(url, payload, next);
 			};
-			if (!todo) doneOne();
-			if (hasMissing) if (!this.options.request) request(defaults$1({ authorize: true }, this.options), missingUrl, payloadMissing, doneOne);
-			else {
-				const info = getCustomRequestInfo(missingUrl, defaults$1({ authorize: true }, this.options), payloadMissing);
-				handleCustomRequest(this.options, info, doneOne);
-			}
-			if (hasUpdates) if (!this.options.request) request(defaults$1({ authorize: true }, this.options), updatesUrl, payloadUpdate, doneOne);
-			else {
-				const info = getCustomRequestInfo(updatesUrl, defaults$1({ authorize: true }, this.options), payloadUpdate);
-				handleCustomRequest(this.options, info, doneOne);
-			}
+			next();
+		}
+		post(url, payload, callback, attempt = 1) {
+			const done = (err, res) => {
+				const status = res && res.status;
+				const noAnswer = !status && (!!err || status === 0);
+				const failed = noAnswer || status >= 400 && status !== 412;
+				if ((noAnswer || status === 429 || status >= 500) && attempt < 3) {
+					const retryAfter = Math.min(parseInt(res && res.retryAfter, 10) || 0, 60);
+					const delay = retryAfter > 0 ? retryAfter * 1e3 : status === 429 ? 6e3 : attempt * 1e3;
+					return setTimeout(() => this.post(url, payload, callback, attempt + 1), delay);
+				}
+				if (!failed) return callback();
+				warnAndCallBack(this, callback, `i18next-locize-backend: saving keys to ${sanitizeLogValue(redactUrlCredentials(url))} failed: ${status || sanitizeLogValue(String(err && err.message || err))}`);
+			};
+			const options = defaults$1({ authorize: true }, this.options);
+			if (!this.options.request) return request(options, url, payload, done);
+			handleCustomRequest(this.options, getCustomRequestInfo(url, options, payload), done);
 		}
 		write(lng, namespace) {
 			if (getPath(this.queuedWrites, [
@@ -6916,30 +6957,24 @@ var locizify = (function() {
 					lng,
 					namespace
 				], true);
-				const namespaceSaved = () => {
+				const namespaceSaved = (err) => {
 					setPath(this.queuedWrites, [
 						"locks",
 						lng,
 						namespace
 					], false);
-					clbs.forEach((clb) => clb());
-					if (this.options.onSaved) this.options.onSaved(lng, namespace);
+					clbs.forEach((clb) => clb(err));
+					if (this.options.onSaved && !err) this.options.onSaved(lng, namespace);
 					this.debouncedProcess(lng, namespace);
 				};
-				const amountOfPages = missings.length / pageSize;
-				let pagesDone = 0;
-				let page = missings.splice(0, pageSize);
-				this.writePage(lng, namespace, page, () => {
-					pagesDone++;
-					if (pagesDone >= amountOfPages) namespaceSaved();
-				});
-				while (page.length === pageSize) {
-					page = missings.splice(0, pageSize);
-					if (page.length) this.writePage(lng, namespace, page, () => {
-						pagesDone++;
-						if (pagesDone >= amountOfPages) namespaceSaved();
-					});
-				}
+				let firstError;
+				const writeNextPage = (err) => {
+					if (err && !firstError) firstError = err;
+					const page = missings.splice(0, pageSize);
+					if (!page.length) return namespaceSaved(firstError);
+					this.writePage(lng, namespace, page, writeNextPage);
+				};
+				writeNextPage();
 			}
 		}
 		process() {
@@ -6962,6 +6997,42 @@ var locizify = (function() {
 	};
 	I18NextLocizeBackend.type = "backend";
 	I18NextLocizeBackend.callbackApi = true;
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/arrayLikeToArray.js
+	function _arrayLikeToArray$1(r, a) {
+		(null == a || a > r.length) && (a = r.length);
+		for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
+		return n;
+	}
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/arrayWithoutHoles.js
+	function _arrayWithoutHoles(r) {
+		if (Array.isArray(r)) return _arrayLikeToArray$1(r);
+	}
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/iterableToArray.js
+	function _iterableToArray(r) {
+		if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r);
+	}
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/unsupportedIterableToArray.js
+	function _unsupportedIterableToArray$1(r, a) {
+		if (r) {
+			if ("string" == typeof r) return _arrayLikeToArray$1(r, a);
+			var t = {}.toString.call(r).slice(8, -1);
+			return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0;
+		}
+	}
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/nonIterableSpread.js
+	function _nonIterableSpread() {
+		throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+	}
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/toConsumableArray.js
+	function _toConsumableArray(r) {
+		return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray$1(r) || _nonIterableSpread();
+	}
 	//#endregion
 	//#region node_modules/@babel/runtime/helpers/esm/typeof.js
 	function _typeof(o) {
@@ -7001,63 +7072,187 @@ var locizify = (function() {
 		}) : e[r] = t, e;
 	}
 	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/arrayWithHoles.js
+	function _arrayWithHoles(r) {
+		if (Array.isArray(r)) return r;
+	}
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/iterableToArrayLimit.js
+	function _iterableToArrayLimit(r, l) {
+		var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
+		if (null != t) {
+			var e, n, i, u, a = [], f = !0, o = !1;
+			try {
+				if (i = (t = t.call(r)).next, 0 === l) {
+					if (Object(t) !== t) return;
+					f = !1;
+				} else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0);
+			} catch (r) {
+				o = !0, n = r;
+			} finally {
+				try {
+					if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return;
+				} finally {
+					if (o) throw n;
+				}
+			}
+			return a;
+		}
+	}
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/nonIterableRest.js
+	function _nonIterableRest() {
+		throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+	}
+	//#endregion
+	//#region node_modules/@babel/runtime/helpers/esm/slicedToArray.js
+	function _slicedToArray(r, e) {
+		return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray$1(r, e) || _nonIterableRest();
+	}
+	//#endregion
 	//#region node_modules/i18next-subliminal/dist/esm/encoder.js
-	var INVISIBLE_CHARACTERS = typeof window !== "undefined" ? ["‌", "‍"] : ["​", "‌"];
-	var INVISIBLE_REGEX = RegExp("([".concat(INVISIBLE_CHARACTERS.join(""), "]{9})+"), "gu");
-	var TEMPLATE_MINIMUM_LENGTH = 9;
-	var invisibleStartMarker = "subliminal:start";
-	var toBytes = function toBytes(text) {
-		return Array.from(new TextEncoder().encode(text));
+	function _createForOfIteratorHelper(r, e) {
+		var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
+		if (!t) {
+			if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e) {
+				t && (r = t);
+				var _n = 0, F = function F() {};
+				return {
+					s: F,
+					n: function n() {
+						return _n >= r.length ? { done: true } : {
+							done: false,
+							value: r[_n++]
+						};
+					},
+					e: function e(r) {
+						throw r;
+					},
+					f: F
+				};
+			}
+			throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+		}
+		var o, a = true, u = false;
+		return {
+			s: function s() {
+				t = t.call(r);
+			},
+			n: function n() {
+				var r = t.next();
+				return a = r.done, r;
+			},
+			e: function e(r) {
+				u = true, o = r;
+			},
+			f: function f() {
+				try {
+					a || null == t.return || t.return();
+				} finally {
+					if (u) throw o;
+				}
+			}
+		};
+	}
+	function _unsupportedIterableToArray(r, a) {
+		if (r) {
+			if ("string" == typeof r) return _arrayLikeToArray(r, a);
+			var t = {}.toString.call(r).slice(8, -1);
+			return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
+		}
+	}
+	function _arrayLikeToArray(r, a) {
+		(null == a || a > r.length) && (a = r.length);
+		for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
+		return n;
+	}
+	var FRAME = "⁠";
+	var DIGITS = [
+		"⁡",
+		"⁢",
+		"⁣",
+		"⁤"
+	];
+	var START_MARKER = FRAME + DIGITS[0] + FRAME;
+	var MARKER_SOURCE = "⁠([⁡-⁤]+)⁠";
+	var END_MARKER_AT_END = /\u2060(?:[\u2061-\u2064]{4})+\u2060$/;
+	var MARKERS = new RegExp(MARKER_SOURCE, "g");
+	var SOURCE_CODES = {
+		translation: "t",
+		default: "d",
+		key: "k"
 	};
-	var fromBytes = function fromBytes(bytes) {
+	var SOURCE_NAMES = {
+		t: "translation",
+		d: "default",
+		k: "key"
+	};
+	var has = function has(map, name) {
+		return Object.prototype.hasOwnProperty.call(map, name);
+	};
+	var stringOrUndefined = function stringOrUndefined(value) {
+		return typeof value === "string" && value || void 0;
+	};
+	var encodeMeta = function encodeMeta() {
+		var _ref = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {}, key = _ref.key, ns = _ref.ns, lng = _ref.lng, source = _ref.source;
+		var bytes = new TextEncoder().encode(JSON.stringify([
+			key,
+			ns,
+			lng,
+			has(SOURCE_CODES, source) ? SOURCE_CODES[source] : source
+		]));
+		var digits = "";
+		var _iterator = _createForOfIteratorHelper(bytes), _step;
+		try {
+			for (_iterator.s(); !(_step = _iterator.n()).done;) {
+				var byte = _step.value;
+				digits += DIGITS[byte >> 6] + DIGITS[byte >> 4 & 3] + DIGITS[byte >> 2 & 3] + DIGITS[byte & 3];
+			}
+		} catch (err) {
+			_iterator.e(err);
+		} finally {
+			_iterator.f();
+		}
+		return FRAME + digits + FRAME;
+	};
+	var decodeMeta = function decodeMeta(digits) {
+		if (digits.length % 4) return;
+		var bytes = new Uint8Array(digits.length / 4);
+		for (var i = 0; i < digits.length; i++) bytes[i >> 2] = bytes[i >> 2] * 4 + digits.charCodeAt(i) - 8289;
+		var parsed;
+		try {
+			parsed = JSON.parse(new TextDecoder().decode(bytes));
+		} catch (e) {
+			return;
+		}
+		if (!Array.isArray(parsed)) return;
+		var _parsed2 = _slicedToArray(parsed, 4), key = _parsed2[0], ns = _parsed2[1], lng = _parsed2[2], source = _parsed2[3];
+		return {
+			key: stringOrUndefined(key),
+			ns: stringOrUndefined(ns),
+			lng: stringOrUndefined(lng),
+			source: has(SOURCE_NAMES, source) ? SOURCE_NAMES[source] : stringOrUndefined(source)
+		};
+	};
+	var LEGACY_CHARACTERS = ["‌", "‍"];
+	var LEGACY_RUNS = /(?:[\u200C\u200D]{9})+/g;
+	var LEGACY_START_MARKER = Array.from(new TextEncoder().encode("subliminal:start")).map(function(byte) {
+		return byte.toString(2).padStart(8, "0") + "0";
+	}).join("").replace(/[01]/g, function(bit) {
+		return LEGACY_CHARACTERS[bit];
+	});
+	var decodeLegacy = function decodeLegacy(run) {
+		var bytes = [];
+		for (var i = 0; i + 9 <= run.length; i += 9) bytes.push(parseInt(Array.from(run.slice(i, i + 8), function(c) {
+			return LEGACY_CHARACTERS.indexOf(c);
+		}).join(""), 2));
 		return new TextDecoder().decode(new Uint8Array(bytes));
 	};
-	var padToWholeBytes = function padToWholeBytes(binary) {
-		var needsToAdd = 8 - binary.length;
-		return "0".repeat(needsToAdd) + binary;
-	};
-	var encodeMessage = function encodeMessage(text) {
-		var binary = toBytes(text).map(Number).map(function(byte) {
-			return padToWholeBytes(byte.toString(2)) + "0";
-		}).join("");
-		return Array.from(binary).map(function(b) {
-			return INVISIBLE_CHARACTERS[Number(b)];
-		}).join("");
-	};
-	var encodedInvisibleStartMarker = encodeMessage(invisibleStartMarker);
-	var decodeMessage = function decodeMessage(message) {
-		var textBytes = Array.from(message).map(function(character) {
-			return INVISIBLE_CHARACTERS.indexOf(character);
-		}).map(String).join("").match(/(.{9})/g);
-		return fromBytes(Uint8Array.from((textBytes === null || textBytes === void 0 ? void 0 : textBytes.map(function(byte) {
-			return parseInt(byte.slice(0, 8), 2);
-		})) || []));
-	};
-	var decodeFromText = function decodeFromText(text) {
-		var _text$match;
-		var invisibleMessages = (_text$match = text.match(INVISIBLE_REGEX)) === null || _text$match === void 0 ? void 0 : _text$match.filter(function(m) {
-			return m.length > TEMPLATE_MINIMUM_LENGTH - 1;
-		});
-		if (!invisibleMessages || invisibleMessages.length === 0) return;
-		return decodeMessage(invisibleMessages[invisibleMessages.length - 1]);
-	};
-	var removeInvisibles = function removeInvisibles(text) {
-		return text.replace(INVISIBLE_REGEX, "");
-	};
-	var encodeValue = function encodeValue(data) {
-		if (Object.keys(data).length === 0) return data;
-		var value = {
-			k: data.key,
-			n: data.ns,
-			l: data.lng,
-			s: data.source
-		};
-		return JSON.stringify(value);
-	};
-	var decodeValue = function decodeValue(value) {
-		if (!value || typeof value !== "string" || value.indexOf("{") !== 0) return;
+	var legacyMeta = function legacyMeta(text) {
+		var runs = text.match(LEGACY_RUNS);
+		if (!runs) return;
 		try {
-			var parsed = JSON.parse(value || "{}");
+			var parsed = JSON.parse(decodeLegacy(runs[runs.length - 1]));
 			return {
 				key: parsed.k,
 				ns: parsed.n,
@@ -7068,24 +7263,70 @@ var locizify = (function() {
 			return;
 		}
 	};
+	var containsLegacyMeta = function containsLegacyMeta(text) {
+		return text.length >= 27 && /[\u200C\u200D]{9}$/.test(text) && decodeLegacy(text.slice(-9)) === "}";
+	};
+	var removeInvisibles = function removeInvisibles(text) {
+		return text.replace(MARKERS, "").replace(LEGACY_RUNS, "");
+	};
 	function wrap(text) {
-		var invisibleMark = encodeMessage(encodeValue(arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {}));
-		return typeof text === "string" && text ? encodedInvisibleStartMarker + text + invisibleMark : text;
+		var invisibleMeta = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
+		return typeof text === "string" && text ? START_MARKER + text + encodeMeta(invisibleMeta) : text;
+	}
+	function unwrapAll(text) {
+		if (typeof text !== "string") return [];
+		var segments = [];
+		var starts = [];
+		var from = 0;
+		var markers = new RegExp(MARKER_SOURCE, "g");
+		var match;
+		while (match = markers.exec(text)) {
+			if (match[1].length === 1) {
+				starts.push(match.index);
+				continue;
+			}
+			var invisibleMeta = decodeMeta(match[1]);
+			if (!invisibleMeta) continue;
+			var start = starts.length ? starts.pop() : from;
+			var end = match.index + match[0].length;
+			segments.push({
+				text: removeInvisibles(text.slice(start, match.index)),
+				invisibleMeta,
+				start,
+				end
+			});
+			from = end;
+		}
+		if (!segments.length) {
+			var _invisibleMeta = legacyMeta(text);
+			if (_invisibleMeta) segments.push({
+				text: removeInvisibles(text),
+				invisibleMeta: _invisibleMeta,
+				start: 0,
+				end: text.length
+			});
+		}
+		return segments;
 	}
 	function unwrap(text) {
-		var decodedVal = decodeValue(decodeFromText(text));
+		if (typeof text !== "string") return {
+			text,
+			invisibleMeta: void 0
+		};
+		var segments = unwrapAll(text);
+		var last = segments[segments.length - 1];
 		return {
 			text: removeInvisibles(text),
-			invisibleMeta: decodedVal
+			invisibleMeta: last && last.invisibleMeta
 		};
 	}
 	function containsHiddenMeta(text) {
-		if (!text || text.length < 27) return false;
-		if (!INVISIBLE_REGEX.test(text)) return false;
-		return decodeMessage(text.substring(text.length - 9)) === "}";
+		if (!text || typeof text !== "string") return false;
+		return END_MARKER_AT_END.test(text) || containsLegacyMeta(text);
 	}
 	function containsHiddenStartMarker(text) {
-		return text.startsWith(encodedInvisibleStartMarker);
+		if (!text || typeof text !== "string") return false;
+		return text.startsWith(START_MARKER) || text.startsWith(LEGACY_START_MARKER);
 	}
 	//#endregion
 	//#region node_modules/i18next-subliminal/dist/esm/postProcessor.js
@@ -7116,10 +7357,10 @@ var locizify = (function() {
 		type: "postProcessor",
 		options: {},
 		setOptions: function setOptions(options) {
-			this.options = _objectSpread$7(_objectSpread$7({}, options), this.options);
+			this.options = _objectSpread$7(_objectSpread$7({}, this.options), options);
 		},
 		process: function process(value, keyIn, options, translator) {
-			var opt = this.options = _objectSpread$7(_objectSpread$7({}, options), this.options);
+			var opt = _objectSpread$7(_objectSpread$7({}, this.options), options);
 			var key, ns, lng, source;
 			if (options.i18nResolved) {
 				key = options.i18nResolved.exactUsedKey;
@@ -7134,7 +7375,7 @@ var locizify = (function() {
 				var _translator$extractFr = translator.extractFromKey(keyIn.join(keySeparator), options), extractedKey = _translator$extractFr.key, namespaces = _translator$extractFr.namespaces;
 				key = extractedKey;
 				ns = (_ref2 = (_namespaces$ = namespaces === null || namespaces === void 0 ? void 0 : namespaces[0]) !== null && _namespaces$ !== void 0 ? _namespaces$ : opt.ns) !== null && _ref2 !== void 0 ? _ref2 : translator === null || translator === void 0 || (_translator$options2 = translator.options) === null || _translator$options2 === void 0 ? void 0 : _translator$options2.defaultNS;
-				lng = options.lng || this.language;
+				lng = options.lng || (translator === null || translator === void 0 ? void 0 : translator.language);
 				if (key === value) source = "key";
 				else source = "translation";
 			}
@@ -7192,60 +7433,6 @@ var locizify = (function() {
 		document.head.appendChild(style);
 		return style.sheet;
 	}();
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/arrayWithHoles.js
-	function _arrayWithHoles(r) {
-		if (Array.isArray(r)) return r;
-	}
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/iterableToArrayLimit.js
-	function _iterableToArrayLimit(r, l) {
-		var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
-		if (null != t) {
-			var e, n, i, u, a = [], f = !0, o = !1;
-			try {
-				if (i = (t = t.call(r)).next, 0 === l) {
-					if (Object(t) !== t) return;
-					f = !1;
-				} else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0);
-			} catch (r) {
-				o = !0, n = r;
-			} finally {
-				try {
-					if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return;
-				} finally {
-					if (o) throw n;
-				}
-			}
-			return a;
-		}
-	}
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/arrayLikeToArray.js
-	function _arrayLikeToArray(r, a) {
-		(null == a || a > r.length) && (a = r.length);
-		for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
-		return n;
-	}
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/unsupportedIterableToArray.js
-	function _unsupportedIterableToArray(r, a) {
-		if (r) {
-			if ("string" == typeof r) return _arrayLikeToArray(r, a);
-			var t = {}.toString.call(r).slice(8, -1);
-			return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
-		}
-	}
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/nonIterableRest.js
-	function _nonIterableRest() {
-		throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-	}
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/slicedToArray.js
-	function _slicedToArray(r, e) {
-		return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest();
-	}
 	//#endregion
 	//#region node_modules/locize/dist/esm/utils.js
 	function debounce(func, wait, immediate) {
@@ -7729,10 +7916,18 @@ var locizify = (function() {
 	function setValueOnNode(meta, value) {
 		var item = store.get(meta.eleUniqueID);
 		if (!item || !item.keys[meta.textType]) return;
-		var txtWithHiddenMeta = item.subliminal ? wrap(value, item.subliminal) : value;
-		if (meta.textType === "text") item.node.textContent = txtWithHiddenMeta;
-		else if (meta.textType.indexOf("attr:") === 0) {
-			var attr = meta.textType.replace("attr:", "");
+		if (meta.qualifiedKey && item.keys[meta.textType].qualifiedKey !== meta.qualifiedKey) return;
+		var subliminal = item.subliminals && item.subliminals[meta.textType];
+		var txtWithHiddenMeta = subliminal ? wrap(value, subliminal) : value;
+		var textTarget = item.textTargets && item.textTargets[meta.textType];
+		if (textTarget) {
+			var text = textTarget.node.nodeValue || "";
+			var segment = unwrapAll(text)[textTarget.index];
+			if (segment) textTarget.node.nodeValue = text.slice(0, segment.start) + txtWithHiddenMeta + text.slice(segment.end);
+		} else if (meta.textType === "text") item.node.textContent = txtWithHiddenMeta;
+		else if (meta.textType !== "html") {
+			var attr = meta.textType;
+			if (!validAttributes.includes(attr)) return;
 			if (!isSafeAttributeWrite(attr, txtWithHiddenMeta)) return;
 			item.node.setAttribute(attr, txtWithHiddenMeta);
 		} else if (meta.textType === "html") {
@@ -7785,26 +7980,6 @@ var locizify = (function() {
 		}
 	}
 	api.addHandler("commitKey", handler$7);
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/arrayWithoutHoles.js
-	function _arrayWithoutHoles(r) {
-		if (Array.isArray(r)) return _arrayLikeToArray(r);
-	}
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/iterableToArray.js
-	function _iterableToArray(r) {
-		if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r);
-	}
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/nonIterableSpread.js
-	function _nonIterableSpread() {
-		throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-	}
-	//#endregion
-	//#region node_modules/@babel/runtime/helpers/esm/toConsumableArray.js
-	function _toConsumableArray(r) {
-		return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread();
-	}
 	//#endregion
 	//#region node_modules/locize/dist/esm/api/handleCommitKeys.js
 	function handler$6(payload) {
@@ -9557,18 +9732,32 @@ var locizify = (function() {
 			}
 		});
 	}
-	function save(id, subliminal, type, meta, node, children) {
+	function save(id, subliminal, type, meta, node, children, textTarget) {
 		if (!id || !type || !meta || !node) return;
 		if (!data[id]) data[id] = {
 			id,
-			node,
-			subliminal
+			node
 		};
-		if (subliminal) data[id].subliminal = subliminal;
+		if (subliminal) data[id].subliminals = _objectSpread$3(_objectSpread$3({}, data[id].subliminals), {}, _defineProperty({}, "".concat(type), subliminal));
+		if (textTarget) data[id].textTargets = _objectSpread$3(_objectSpread$3({}, data[id].textTargets), {}, _defineProperty({}, "".concat(type), textTarget));
 		data[id].keys = _objectSpread$3(_objectSpread$3({}, data[id].keys), {}, _defineProperty({}, "".concat(type), meta));
 		if (children) data[id].children = _objectSpread$3(_objectSpread$3({}, data[id].children), {}, _defineProperty({}, "".concat(type, "-").concat(children.map(function(c) {
 			return c.childIndex;
 		}).join(",")), children));
+	}
+	function trimTexts(id, count) {
+		var item = data[id];
+		if (!item || !item.textTargets) return;
+		Object.keys(item.textTargets).forEach(function(type) {
+			if ((type === "text" ? 1 : parseInt(type.slice(5), 10)) <= count) return;
+			delete item.textTargets[type];
+			if (item.subliminals) delete item.subliminals[type];
+			delete item.keys[type];
+		});
+		if (!Object.keys(item.keys).length) {
+			resetHighlight(item, item.node, item.keys, false);
+			delete data[id];
+		}
 	}
 	function get(id) {
 		return data[id];
@@ -9576,6 +9765,7 @@ var locizify = (function() {
 	var store = {
 		save,
 		clean,
+		trimTexts,
 		get,
 		data
 	};
@@ -9712,6 +9902,7 @@ var locizify = (function() {
 		if (ignoreElements.indexOf(node.nodeName) > -1) return;
 		var nodeI18nMeta = getI18nMetaFromNode(node);
 		var usedSubliminalForText = false;
+		var textCount = 0;
 		if (node.childNodes && !ignoreMergedEleUniqueIds.includes(node.uniqueID)) {
 			var merge = [];
 			node.childNodes.forEach(function(child, i) {
@@ -9726,41 +9917,47 @@ var locizify = (function() {
 				var txt = child.textContent;
 				if (containsOnlySpaces(txt)) return;
 				var trimmedTxt = txt.trim();
-				var hasHiddenMeta = containsHiddenMeta(trimmedTxt);
+				var segments = unwrapAll(txt);
 				var hasHiddenStartMarker = containsHiddenStartMarker(trimmedTxt);
-				if (hasHiddenMeta) usedSubliminalForText = true;
-				if (hasHiddenStartMarker && hasHiddenMeta) {
-					var meta = unwrap(trimmedTxt);
-					uninstrumentedStore.remove(node.uniqueID);
-					store.save(node.uniqueID, meta.invisibleMeta, "text", extractHiddenMeta(node.uniqueID, "text", meta), node);
-				} else if (hasHiddenMeta && !merge.length) {
-					var _meta = unwrap(trimmedTxt);
-					uninstrumentedStore.remove(node.uniqueID);
-					store.save(node.uniqueID, _meta.invisibleMeta, "text", extractHiddenMeta(node.uniqueID, "text", _meta), node);
-				} else if (hasHiddenStartMarker) merge.push({
-					childIndex: i,
-					child,
-					text: txt
+				var leading = txt.length - txt.trimStart().length;
+				var endsEarlier = segments.some(function(s) {
+					return !containsHiddenStartMarker(txt.slice(s.start).trimStart());
 				});
-				else if (merge.length && !hasHiddenMeta) merge.push({
-					childIndex: i,
-					child,
-					text: txt
+				var beginsSpanning = hasHiddenStartMarker && !segments.some(function(s) {
+					return s.start <= leading;
 				});
-				else if (merge.length && hasHiddenMeta) {
+				var closesMerge = merge.length > 0 && endsEarlier;
+				var isText = merge.length ? !endsEarlier && hasHiddenStartMarker && containsHiddenMeta(trimmedTxt) : segments.length > 0 && !beginsSpanning;
+				if (segments.length) usedSubliminalForText = true;
+				if (isText) {
+					uninstrumentedStore.remove(node.uniqueID);
+					segments.forEach(function(segment, index) {
+						textCount++;
+						var type = textCount === 1 ? "text" : "text#".concat(textCount);
+						store.save(node.uniqueID, segment.invisibleMeta, type, extractHiddenMeta(node.uniqueID, type, segment), node, void 0, {
+							node: child,
+							index
+						});
+					});
+				} else if (closesMerge) {
 					merge.push({
 						childIndex: i,
 						child,
 						text: txt
 					});
-					var _meta2 = unwrap(merge.reduce(function(mem, item) {
+					var meta = unwrap(merge.reduce(function(mem, item) {
 						return mem + item.text;
 					}, ""));
 					uninstrumentedStore.removeKey(node.uniqueID, "html");
-					store.save(node.uniqueID, _meta2.invisibleMeta, "html", extractHiddenMeta(node.uniqueID, "html", _meta2, merge), node, merge);
+					store.save(node.uniqueID, meta.invisibleMeta, "html", extractHiddenMeta(node.uniqueID, "html", meta, merge), node, merge);
 					merge = [];
-				}
+				} else if (beginsSpanning || merge.length) merge.push({
+					childIndex: i,
+					child,
+					text: txt
+				});
 			});
+			store.trimTexts(node.uniqueID, textCount);
 			if (!usedSubliminalForText) node.childNodes.forEach(function(child, i) {
 				if (merge.length && child.nodeName !== "#text") ignoreMergedEleUniqueIds.push(child.uniqueID);
 				var txt = child.textContent;
@@ -10090,6 +10287,7 @@ var locizify = (function() {
 		return e;
 	}
 	var dummyImplementation = getImplementation$1();
+	var started = false;
 	function start() {
 		var implementation = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : dummyImplementation;
 		var opt = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {
@@ -10123,6 +10321,8 @@ var locizify = (function() {
 		});
 		function continueToStart() {
 			if (!isInIframe && !showInContext) return;
+			if (started) return;
+			started = true;
 			var observer = createObserver(document.body, function(eles) {
 				eles.forEach(function(ele) {
 					parseTree(ele);
@@ -10300,9 +10500,8 @@ var locizify = (function() {
 	//#region node_modules/locize/dist/esm/locizePlugin.js
 	function configurePostProcessor(i18next, options) {
 		i18next.use(SubliminalPostProcessor);
-		if (typeof options.postProcess === "string") options.postProcess = [options.postProcess, "subliminal"];
-		else if (Array.isArray(options.postProcess)) options.postProcess.push("subliminal");
-		else options.postProcess = "subliminal";
+		var list = typeof options.postProcess === "string" ? [options.postProcess] : Array.isArray(options.postProcess) ? options.postProcess : [];
+		if (!list.includes("subliminal")) options.postProcess = [].concat(_toConsumableArray(list), ["subliminal"]);
 		options.postProcessPassResolved = true;
 	}
 	var i18next$1;
