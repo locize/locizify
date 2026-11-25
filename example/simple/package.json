@@ -11,8 +11,8 @@
   "dependencies": {
     "body-parser": "^1.14.2",
     "express": "^4.13.3",
-    "i18next": "19.5.0",
-    "i18next-http-middleware": "3.9.3",
-    "i18next-fs-backend": "2.6.4"
+    "i18next": "27.2.9",
+    "i18next-http-middleware": "3.11.1",
+    "i18next-fs-backend": "2.7.3"
   }
 }
