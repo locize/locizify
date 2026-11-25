@@ -1,6 +1,6 @@
 {
   "name": "locizify",
-  "version": "11.1.1",
+  "version": "11.2.0",
   "description": "main script for using locize service in frontend",
   "type": "module",
   "sideEffects": false,
